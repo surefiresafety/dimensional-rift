@@ -674,7 +674,7 @@ function sukunaTakeover() {
   const st = STYLES[STYLES[player.style].takeover];
   player.sukunaUsed = true; player.hp = player.maxHp; player.se = player.maxSe; player.invulnUntil = now + 2.5; player.cooldowns = {};
   closeSense(); releaseSwing(false); hitStop = .35; screenFlash(1); shake = 1.4;
-  center('SUKUNA TAKES OVER', 2200); player.transform = null;
+  center('SUKUNA TAKES OVER', 2200); player.transform = null; camDist = 3.5;
   log('"Know your place, fool." Sukuna has taken the body. Full health, full energy, his techniques.', true);
   applyStyle(STYLES[player.style].takeover, false);
   for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() < 16) { e.pos.addScaledVector(to.normalize(), 6); e.status.stun = 1.8; floatText(e.pos, '!', 'se'); } }
@@ -847,7 +847,7 @@ function useUltimate() {
     const from = player.style;
     player.transform = { from, until: now + u.duration };
     applyStyle(u.into, false); player.hp = Math.min(player.maxHp, player.hp + 150); player.cooldowns = {};
-    hitStop = .3; screenFlash(1); shake = 1.2; center('SUKUNA POSSESSION', 2000);
+    hitStop = .3; screenFlash(1); shake = 1.2; center('SUKUNA POSSESSION', 2000); camDist = 3.5;
     log(`"Finally." Sukuna has the body for ${u.duration} seconds. Yuji returns when it ends.`, true);
     burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), 0xff2d55, 40);
     for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() < 12) { e.pos.addScaledVector(to.normalize(), 4); e.status.stun = 1.2; } }
@@ -924,7 +924,7 @@ function updateProjectiles(dt) {
     b.t += dt;
     if (b.ring) { b.m.scale.setScalar(1 + b.t * 12); b.m.material.opacity = Math.max(0, 1 - b.t * 3); if (b.t > .35) b.done = true; }
     else if (b.line) { b.m.material.opacity = 1 - b.t * 4; b.m.material.transparent = true; if (b.t > .25) b.done = true; }
-    else { b.m.position.addScaledVector(b.v, dt); b.v.y -= 20 * dt; b.m.scale.setScalar(Math.max(0.01, 1 - b.t * 1.6)); if (b.t > .6) b.done = true; }
+    else { b.m.position.addScaledVector(b.v, dt); if (!b.float) b.v.y -= 20 * dt; b.m.scale.setScalar(Math.max(0.01, 1 - b.t * (b.float ? .9 : 1.6))); if (b.t > (b.float ? 1.1 : .6)) b.done = true; }
     if (b.done) scene.remove(b.m);
   }
   for (let i = bursts.length - 1; i >= 0; i--) if (bursts[i].done) bursts.splice(i, 1);
@@ -1038,7 +1038,46 @@ function renderSlots() {
   }
 }
 const LOOKS = { default: [0xd8323c, 0xffe45c, 0xffffff], sukuna: [0x1a0508, 0xe8d0c0, 0xff2d55], megumi: [0x0d1230, 0xe8d0c0, 0x5aa9ff], yuji: [0x2a2a2a, 0xe8d0c0, 0xff8a8a], gojo: [0x0b0a14, 0xf0f0f0, 0x5ad4ff], naruto: [0xff8a1f, 0xffe45c, 0x5aa9ff] };
-function setLook(style) { const [t, h, v] = LOOKS[style] ?? LOOKS.default; torso.material.color.set(t); head.material.color.set(h); visor.material.color.set(v); }
+let sukunaParts = null, sukunaAura = null, sukunaEmber = 0;
+function buildSukunaParts() {
+  const g = new THREE.Group();
+  const ink = new THREE.MeshBasicMaterial({ color: 0x07030a });
+  const skin = toon(0xe8d0c0);
+  // Face markings: lines under the eyes and across the cheeks, forehead bars.
+  for (const sx of [-1, 1]) {
+    const cheek = new THREE.Mesh(new THREE.BoxGeometry(.16, .035, .02), ink); cheek.position.set(sx * .17, 1.9, .3); cheek.rotation.z = sx * .35; g.add(cheek);
+    const cheek2 = new THREE.Mesh(new THREE.BoxGeometry(.14, .035, .02), ink); cheek2.position.set(sx * .19, 1.82, .29); cheek2.rotation.z = sx * .35; g.add(cheek2);
+    const brow = new THREE.Mesh(new THREE.BoxGeometry(.12, .035, .02), ink); brow.position.set(sx * .12, 2.12, .28); brow.rotation.z = -sx * .5; g.add(brow);
+    // Second pair of eyes on the cheekbones.
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(.035, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff2d55 })); eye.position.set(sx * .12, 1.86, .31); g.add(eye);
+  }
+  // Body markings: black bands round the torso and the second face on the stomach.
+  for (const y of [1.45, 1.15, .85]) { const band = new THREE.Mesh(new THREE.TorusGeometry(.4, .025, 6, 24), ink); band.position.y = y; band.rotation.x = Math.PI / 2; g.add(band); }
+  for (const sx of [-1, 1]) { const e = new THREE.Mesh(new THREE.SphereGeometry(.05, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff2d55 })); e.position.set(sx * .12, 1.02, .38); g.add(e); }
+  const mouth = new THREE.Mesh(new THREE.BoxGeometry(.28, .05, .02), new THREE.MeshBasicMaterial({ color: 0xffffff })); mouth.position.set(0, .9, .4); g.add(mouth);
+  const mouthInk = new THREE.Mesh(new THREE.BoxGeometry(.32, .09, .015), ink); mouthInk.position.set(0, .9, .395); g.add(mouthInk);
+  // Four arms: the upper pair raised, the lower pair hanging.
+  const armGeo = new THREE.CapsuleGeometry(.11, .7, 4, 8);
+  for (const sx of [-1, 1]) {
+    const upper = outlined(new THREE.Mesh(armGeo, skin), .1); upper.position.set(sx * .62, 1.55, .05); upper.rotation.z = sx * 1.1; g.add(upper);
+    const lower = outlined(new THREE.Mesh(armGeo, skin), .1); lower.position.set(sx * .58, 1.05, -.05); lower.rotation.z = sx * .35; g.add(lower);
+    for (const [arm, yy] of [[upper, 1.55], [lower, 1.05]]) { const band = new THREE.Mesh(new THREE.TorusGeometry(.12, .02, 6, 16), ink); band.position.copy(arm.position); band.rotation.z = arm.rotation.z; band.rotation.x = Math.PI / 2; g.add(band); void yy; }
+  }
+  return g;
+}
+function setLook(style) {
+  const [t, h, v] = LOOKS[style] ?? LOOKS.default; torso.material.color.set(t); head.material.color.set(h); visor.material.color.set(v);
+  const isSukuna = style === 'sukuna';
+  if (isSukuna && !sukunaParts) {
+    sukunaParts = buildSukunaParts(); body.add(sukunaParts);
+    sukunaAura = new THREE.Mesh(new THREE.RingGeometry(.8, 1.5, 32), new THREE.MeshBasicMaterial({ color: 0xff2d55, side: THREE.DoubleSide, transparent: true, opacity: .55 }));
+    sukunaAura.rotation.x = -Math.PI / 2; sukunaAura.position.y = .06; body.add(sukunaAura);
+    torso.material.color.set(0x1a0508); head.material.color.set(0xe8d0c0); visor.material.color.set(0xff2d55);
+    visor.scale.set(1.15, 1, 1);
+  } else if (!isSukuna && sukunaParts) {
+    body.remove(sukunaParts); body.remove(sukunaAura); sukunaParts = null; sukunaAura = null; visor.scale.set(1, 1, 1);
+  }
+}
 function makeDogMesh(color) {
   const g = new THREE.Group();
   const bodyM = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.35, 1, 4, 10), toon(color)), .08); bodyM.rotation.z = Math.PI / 2; bodyM.position.y = .7; g.add(bodyM);
@@ -1165,6 +1204,7 @@ function frame(t) {
   body.rotation.x = player.swinging ? THREE.MathUtils.clamp(-player.vel.y * .02, -.5, .5) : 0;
   if (player.swinging) { webLine.geometry.setFromPoints([player.pos.clone().add(new THREE.Vector3(0, 1.4, 0)), player.anchor]); }
   if (cloneMesh) cloneMesh.rotation.y += worldDt;
+  if (sukunaAura) { sukunaAura.rotation.z += real * 2.5; sukunaAura.material.opacity = .4 + .25 * Math.sin(now * 6); sukunaEmber += real; if (sukunaEmber > .12) { sukunaEmber = 0; const g = new THREE.Mesh(partGeo, new THREE.MeshBasicMaterial({ color: Math.random() < .5 ? 0xff2d55 : 0x120008 })); g.position.copy(player.pos).add(new THREE.Vector3((Math.random() - .5) * 1.6, .2, (Math.random() - .5) * 1.6)); scene.add(g); bursts.push({ m: g, v: new THREE.Vector3((Math.random() - .5) * 2, 4 + Math.random() * 3, (Math.random() - .5) * 2), t: 0, float: true }); } }
 
   updateEnemies(worldDt);
   updateProjectiles(worldDt);
@@ -1200,7 +1240,7 @@ function moveSetCard(id, st) {
   const extra = [];
   if (st.ultimate) extra.push(`<b>G · ${st.ultimate.name}</b> — ${st.ultimate.cost} SE, ${st.ultimate.duration}s, ${st.ultimate.cd}s cooldown.`);
   for (const p of st.passives ?? []) extra.push(p);
-  card.innerHTML = `<div class="ms-head"><div class="ms-portrait" style="background:${hex(t)}"><i style="background:${hex(h)}"></i><b style="background:${hex(v)}"></b></div><div><div class="display ms-name">${st.name}</div><div class="ms-blurb">${st.blurb}</div></div></div>
+  card.innerHTML = `<div class="ms-head"><div class="ms-portrait" style="background:${hex(t)}${id === 'sukuna' ? ';background-image:repeating-linear-gradient(180deg,transparent 0 9px,#07030a 9px 11px)' : ''}"><i style="background:${hex(h)}"></i><b style="background:${hex(v)}"></b></div><div><div class="display ms-name">${st.name}</div><div class="ms-blurb">${st.blurb}</div></div></div>
     <ul class="ms-tech">${tech}</ul>
     ${extra.length ? `<div class="ms-extra">${extra.join('<br>')}</div>` : ''}
     <button class="pick">${msMode === 'start' ? 'Play as this' : 'Switch to this'}</button>`;
