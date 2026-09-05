@@ -143,7 +143,7 @@
       <p style="font-size:12px;opacity:.75">Fire beats Wind, Wind beats Lightning, Lightning beats Earth, Earth beats Water, Water beats Fire.</p>
       <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
         <button id="open-movesets">Choose your move set</button>
-        <span style="opacity:.7;font-size:12px">Eight characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
+        <span style="opacity:.7;font-size:12px">Nine characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
       </div>
     </div>
   </div>
@@ -204,6 +204,24 @@ function effectiveness(a, d) {
   return 1;
 }
 const MAX_SLOTS = 5;
+// Toji's arsenal. Slot 5 cycles these; the drawn weapon rewrites his basic
+// attack and scales every one of his moves.
+const WEAPONS = {
+  spear_chain: { id: 'spear_chain', name: 'Inverted Spear of Heaven', sub: 'Chain of a Thousand Miles attached', color: 0x9fe870,
+    m1: 34, mul: 1, range: 1.4, ignoreDef: true, breaksBarrier: true, pull: true, knock: 4,
+    note: 'Breaks Infinity. Nothing it touches gets to keep a barrier, and the chain drags them in.' },
+  split_soul: { id: 'split_soul', name: 'Split Soul Katana', sub: 'cuts the soul behind the body', color: 0xff6b6b,
+    m1: 30, mul: 1.15, range: 1, ignoreDef: true, soul: { mul: .55, delay: .4 }, knock: 6,
+    note: 'Every hit lands twice: the body, then the soul a beat later.' },
+  playful_cloud: { id: 'playful_cloud', name: 'Playful Cloud', sub: 'sharpened three-section staff', color: 0xffd54a,
+    m1: 38, mul: 1.35, range: 1.35, knock: 30,
+    note: 'The heaviest swings he has, with reach and enormous knockback.' },
+  slaughter_demon: { id: 'slaughter_demon', name: 'Slaughter Demon', sub: 'fast and low', color: 0xe8eaf2,
+    m1: 22, mul: .78, range: .95, cdMul: .5, costMul: .55, knock: 3,
+    note: 'Lighter hits, but half the cooldowns and almost half the cost.' },
+};
+const WEAPON_ORDER = ['spear_chain', 'split_soul', 'playful_cloud', 'slaughter_demon'];
+const currentWeapon = () => (player.weapon ? WEAPONS[player.weapon] : null);
 // Hold B to power up. A tap is Minimum Output; 15 s is Medium; 30 s is Maximum.
 const CHARGE_MAX = 10;
 // A charge is stored, not timed: it waits until you spend it on one ability.
@@ -262,13 +280,11 @@ const SKILLS = {
   incomplete_shrine: { name: 'Incomplete Shrine', origin: 'Sukuna', nature: 'wind', cost: 20, cd: 10, type: 'shrine', range: 18, arc: .25, power: 50, ticks: 6, tick: .3, desc: 'A shrine with no barrier: a cone of dismantles carved out in front of you.' },
 
   // --- Toji Fushiguro: Heavenly Restriction ---
-  slaughter_demon: { name: 'Slaughter Demon', origin: 'Toji', nature: 'physical', cost: 5, cd: 1.2, type: 'melee', range: 4.2, arc: .2, power: 46, knock: 6, desc: 'A cursed tool blade drawn low and fast.' },
-  playful_cloud:   { name: 'Playful Cloud', origin: 'Toji', nature: 'physical', cost: 9, cd: 3, type: 'melee', range: 6, arc: -.2, power: 105, knock: 38, desc: 'Sharpened three-section staff swung in a full circle. Blunt force, enormous knockback.' },
-  split_soul:      { name: 'Split Soul Katana', origin: 'Toji', nature: 'cursed', cost: 13, cd: 3.5, type: 'melee', range: 4.4, arc: .2, power: 95, knock: 10, ignoreDef: true, second: { power: 65, delay: .4 }, desc: 'Cuts the body, then the soul a beat later. Nothing hardens against it.' },
-  weapon_throw:    { name: 'Weapon Throw', origin: 'Toji', nature: 'physical', cost: 6, cd: 2, type: 'projectile', speed: 58, radius: .5, power: 55, pierce: true, desc: 'A thrown blade that goes straight through a line of enemies.' },
-  spear_heaven:    { name: 'Inverted Spear of Heaven', origin: 'Toji', nature: 'physical', cost: 12, cd: 2.6, type: 'melee', range: 4.8, arc: .25, power: 100, knock: 8, ignoreDef: true, breaksBarrier: true, desc: 'Breaks Infinity. It negates any technique it touches, so no barrier, hardened defence or adaptation counts.' },
-  chain_miles:     { name: 'Chain of a Thousand Miles', origin: 'Toji', nature: 'physical', cost: 10, cd: 3, type: 'yank', range: 34, power: 48, sweep: 9, sweepPower: 34, desc: 'The chain crosses the street, drags one enemy in and sweeps the rest off their feet.' },
-  weapon_switch:   { name: 'Switch Weapon', origin: 'Toji', nature: 'physical', cost: 0, cd: .5, type: 'switch', between: ['spear_heaven', 'chain_miles', 'split_soul'], desc: 'Cycle the drawn weapon: Inverted Spear of Heaven, Chain of a Thousand Miles, Split Soul Katana.' },
+  sorcerer_killer: { name: 'Sorcerer Killer', origin: 'Toji', nature: 'physical', cost: 8, cd: 3, type: 'dash', range: 13, power: 62, weaponScaled: true, onHit: { knock: 10 }, desc: 'Crosses the gap in a blink and cuts through on the way past.' },
+  wide_sweep:      { name: 'Wide Sweep', origin: 'Toji', nature: 'physical', cost: 7, cd: 2.4, type: 'melee', range: 5.5, arc: -.45, power: 58, knock: 14, weaponScaled: true, desc: 'A full circle swing that catches everything standing around him.' },
+  inventory_throw: { name: 'Inventory Curse', origin: 'Toji', nature: 'physical', cost: 6, cd: 2, type: 'projectile', speed: 58, radius: .55, power: 60, pierce: true, weaponScaled: true, desc: 'Pulls the drawn weapon out of the curse and throws it clean through a line.' },
+  execution:       { name: 'Execution', origin: 'Toji', nature: 'physical', cost: 12, cd: 5, type: 'melee', range: 4.4, arc: .35, power: 92, knock: 8, weaponScaled: true, finisher: .9, desc: 'A committed killing blow, far heavier against anything already hurt.' },
+  weapon_switch:   { name: 'Switch Weapon', origin: 'Toji', nature: 'physical', cost: 0, cd: .45, type: 'switch', desc: 'Draw the next weapon: Inverted Spear of Heaven with the Chain attached, Split Soul Katana, Playful Cloud, Slaughter Demon. It changes your basic attack and every move.' },
   heavenly_restriction: { name: 'Heavenly Restriction', origin: 'Toji', nature: 'physical', cost: 30, cd: 80, type: 'buff', duration: 20, dmgMul: 1.9, speedMul: 1.6, costMul: 0, color: 0x9fe870, desc: 'Not a drop of cursed energy. Pure body: faster, far stronger, and every weapon is free.' },
 
   // --- Sasuke Uchiha: Rinnegan ---
@@ -280,6 +296,13 @@ const SKILLS = {
   susanoo:         { name: 'Perfect Susanoo', origin: 'Sasuke', nature: 'lightning', cost: 40, cd: 95, type: 'buff', duration: 25, dmgMul: 2, speedMul: 1, shield: 5, avatar: true, color: 0x9b6cff, desc: 'A giant avatar of chakra closes around you: double damage, and it eats five hits.' },
 
   // --- Ultimates ---
+  // --- Kashimo Hajime: Mythical Beast Amber ---
+  kashimo_amber:   { name: 'Mythical Beast Amber', origin: 'Kashimo', nature: 'lightning', cost: 12, cd: 3, type: 'projectile', speed: 46, radius: .9, power: 78, aoe: 4, onHit: { paralyze: 2.5 }, desc: 'His cursed technique: stored electricity thrown out in a bolt that bursts on impact.' },
+  lightning_guard: { name: 'Lightning Guard', origin: 'Kashimo', nature: 'lightning', cost: 14, cd: 12, type: 'shield', charges: 3, duration: 10, reflect: 60, color: 0xffe45c, desc: 'A shell of electricity. It eats the next three hits and shocks whoever threw them.' },
+  thunder_staff:   { name: 'Thunderclap Staff', origin: 'Kashimo', nature: 'lightning', cost: 7, cd: 1.4, type: 'melee', range: 5, arc: .1, power: 54, knock: 12, onHit: { paralyze: 1.5 }, desc: 'A sweep of the pole with the charge running down its length.' },
+  discharge:       { name: 'Full Discharge', origin: 'Kashimo', nature: 'lightning', cost: 20, cd: 7, type: 'trap', range: 0, radius: 9.5, power: 88, color: 0xffe45c, onHit: { paralyze: 2, knock: 16 }, desc: 'Dumps everything he is holding at once: a nova of lightning centred on himself.' },
+  amber_maximum:   { name: 'Amber: Maximum', origin: 'Kashimo', nature: 'lightning', cost: 38, cd: 90, type: 'buff', duration: 22, dmgMul: 2.1, speedMul: 1.45, costMul: .6, regen: 10, chain: { power: 48, radius: 17, every: .7 }, color: 0xffe45c, desc: 'His whole body becomes the discharge: everything hits harder and lightning keeps arcing to anything near him.' },
+
   kurama_cloak:    { name: 'Kurama Chakra Mode', origin: 'Naruto', nature: 'fire', cost: 35, cd: 85, type: 'buff', duration: 25, dmgMul: 2.2, speedMul: 1.5, costMul: .5, regen: 12, color: 0xffb340, desc: "Kurama's chakra floods every jutsu: far more damage, faster, half price, chakra pouring back." },
   spider_verse:    { name: 'Spider-Verse Assist', origin: 'Spider-Man', nature: 'physical', cost: 32, cd: 80, type: 'clones', mesh: 'spider', count: 3, duration: 20, power: 30, speed: 12, desc: 'Three spiders from other dimensions drop in and fight beside you.' },
 
@@ -317,9 +340,13 @@ const STYLES = {
     pool: ['divine_dogs', 'nue', 'toad_s', 'max_elephant', 'rabbit_escape'], slots: ['divine_dogs', 'nue', 'toad_s', 'max_elephant', 'rabbit_escape'],
     ultimate: { kind: 'mahoraga', name: 'Summon Mahoraga', cost: 50, cd: 90, duration: 30 } },
   toji: { name: 'Toji: Heavenly Restriction', blurb: 'No cursed energy, just a body that outclasses sorcerers and a bag of cursed tools.',
-    passives: ['Press 5 to cycle the drawn weapon: Inverted Spear of Heaven, Chain of a Thousand Miles, Split Soul Katana.', 'The Spear breaks Infinity: no barrier or hardened defence reduces it.', 'Playful Cloud is sharpened and swings in a full circle.'],
-    pool: ['spear_heaven', 'chain_miles', 'split_soul', 'playful_cloud', 'weapon_throw', 'slaughter_demon', 'weapon_switch'], slots: ['spear_heaven', 'playful_cloud', 'weapon_throw', 'slaughter_demon', 'weapon_switch'],
+    passives: ['Key 5 cycles the drawn weapon, and the weapon rewrites your basic attack and all four moves.', 'Inverted Spear of Heaven (Chain attached) breaks Infinity and drags them in.', 'Split Soul Katana cuts twice. Playful Cloud hits hardest. Slaughter Demon halves cooldowns.'],
+    pool: ['sorcerer_killer', 'wide_sweep', 'inventory_throw', 'execution', 'weapon_switch'], slots: ['sorcerer_killer', 'wide_sweep', 'inventory_throw', 'execution', 'weapon_switch'],
     ultimate: { skill: 'heavenly_restriction', name: 'Heavenly Restriction', cost: 30, cd: 80, duration: 20 } },
+  kashimo: { name: 'Kashimo: Mythical Beast', blurb: 'Four hundred years bored. Pure electricity, and he only wants a real fight.',
+    passives: ['Lightning Guard shocks whoever hits it.', 'Almost everything he does paralyses.'],
+    pool: ['kashimo_amber', 'lightning_guard', 'thunder_staff', 'discharge', 'rct_heal'], slots: ['kashimo_amber', 'lightning_guard', 'thunder_staff', 'discharge', 'rct_heal'],
+    ultimate: { skill: 'amber_maximum', name: 'Amber: Maximum', cost: 38, cd: 90, duration: 22 } },
   sasuke: { name: 'Sasuke: Rinnegan', blurb: 'Space and time bend around him. Teleport, stop the clock, take it back.',
     passives: ['Work in progress: more Rinnegan techniques to come.'],
     pool: ['amenotejikara', 'time_freeze', 'frozen_world', 'reverse_time', 'amaterasu'], slots: ['amenotejikara', 'time_freeze', 'frozen_world', 'reverse_time', 'amaterasu'],
@@ -433,7 +460,7 @@ const player = {
   learned: ['web_stun', 'fireball'], slots: ['web_stun', 'fireball', null, null], cooldowns: {},
   swinging: false, anchor: new THREE.Vector3(), rope: 0, releaseAt: -10,
   invulnUntil: 0, graceUntil: 0, nextDodge: 0, decoy: false, strikeCd: 0,
-  shield: 0, shieldUntil: 0, buff: null, style: null, evadeUntil: 0, sukunaUsed: false, flashRamp: 0, blackFlashes: 0, ultCd: 0, transform: null, charging: null, output: null, freezeUntil: 0,
+  shield: 0, shieldUntil: 0, buff: null, style: null, evadeUntil: 0, sukunaUsed: false, flashRamp: 0, blackFlashes: 0, ultCd: 0, transform: null, charging: null, output: null, freezeUntil: 0, weapon: null, shieldReflect: 0,
   sense: { active: false, until: 0, attacker: null },
   kills: 0, dead: false,
 };
@@ -718,7 +745,9 @@ function hurtPlayer(atk, nature, from) {
   if (player.dead) return;
   if (now < player.invulnUntil || now < player.graceUntil) { floatText(player.pos, 'DODGED', 'heal'); return; }
   if (now < player.evadeUntil) { floatText(player.pos, 'SPIDER-SENSE', 'heal'); hitStop = Math.max(hitStop, .05); player.vel.add(player.pos.clone().sub(from.pos).setY(0).normalize().multiplyScalar(6)); player.se = Math.min(player.maxSe, player.se + 3); return; }
-  if (player.shield > 0 && now < player.shieldUntil) { player.shield--; floatText(player.pos, 'INFINITY', 'heal'); burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), 0xb06cff, 10); if (player.shield === 0) { if (shieldMesh) { scene.remove(shieldMesh); shieldMesh = null; } } return; }
+  if (player.shield > 0 && now < player.shieldUntil) { player.shield--; floatText(player.pos, 'INFINITY', 'heal'); burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), 0xb06cff, 10); if (player.shield === 0) { if (shieldMesh) { scene.remove(shieldMesh); shieldMesh = null; } player.shieldReflect = 0; }
+    if (player.shieldReflect && from && !from.dead) { enemyTakeHit(from, player.shieldReflect, 'lightning', player.pos, { paralyze: 1.5, knock: 8 }); }
+    return; }
   if (player.decoy) { player.decoy = false; if (cloneMesh) { scene.remove(cloneMesh); cloneMesh = null; } floatText(player.pos, 'CLONE!', 'heal'); log('Your Shadow Clone took the hit and vanished!'); return; }
   const eff = effectiveness(nature, player.nature);
   const dmg = Math.round(atk * eff * (0.9 + Math.random() * .2));
@@ -790,11 +819,13 @@ function activateSlot(i) {
 function castSkill(id, opts = {}) {
   const s = SKILLS[id];
   if (!s || player.dead || player.charging) return false;
+  const W = s.weaponScaled ? currentWeapon() : null;   // Toji's drawn weapon
+  const WM = W?.mul ?? 1;
   if (!opts.free) {
     if ((player.cooldowns[id] ?? 0) > now) return false;
-    const cost = Math.ceil(s.cost * outputCost() * buffCost());
+    const cost = Math.ceil(s.cost * (W?.costMul ?? 1) * outputCost() * buffCost());
     if (player.se < cost) { log(`Not enough Spirit Energy for ${s.name}.`); return false; }
-    player.se -= cost; player.regenBlockedUntil = now + 2.5; player.cooldowns[id] = now + s.cd;
+    player.se -= cost; player.regenBlockedUntil = now + 2.5; player.cooldowns[id] = now + s.cd * (W?.cdMul ?? 1);
   }
   const slotEl = opts.slot != null ? $('#slots').children[opts.slot] : null;
   if (slotEl) { slotEl.classList.add('flash'); setTimeout(() => slotEl.classList.remove('flash'), 350); }
@@ -806,18 +837,22 @@ function castSkill(id, opts = {}) {
     const m = outlined(new THREE.Mesh(new THREE.SphereGeometry(s.radius, 12, 10), new THREE.MeshBasicMaterial({ color: s.color ?? NATURE[s.nature].color })), .12);
     if (s.spin) { const blades = new THREE.Mesh(new THREE.TorusGeometry(s.radius * 2.2, .18, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffffff })); blades.rotation.x = Math.PI / 2; m.add(blades); m.userData.spin = true; }
     m.position.copy(origin).addScaledVector(dir, 1); scene.add(m);
-    projectiles.push({ m, v: dir.clone().multiplyScalar(s.speed), s, t: 0, trail: [], boost: B });
+    projectiles.push({ m, v: dir.clone().multiplyScalar(s.speed), s, t: 0, trail: [], boost: B * WM });
   } else if (s.type === 'melee') {
-    burst(origin.clone().addScaledVector(dir, 1.5), NATURE[s.nature].color, 12); shake = .3;
-    for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() <= s.range + e.t.size && (s.arc == null || to.normalize().dot(dir.clone().setY(0).normalize()) > s.arc)) {
-      let power = (s.power + (s.percentMax ? e.maxHp * s.percentMax : 0)) * B;
+    const reach = s.range * (W?.range ?? 1);
+    burst(origin.clone().addScaledVector(dir, 1.5), W?.color ?? NATURE[s.nature].color, 12); shake = .3;
+    for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() <= reach + e.t.size && (s.arc == null || to.normalize().dot(dir.clone().setY(0).normalize()) > s.arc)) {
+      let power = (s.power * WM + (s.percentMax ? e.maxHp * s.percentMax : 0)) * B;
+      if (s.finisher) power *= 1 + s.finisher * (1 - e.hp / e.maxHp);
       if (s.crit) {
         if (Math.random() < s.crit.chance + player.flashRamp) { power *= s.crit.mul; player.flashRamp = 0; center('BLACK FLASH', 1000); hitStop = .22; screenFlash(.85); shake = 1; burst(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), 0x120008, 24); burst(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), 0xff2d55, 12); }
         else player.flashRamp += s.crit.ramp;
       }
-      if (s.breaksBarrier && e.defMul < 1) { e.defMul = 1; floatText(e.pos, 'BARRIER BROKEN', 'se'); }
-      enemyTakeHit(e, power, s.nature, player.pos, { ...s.onHit, knock: s.knock, ignoreDef: s.ignoreDef });
+      if ((s.breaksBarrier || W?.breaksBarrier) && e.defMul < 1) { e.defMul = 1; floatText(e.pos, 'BARRIER BROKEN', 'se'); }
+      enemyTakeHit(e, power, s.nature, player.pos, { ...s.onHit, knock: (s.knock ?? 0) + (W?.knock ?? 0), ignoreDef: s.ignoreDef || W?.ignoreDef });
+      if (W?.pull) { const pull = player.pos.clone().sub(e.pos).setY(0); if (pull.length() > 2) e.pos.addScaledVector(pull.normalize(), Math.min(6, pull.length() - 1.6)); }
       if (s.second) { const target = e; setTimeout(() => { if (!target.dead && !player.dead) { enemyTakeHit(target, s.second.power * B, 'cursed', player.pos, { knock: 4 }); } }, s.second.delay * 1000); }
+      if (W?.soul) { const target = e, soul = power * W.soul.mul; setTimeout(() => { if (!target.dead && !player.dead) { enemyTakeHit(target, soul, 'cursed', player.pos, { knock: 2, ignoreDef: true }); floatText(target.pos, 'SOUL', 'se'); } }, W.soul.delay * 1000); }
     } }
   } else if (s.type === 'dash') {
     releaseSwing(false);
@@ -826,7 +861,7 @@ function castSkill(id, opts = {}) {
     const pts = []; for (let i = 0; i <= 14; i++) pts.push(start.clone().lerp(end, i / 14).add(new THREE.Vector3((Math.random() - .5) * .6, 1.2 + (Math.random() - .5) * .6, (Math.random() - .5) * .6)));
     const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: NATURE[s.nature].color })); scene.add(line); bursts.push({ m: line, t: 0, line: true });
     screenFlash(.3); shake = .4;
-    for (const e of enemies) { if (e.dead) continue; const seg = new THREE.Line3(start, end); const cp = new THREE.Vector3(); seg.closestPointToPoint(e.pos, true, cp); if (cp.distanceTo(e.pos) < 2 + e.t.size) { const mul = s.bonusStatus && e.status[s.bonusStatus] ? s.bonusMul : 1; if (mul > 1) center('WEBBED! x2', 500); enemyTakeHit(e, s.power * mul * B, s.nature, start, s.onHit); } }
+    for (const e of enemies) { if (e.dead) continue; const seg = new THREE.Line3(start, end); const cp = new THREE.Vector3(); seg.closestPointToPoint(e.pos, true, cp); if (cp.distanceTo(e.pos) < 2 + e.t.size) { const mul = s.bonusStatus && e.status[s.bonusStatus] ? s.bonusMul : 1; if (mul > 1) center('WEBBED! x2', 500); enemyTakeHit(e, s.power * mul * WM * B, s.nature, start, { ...s.onHit, ignoreDef: s.ignoreDef || W?.ignoreDef }); } }
   } else if (s.type === 'self' && s.decoy) {
     player.decoy = true;
     if (cloneMesh) scene.remove(cloneMesh);
@@ -872,10 +907,12 @@ function castSkill(id, opts = {}) {
     log('Domain Expansion: Unlimited Void. Every enemy is paralysed by infinite information.', true);
   } else if (s.type === 'shield') {
     player.shield = Math.round(s.charges * B); player.shieldUntil = now + s.duration;
+    player.shieldReflect = (s.reflect ?? 0) * B;
     if (shieldMesh) scene.remove(shieldMesh);
-    shieldMesh = new THREE.Mesh(new THREE.SphereGeometry(1.7, 24, 16), new THREE.MeshBasicMaterial({ color: 0xb06cff, transparent: true, opacity: .18, wireframe: true }));
+    shieldMesh = new THREE.Mesh(new THREE.SphereGeometry(1.7, 24, 16), new THREE.MeshBasicMaterial({ color: s.color ?? 0xb06cff, transparent: true, opacity: .18, wireframe: true }));
     shieldMesh.position.copy(player.pos).add(new THREE.Vector3(0, 1.3, 0)); scene.add(shieldMesh);
-    log(`Infinity: the next ${s.charges} hits stop before they reach you.`, true); center('INFINITY', 800);
+    log(`${s.name}: the next ${Math.round(s.charges * B)} hits stop before they reach you${s.reflect ? ' and the attacker takes the charge' : ''}.`, true);
+    center(s.name.toUpperCase(), 900);
   } else if (s.type === 'clones') {
     player.decoy = true;
     for (let i = 0; i < s.count; i++) {
@@ -912,7 +949,7 @@ function castSkill(id, opts = {}) {
     burst(centerP.clone().add(new THREE.Vector3(0, 1, 0)), s.color ?? 0xffffff, 16); center(s.name.toUpperCase(), 500); if (s.color) shake = .7;
   } else if (s.type === 'buff') {
     const dur = s.duration * B;
-    player.buff = { until: now + dur, dmgMul: s.dmgMul, speedMul: s.speedMul ?? 1, costMul: s.costMul ?? 1, regen: s.regen ?? 6 };
+    player.buff = { until: now + dur, dmgMul: s.dmgMul, speedMul: s.speedMul ?? 1, costMul: s.costMul ?? 1, regen: s.regen ?? 6, chain: s.chain ?? null, chainNext: 0, chainBoost: B };
     const col = s.color ?? 0xffb340;
     if (s.shield) {
       player.shield = Math.round(s.shield * B); player.shieldUntil = now + dur;
@@ -981,15 +1018,13 @@ function castSkill(id, opts = {}) {
     if (gained > 0) floatText(player.pos, '+' + gained, 'heal');
     log(`Reverse Time: you are where you were ${s.seconds} seconds ago${gained > 0 ? `, ${gained} HP back` : ''}.`, true);
   } else if (s.type === 'switch') {
-    const held = s.between.findIndex((k) => player.slots.includes(k));
-    const from = s.between[held < 0 ? 0 : held];
-    const to = s.between[(held < 0 ? 0 : held + 1) % s.between.length];
-    const idx = player.slots.indexOf(from);
-    if (idx >= 0) player.slots[idx] = to;
-    if (!player.learned.includes(to)) player.learned.push(to);
+    const at = WEAPON_ORDER.indexOf(player.weapon);
+    const next = WEAPON_ORDER[(at + 1) % WEAPON_ORDER.length];
+    player.weapon = next;
+    const w = WEAPONS[next];
     renderSlots();
-    center(SKILLS[to].name.toUpperCase(), 1100); burst(origin, 0x9fe870, 14);
-    log(`Drew ${SKILLS[to].name} from the Inventory Curse.`, true);
+    center(w.name.toUpperCase(), 1200); burst(origin, w.color, 18); screenFlash(.25);
+    log(`Drew the ${w.name} (${w.sub}). ${w.note}`, true);
   }
   return true;
 }
@@ -1141,9 +1176,14 @@ function strike() {
   // Yuji: most basic hits spark into Black Flash.
   const bfChance = player.style ? STYLES[player.style].m1BlackFlash ?? 0 : 0;
   const blackFlash = bfChance > 0 && Math.random() < bfChance;
+  const W = currentWeapon();
+  const m1 = W ? W.m1 : 16;
   for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() <= 2.8 + e.t.size && to.normalize().dot(dir.clone().setY(0).normalize()) > .3) {
     if (blackFlash) { if (!hit) { player.blackFlashes++; center('BLACK FLASH', 700); hitStop = .16; screenFlash(.7); shake = .8; } burst(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), 0x120008, 16); burst(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), 0xff2d55, 8); enemyTakeHit(e, 16 * 2.5, 'cursed', player.pos, { knock: 9 }); }
-    else enemyTakeHit(e, 16, 'physical', player.pos, { knock: 5 });
+    else {
+      enemyTakeHit(e, m1, 'physical', player.pos, { knock: 5 + (W?.knock ?? 0) * .4, ignoreDef: W?.ignoreDef });
+      if (W?.soul) { const target = e, soul = m1 * W.soul.mul; setTimeout(() => { if (!target.dead && !player.dead) enemyTakeHit(target, soul, 'cursed', player.pos, { knock: 1, ignoreDef: true }); }, W.soul.delay * 1000); }
+    }
     hit = true; } }
   if (!hit) burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)).addScaledVector(dir, 1.5), 0xffffff, 3);
 }
@@ -1263,6 +1303,18 @@ function updateProjectiles(dt) {
   if (player.buff && now > player.buff.until) { const quiet = player.buff.quiet; player.buff = null; if (!quiet) { setLook(player.style); if (auraMesh) { scene.remove(auraMesh); auraMesh = null; } if (avatarMesh) { scene.remove(avatarMesh); avatarMesh = null; } log('Your power-up faded.'); } }
   if (player.buff) { player.se = Math.min(player.maxSe, player.se + (player.buff.regen ?? 6) * dt); if (auraMesh) { auraMesh.position.copy(player.pos).add(new THREE.Vector3(0, .06, 0)); auraMesh.rotation.z += dt * 3; } }
   if (avatarMesh) { avatarMesh.position.copy(player.pos); avatarMesh.rotation.y = body.rotation.y; }
+  if (player.buff?.chain && now > player.buff.chainNext) {
+    const c = player.buff.chain; player.buff.chainNext = now + c.every;
+    for (const e of enemies) {
+      if (e.dead || e.pos.distanceTo(player.pos) > c.radius) continue;
+      enemyTakeHit(e, c.power * (player.buff.chainBoost ?? 1), 'lightning', player.pos, { paralyze: 1 });
+      const a = player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), b2 = e.pos.clone().add(new THREE.Vector3(0, 1, 0));
+      const pts = []; for (let i = 0; i <= 8; i++) pts.push(a.clone().lerp(b2, i / 8).add(new THREE.Vector3((Math.random() - .5) * .8, (Math.random() - .5) * .8, (Math.random() - .5) * .8)));
+      const bolt = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: 0xffe45c }));
+      scene.add(bolt); bursts.push({ m: bolt, t: 0, line: true });
+      break;
+    }
+  }
   if (shieldMesh) { shieldMesh.position.copy(player.pos).add(new THREE.Vector3(0, 1.3, 0)); shieldMesh.rotation.y += dt; if (now > player.shieldUntil) { scene.remove(shieldMesh); shieldMesh = null; player.shield = 0; } }
 }
 
@@ -1291,7 +1343,13 @@ function renderSlots() {
   const el = $('#slots'); el.innerHTML = '';
   player.slots.forEach((id, i) => {
     const d = document.createElement('div'); d.className = 'slot' + (id ? '' : ' empty');
-    if (id) { const s = SKILLS[id]; d.innerHTML = `<span class="key">${i + 1}</span><span class="cost">${s.cost} SE</span><div class="name">${s.name}</div><div class="nature" style="color:#${NATURE[s.nature].color.toString(16).padStart(6, '0')}">${NATURE[s.nature].label} · ${s.origin}</div><div class="cd"></div>`; }
+    if (id) {
+      const s = SKILLS[id];
+      const w = s.type === 'switch' ? currentWeapon() : null;
+      const sub = w ? `Now: ${w.name}` : `${NATURE[s.nature].label} · ${s.origin}`;
+      const col = w ? '#' + w.color.toString(16).padStart(6, '0') : '#' + NATURE[s.nature].color.toString(16).padStart(6, '0');
+      d.innerHTML = `<span class="key">${i + 1}</span><span class="cost">${s.cost} SE</span><div class="name">${s.name}</div><div class="nature" style="color:${col}">${sub}</div><div class="cd"></div>`;
+    }
     else d.innerHTML = `<span class="key">${i + 1}</span><div class="name" style="opacity:.6">empty</div>`;
     el.appendChild(d);
   });
@@ -1306,7 +1364,7 @@ function renderSlots() {
     el.appendChild(d);
   }
 }
-const LOOKS = { default: [0xd8323c, 0xffe45c, 0xffffff], sukuna: [0x1a0508, 0xe8d0c0, 0xff2d55], megumi: [0x0d1230, 0xe8d0c0, 0x5aa9ff], yuji: [0x2a2a2a, 0xe8d0c0, 0xff8a8a], gojo: [0x0b0a14, 0xf0f0f0, 0x5ad4ff], naruto: [0xff8a1f, 0xffe45c, 0x5aa9ff], toji: [0x1c2a1c, 0xe8d0c0, 0x9fe870], sasuke: [0x14163a, 0xe8d0c0, 0x9b6cff] };
+const LOOKS = { default: [0xd8323c, 0xffe45c, 0xffffff], sukuna: [0x1a0508, 0xe8d0c0, 0xff2d55], megumi: [0x0d1230, 0xe8d0c0, 0x5aa9ff], yuji: [0x2a2a2a, 0xe8d0c0, 0xff8a8a], gojo: [0x0b0a14, 0xf0f0f0, 0x5ad4ff], naruto: [0xff8a1f, 0xffe45c, 0x5aa9ff], toji: [0x1c2a1c, 0xe8d0c0, 0x9fe870], sasuke: [0x14163a, 0xe8d0c0, 0x9b6cff], kashimo: [0x2a2340, 0xe8d0c0, 0xffe45c] };
 let sukunaParts = null, sukunaAura = null, sukunaEmber = 0;
 function buildSukunaParts() {
   const g = new THREE.Group();
@@ -1368,6 +1426,7 @@ function applyStyle(id, announce = true) {
   const st = STYLES[id]; player.style = id;
   for (const sk of st.pool) if (!player.learned.includes(sk)) player.learned.push(sk);
   player.slots = st.slots.slice();
+  player.weapon = id === 'toji' ? (player.weapon && WEAPONS[player.weapon] ? player.weapon : WEAPON_ORDER[0]) : null;
   setLook(id);
   renderSlots();
   if (announce) { log(`Move set: ${st.name}.`, true); center(st.name.toUpperCase(), 1400); }
@@ -1499,7 +1558,7 @@ function frame(t) {
   renderer.render(scene, camera);
 }
 requestAnimationFrame(frame);
-window.__rift = { player, enemies, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, startCharge, releaseCharge, OUTPUT_TIERS, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
+window.__rift = { player, enemies, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, startCharge, releaseCharge, hurtPlayer, castSkill, OUTPUT_TIERS, WEAPONS, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
 
 function start(styleId) {
   $('#start').hidden = true; running = true; lastT = performance.now();
@@ -1553,7 +1612,7 @@ $('#ms-close').onclick = () => { $('#movesets').hidden = true; canvas.requestPoi
 $('#retry').onclick = () => {
   for (const e of enemies) { if (!e.dead) { scene.remove(e.mesh); e.bar.remove(); } }
   enemies.length = 0; wave = 0; player.hp = player.maxHp; player.se = player.maxSe; player.dead = false; player.pos.set(0, 0, 8); player.vel.set(0, 0, 0);
-  player.sukunaUsed = false; player.flashRamp = 0; player.transform = null; player.ultCd = 0; player.output = null; player.charging = null; player.freezeUntil = 0; history.length = 0; if (chargeAura) { scene.remove(chargeAura); chargeAura = null; } if (avatarMesh) { scene.remove(avatarMesh); avatarMesh = null; } $('#charge').hidden = true; $('#freeze').hidden = true; if (mahoraga) { scene.remove(mahoraga.m); mahoraga = null; } setLook(player.style);
+  player.sukunaUsed = false; player.flashRamp = 0; player.transform = null; player.ultCd = 0; player.output = null; player.charging = null; player.freezeUntil = 0; player.shieldReflect = 0; history.length = 0; if (chargeAura) { scene.remove(chargeAura); chargeAura = null; } if (avatarMesh) { scene.remove(avatarMesh); avatarMesh = null; } $('#charge').hidden = true; $('#freeze').hidden = true; if (mahoraga) { scene.remove(mahoraga.m); mahoraga = null; } setLook(player.style);
   $('#dead').hidden = true; spawnWave(); canvas.requestPointerLock?.();
 };
 })();
