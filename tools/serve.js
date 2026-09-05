@@ -14,7 +14,8 @@ http.createServer(async (req, res) => {
   if (!file.startsWith(ROOT)) { res.writeHead(403); return res.end(); }
   try {
     const body = await readFile(file);
-    res.writeHead(200, { 'Content-Type': TYPES[extname(file)] ?? 'application/octet-stream' });
+    const type = TYPES[extname(file)] ?? 'application/octet-stream';
+    res.writeHead(200, { 'Content-Type': type.startsWith('text/') || type.includes('json') ? `${type}; charset=utf-8` : type });
     res.end(body);
   } catch {
     res.writeHead(404); res.end('Not found');
