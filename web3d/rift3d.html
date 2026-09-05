@@ -89,7 +89,7 @@
   </div>
 
   <div id="start" class="overlay">
-    <div class="card">
+    <div class="card" style="max-width:720px">
       <h1 class="display">Dimensional Rift</h1>
       <p><b>Times Square, New York.</b> The rift over the city is spilling cursed spirits and rogue ninja. Spider-Man tossed you a Web-Shooter before he was pulled through. Every enemy you defeat surrenders its technique. Only four can be equipped.</p>
       <table>
@@ -170,10 +170,18 @@ const SKILLS = {
   rasenshuriken:   { name: 'Rasenshuriken', origin: 'Naruto', nature: 'wind', cost: 26, cd: 9, type: 'projectile', speed: 26, radius: 1.4, power: 110, aoe: 6, spin: true, desc: 'A blade of wind. Explodes into a storm on impact.' },
   sage_mode:       { name: 'Sage Mode', origin: 'Naruto', nature: 'physical', cost: 20, cd: 25, type: 'buff', duration: 10, dmgMul: 1.6, speedMul: 1.35, desc: 'Nature energy. Every hit is heavier, you move faster, chakra returns.' },
   tailed_beast_bomb: { name: 'Tailed Beast Bomb', origin: 'Naruto', nature: 'fire', cost: 34, cd: 14, type: 'projectile', speed: 22, radius: 2.2, power: 150, aoe: 8, onHit: { burn: 5 }, desc: "Kurama's chakra, compressed and fired." },
+
+  // --- Sukuna: King of Curses ---
+  dismantle_s:     { name: 'Dismantle', origin: 'Sukuna', nature: 'wind', cost: 7, cd: 1.4, type: 'melee', range: 9, arc: .35, power: 50, knock: 6, desc: 'Invisible slashes in a fan. Fast and cheap.' },
+  cleave:          { name: 'Cleave', origin: 'Sukuna', nature: 'wind', cost: 12, cd: 4, type: 'melee', range: 3.8, arc: .1, power: 80, percentMax: .12, knock: 12, desc: 'One slash that adjusts to the target: adds 12% of its max HP.' },
+  fuga:            { name: 'Fire Arrow (Fuga)', origin: 'Sukuna', nature: 'fire', cost: 22, cd: 8, type: 'projectile', speed: 44, radius: .9, power: 95, pierce: true, onHit: { burn: 4 }, desc: 'Open. A flame arrow that pierces every enemy in its path.' },
+  world_slash:     { name: 'World Cutting Slash', origin: 'Sukuna', nature: 'wind', cost: 32, cd: 14, type: 'beam', range: 60, radius: 4, power: 170, color: 0xff3b3b, desc: 'Space itself is cut. Everything in the line is halved.' },
+  malevolent_shrine: { name: 'Domain: Malevolent Shrine', origin: 'Sukuna', nature: 'wind', cost: 40, cd: 30, type: 'domain', mode: 'slash', duration: 6, tick: .35, radius: 30, power: 20, desc: 'No barrier. Everything within 30 m is dismantled, over and over.' },
 };
 const STYLES = {
   gojo:   { name: 'Gojo: Limitless', blurb: 'Six Eyes, Infinity, Hollow Purple. High cost, absurd power.', pool: ['blue', 'red', 'hollow_purple', 'unlimited_void', 'infinity'], slots: ['blue', 'red', 'hollow_purple', 'infinity'] },
   naruto: { name: 'Naruto: Uzumaki', blurb: 'Clones, Rasengan, Sage Mode. Relentless and mobile.', pool: ['rasengan_n', 'multi_clone', 'rasenshuriken', 'sage_mode', 'tailed_beast_bomb'], slots: ['rasengan_n', 'multi_clone', 'rasenshuriken', 'sage_mode'] },
+  sukuna: { name: 'Sukuna: King of Curses', blurb: 'Cleave, Dismantle, Fire Arrow. Cuts everything, leaves nothing.', pool: ['dismantle_s', 'cleave', 'fuga', 'world_slash', 'malevolent_shrine'], slots: ['dismantle_s', 'cleave', 'fuga', 'world_slash'] },
 };
 const ENEMIES = {
   cursed_toad:  { name: 'Cursed Toad', nature: 'water', hp: 130, atk: 14, speed: 4.2, size: 1.1, drops: 'acid_spit', shape: 'blob' },
@@ -629,7 +637,7 @@ function activateSlot(i) {
     projectiles.push({ m, v: dir.clone().multiplyScalar(s.speed), s, t: 0, trail: [] });
   } else if (s.type === 'melee') {
     burst(origin.clone().addScaledVector(dir, 1.5), NATURE[s.nature].color, 12); shake = .3;
-    for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() <= s.range + e.t.size && (s.arc == null || to.normalize().dot(dir.clone().setY(0).normalize()) > s.arc)) enemyTakeHit(e, s.power, s.nature, player.pos, { ...s.onHit, knock: s.knock }); }
+    for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() <= s.range + e.t.size && (s.arc == null || to.normalize().dot(dir.clone().setY(0).normalize()) > s.arc)) enemyTakeHit(e, s.power + (s.percentMax ? e.maxHp * s.percentMax : 0), s.nature, player.pos, { ...s.onHit, knock: s.knock }); }
   } else if (s.type === 'dash') {
     releaseSwing(false);
     const start = player.pos.clone(); const end = start.clone().addScaledVector(dir.clone().setY(0).normalize(), s.range);
@@ -654,14 +662,24 @@ function activateSlot(i) {
     // Hollow Purple: instant line, everything within the radius is hit.
     const d = dir.clone().normalize();
     const end = origin.clone().addScaledVector(d, s.range);
-    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(s.radius * .55, s.radius * .55, s.range, 16, 1, true), new THREE.MeshBasicMaterial({ color: s.color, transparent: true, opacity: .85, side: THREE.DoubleSide }));
+    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(s.radius * .55, s.radius * .55, s.range, 16, 1, true), new THREE.MeshBasicMaterial({ color: s.color ?? NATURE[s.nature].color, transparent: true, opacity: .85, side: THREE.DoubleSide }));
     cyl.position.copy(origin).addScaledVector(d, s.range / 2); cyl.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d); scene.add(cyl);
     effects.push({ kind: 'beam', m: cyl, t: 0, life: .45 });
     const core = new THREE.Mesh(new THREE.SphereGeometry(1.2, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffffff })); core.position.copy(origin).addScaledVector(d, 2); scene.add(core); effects.push({ kind: 'beam', m: core, t: 0, life: .3 });
-    hitStop = .14; shake = 1.2; screenFlash(.9); center('HOLLOW PURPLE', 1200);
+    hitStop = .14; shake = 1.2; screenFlash(.9); center(s.name.toUpperCase(), 1200);
     const seg = new THREE.Line3(origin, end); const cp = new THREE.Vector3();
     for (const e of enemies) { if (e.dead) continue; seg.closestPointToPoint(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), true, cp); if (cp.distanceTo(e.pos.clone().add(new THREE.Vector3(0, 1, 0))) < s.radius + e.t.size) enemyTakeHit(e, s.power, s.nature, origin, { knock: 30 }); }
     player.vel.addScaledVector(d, -6);
+  } else if (s.type === 'domain' && s.mode === 'slash') {
+    center('DOMAIN EXPANSION', 1500); setTimeout(() => center('MALEVOLENT SHRINE', 1600), 900);
+    screenFlash(1); hitStop = .25; shake = 1;
+    scene.background.set(0x1a0406); scene.fog.color.set(0x2a0608); sun.intensity = .9; sun.color.set(0xff6a5a);
+    const shrine = new THREE.Group();
+    const floor = new THREE.Mesh(new THREE.RingGeometry(s.radius - .6, s.radius, 64), new THREE.MeshBasicMaterial({ color: 0xff2a2a, side: THREE.DoubleSide, transparent: true, opacity: .8 })); floor.rotation.x = -Math.PI / 2; floor.position.y = .08; shrine.add(floor);
+    for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; const pillar = outlined(new THREE.Mesh(new THREE.BoxGeometry(1.2, 10, 1.2), toon(0x2a0a0a)), .05); pillar.position.set(Math.sin(a) * (s.radius - 3), 5, Math.cos(a) * (s.radius - 3)); shrine.add(pillar); const skull = new THREE.Mesh(new THREE.SphereGeometry(.9, 10, 8), new THREE.MeshBasicMaterial({ color: 0xe8dcc8 })); skull.position.set(Math.sin(a) * (s.radius - 3), 10.6, Math.cos(a) * (s.radius - 3)); shrine.add(skull); }
+    shrine.position.copy(player.pos); scene.add(shrine);
+    effects.push({ kind: 'domain', mode: 'slash', m: shrine, t: 0, life: s.duration, s, next: 0 });
+    log('Domain Expansion: Malevolent Shrine. Everything within 30 m is cut apart.', true);
   } else if (s.type === 'domain') {
     center('DOMAIN EXPANSION', 1500); setTimeout(() => center('UNLIMITED VOID', 1600), 900);
     screenFlash(1); hitStop = .25; shake = .8;
@@ -710,7 +728,7 @@ function updateProjectiles(dt) {
     p.t += dt; p.m.position.addScaledVector(p.v, dt); p.v.y -= 4 * dt;
     if (p.t > .25 && p.t % .06 < dt) { const g = new THREE.Mesh(partGeo, p.m.material); g.position.copy(p.m.position); scene.add(g); bursts.push({ m: g, v: new THREE.Vector3(), t: .3 }); }
     if (p.m.userData.spin) p.m.rotation.y += dt * 30;
-    for (const e of enemies) { if (e.dead) continue; if (p.m.position.distanceTo(e.pos.clone().add(new THREE.Vector3(0, 1, 0))) < p.s.radius + 1.1 * e.t.size) { enemyTakeHit(e, p.s.power, p.s.nature, player.pos, p.s.onHit); p.done = true; break; } }
+    for (const e of enemies) { if (e.dead) continue; if (p.hit?.has(e)) continue; if (p.m.position.distanceTo(e.pos.clone().add(new THREE.Vector3(0, 1, 0))) < p.s.radius + 1.1 * e.t.size) { enemyTakeHit(e, p.s.power, p.s.nature, player.pos, p.s.onHit); if (p.s.pierce) { (p.hit ??= new Set()).add(e); burst(p.m.position, NATURE[p.s.nature].color, 6); } else { p.done = true; break; } } }
     if (p.t > 2.5 || p.m.position.y < 0) { p.done = true; burst(p.m.position, NATURE[p.s.nature].color, 6); }
     if (p.done && p.s.aoe) {
       // Rasenshuriken / Tailed Beast Bomb: the storm after the impact.
@@ -751,6 +769,18 @@ function updateProjectiles(dt) {
       }
     } else if (f.kind === 'beam') {
       f.m.material.opacity = Math.max(0, .85 * (1 - f.t / f.life)); f.m.material.transparent = true; if (f.t >= f.life) f.done = true;
+    } else if (f.kind === 'domain' && f.mode === 'slash') {
+      if (f.t >= f.life) { f.done = true; scene.background.set(0x1b1030); scene.fog.color.set(0x2a1848); sun.intensity = 2.6; sun.color.set(0xfff1d6); }
+      else if (f.t >= f.next) {
+        f.next = f.t + f.s.tick;
+        for (const e of enemies) {
+          if (e.dead || e.pos.distanceTo(f.m.position) > f.s.radius) continue;
+          enemyTakeHit(e, f.s.power, f.s.nature, null, { knock: 2 });
+          const c = e.pos.clone().add(new THREE.Vector3(0, 1 + Math.random(), 0)); const d = new THREE.Vector3(Math.random() - .5, Math.random() - .5, Math.random() - .5).normalize().multiplyScalar(2.2);
+          const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([c.clone().sub(d), c.clone().add(d)]), new THREE.LineBasicMaterial({ color: 0xff3b3b })); scene.add(line); bursts.push({ m: line, t: 0, line: true });
+        }
+        shake = Math.max(shake, .15);
+      }
     } else if (f.kind === 'domain') {
       f.m.position.copy(player.pos); f.m.rotation.y += dt * .2;
       if (f.t >= f.life) { f.done = true; scene.background.set(0x1b1030); scene.fog.color.set(0x2a1848); sun.intensity = 2.6; }
