@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dimensional Rift</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌀</text></svg>" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="game">
+    <canvas id="map" width="640" height="416"></canvas>
+    <div id="hud"></div>
+    <div id="fade"></div>
+    <div id="dialogue" hidden>
+      <div id="speaker"></div>
+      <div id="line"></div>
+      <div class="hint">Space / Enter to continue</div>
+    </div>
+    <div id="battle" hidden>
+      <div id="enemies"></div>
+      <div id="party"></div>
+      <div id="log"></div>
+      <div id="menu"></div>
+      <div id="tutorial-hint" hidden></div>
+    </div>
+    <div id="skills-menu" hidden></div>
+    <div id="toast" hidden></div>
+  </div>
+  <div id="controls">
+    <b>Move:</b> Arrow keys / WASD &nbsp; <b>Interact:</b> Space / Enter / E &nbsp; <b>Skills (Rule of Four):</b> Tab
+  </div>
+  <script type="module" src="src/game/main.js"></script>
+</body>
+</html>

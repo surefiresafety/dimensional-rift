@@ -1,0 +1,49 @@
+:root { --bg: #0b0d14; --panel: #171a26; --line: #2c3147; --text: #e8eaf2; --accent: #b06cff; --hp: #4ade80; --se: #5aa9ff; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { margin: 0; background: var(--bg); color: var(--text); font-family: "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 16px; }
+#game { position: relative; width: 640px; height: 416px; background: #000; border: 2px solid var(--line); border-radius: 8px; overflow: hidden; image-rendering: pixelated; }
+canvas { display: block; }
+#hud { position: absolute; top: 8px; left: 8px; font-size: 12px; background: rgba(0,0,0,.55); padding: 4px 8px; border-radius: 4px; pointer-events: none; white-space: pre; }
+#fade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .5s; }
+#fade.on { opacity: 1; }
+#fade.flash { background: #fff; transition: opacity .08s; }
+#dialogue { position: absolute; left: 12px; right: 12px; bottom: 12px; background: rgba(12,14,24,.94); border: 2px solid var(--accent); border-radius: 8px; padding: 10px 14px; min-height: 92px; }
+#speaker { font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+#line { font-size: 15px; line-height: 1.4; }
+.hint { font-size: 11px; opacity: .6; text-align: right; margin-top: 4px; }
+#battle { position: absolute; inset: 0; background: radial-gradient(ellipse at top, #2a1b45, #0b0d14 70%); display: grid; grid-template-rows: auto 1fr auto; padding: 8px; gap: 6px; }
+#battle.shatter { animation: shatter .5s ease-out; }
+@keyframes shatter { 0% { transform: scale(1.15); filter: brightness(3); } 100% { transform: scale(1); filter: brightness(1); } }
+#enemies, #party { display: flex; gap: 8px; }
+.card { flex: 1; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font-size: 12px; }
+.card .name { font-weight: 700; font-size: 13px; }
+.card.enemy .name { color: #ff8a8a; }
+.card.ally .name { color: #8fe3c9; }
+.card.player .name { color: #ffe45c; }
+.card.glow { box-shadow: 0 0 18px 4px #ffd54a; border-color: #ffd54a; }
+.card.hit { animation: hit .3s; }
+@keyframes hit { 0%,100% { transform: translateX(0);} 25% { transform: translateX(-6px);} 75% { transform: translateX(6px);} }
+.bar { height: 8px; background: #000; border-radius: 4px; overflow: hidden; margin: 3px 0; }
+.bar > i { display: block; height: 100%; background: var(--hp); transition: width .3s; }
+.bar.se > i { background: var(--se); }
+.statuses { opacity: .85; min-height: 14px; }
+#log { background: rgba(0,0,0,.45); border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; font-size: 13px; overflow-y: auto; }
+#log div { padding: 1px 0; }
+#log .round { opacity: .5; font-size: 11px; margin-top: 3px; }
+#log .good { color: #8fe3c9; } #log .bad { color: #ff8a8a; } #log .gold { color: #ffd54a; font-weight: 700; }
+#menu { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+#menu button, #skills-menu button, #dialogue button { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 8px; font-size: 13px; cursor: pointer; text-align: left; }
+#menu button:hover, #skills-menu button:hover { border-color: var(--accent); }
+#menu button:disabled { opacity: .4; cursor: not-allowed; }
+#menu button.pulse { animation: pulse 1s infinite; border-color: #ffd54a; }
+@keyframes pulse { 50% { box-shadow: 0 0 10px #ffd54a; } }
+#menu button small { display: block; opacity: .7; font-size: 11px; }
+#menu.sub { grid-template-columns: repeat(2, 1fr); }
+#tutorial-hint { position: absolute; top: 40%; left: 50%; transform: translate(-50%,-50%); background: #ffd54a; color: #000; padding: 10px 16px; border-radius: 8px; font-weight: 700; pointer-events: none; }
+#skills-menu { position: absolute; inset: 24px; background: rgba(12,14,24,.97); border: 2px solid var(--accent); border-radius: 8px; padding: 14px; overflow: auto; font-size: 13px; }
+#skills-menu h3 { margin: 0 0 8px; }
+#skills-menu .row { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
+#skills-menu .slot { width: 22px; opacity: .6; }
+#toast { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: #ffd54a; color: #000; padding: 8px 14px; border-radius: 8px; font-weight: 700; }
+#controls { margin-top: 10px; font-size: 12px; opacity: .8; }

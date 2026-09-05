@@ -1,0 +1,16 @@
+{
+  "name": "dimensional-rift",
+  "version": "0.1.0",
+  "description": "Multiverse turn-based RPG prototype: Naruto chakra natures, JJK cursed techniques, Spider-Man crowd control.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start": "node tools/serve.js",
+    "export:rpgmaker": "node tools/export-rpgmaker.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
