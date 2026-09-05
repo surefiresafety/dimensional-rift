@@ -1,0 +1,24 @@
+{
+  "FileVersion": 3,
+  "EngineAssociation": "5.4",
+  "Category": "",
+  "Description": "Dimensional Rift: anime multiverse action RPG",
+  "Modules": [
+    {
+      "Name": "DimensionalRift",
+      "Type": "Runtime",
+      "LoadingPhase": "Default",
+      "AdditionalDependencies": [ "Engine", "EnhancedInput", "Niagara" ]
+    }
+  ],
+  "Plugins": [
+    { "Name": "EnhancedInput", "Enabled": true },
+    { "Name": "Niagara", "Enabled": true },
+    { "Name": "NiagaraFluids", "Enabled": true },
+    { "Name": "CableComponent", "Enabled": true },
+    { "Name": "GameplayAbilities", "Enabled": true },
+    { "Name": "ModelingToolsEditorMode", "Enabled": true, "TargetAllowList": [ "Editor" ] },
+    { "Name": "PoseSearch", "Enabled": true },
+    { "Name": "ControlRig", "Enabled": true }
+  ]
+}

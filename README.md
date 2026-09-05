@@ -28,6 +28,9 @@ Controls: **Arrows / WASD** move · **Space / Enter / E** interact · **Tab** sk
 | `src/combat/loadout.js` | Learn / equip / unequip skills under the Rule of Four. |
 | `src/game/` | The playable tutorial: overworld, dialogue, battle UI, skills menu, scene script. |
 | `docs/DESIGN.md` | The full design: type chart, copy system, Spirit Energy, summons, Spider-Man HMs, status effects. |
+| `docs/3D_ANIME_ARPG_GUIDE.md` | The 3D action-RPG track: UE5 architecture, cel-shaded lighting/post setup, VFX techniques, Unity HDRP appendix. |
+| `unreal/` | UE5 C++ module: character, web-swing movement component, 4-slot ability manager, Spirit Energy, nature-weakness damage, Spider-Sense; cel-shade + outline HLSL; rendering config. |
+| `unity/` | HDRP port of the web swing and ability loadout (C#). |
 | `docs/TUTORIAL_SCRIPT.md` | The minute-by-minute opening (0–15 min) as implemented. |
 | `tools/export-rpgmaker.js` | Converts skills, summons, enemies and the element chart into RPG Maker MZ data shapes. |
 | `test/` | Engine tests, including a 50-seed replay of the tutorial fight. |
