@@ -143,4 +143,10 @@ document.addEventListener('keydown', async (ev) => {
 });
 
 // --- Boot -------------------------------------------------------------------
-goto('bedroom');
+// The start overlay gives the page keyboard focus (needed when embedded in an iframe).
+$('#start-btn').addEventListener('click', () => {
+  $('#start').hidden = true;
+  $('#game').setAttribute('tabindex', '-1'); $('#game').focus();
+  goto('bedroom');
+});
+$('#game').addEventListener('click', () => { if ($('#start').hidden) $('#game').focus(); });

@@ -7,7 +7,8 @@
   "scripts": {
     "test": "node --test test/*.test.js",
     "start": "node tools/serve.js",
-    "export:rpgmaker": "node tools/export-rpgmaker.js"
+    "export:rpgmaker": "node tools/export-rpgmaker.js",
+    "bundle": "node tools/bundle.js"
   },
   "engines": {
     "node": ">=20"

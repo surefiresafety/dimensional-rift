@@ -47,3 +47,9 @@ canvas { display: block; }
 #skills-menu .slot { width: 22px; opacity: .6; }
 #toast { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: #ffd54a; color: #000; padding: 8px 14px; border-radius: 8px; font-weight: 700; }
 #controls { margin-top: 10px; font-size: 12px; opacity: .8; }
+#start { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 30%, #3a2260, #0b0d14 70%); display: flex; align-items: center; justify-content: center; text-align: center; z-index: 5; }
+#start h1 { margin: 0 0 6px; font-size: 34px; letter-spacing: .08em; text-transform: uppercase; color: #ffe45c; text-shadow: 0 0 24px #b06cff; }
+#start p { margin: 0 0 16px; opacity: .8; }
+#start button { background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 10px 22px; font-size: 15px; cursor: pointer; }
+#start button:focus-visible { outline: 2px solid #ffe45c; }
+#start small { display: block; margin-top: 12px; opacity: .6; font-size: 11px; }
