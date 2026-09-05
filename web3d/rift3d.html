@@ -24,6 +24,7 @@
   .slot .nature { font-size: 10px; opacity: .75; }
   .slot .cd { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.6); }
   .slot.empty { opacity: .45; border-style: dashed; }
+  .slot.ult { border-color: var(--gold); margin-left: 10px; }
   .slot.flash { animation: flash .35s; }
   @keyframes flash { 0% { border-color: var(--gold); box-shadow: 0 0 18px var(--gold); } }
   #basic { position: absolute; right: 18px; bottom: 26px; font-size: 12px; opacity: .8; text-align: right; line-height: 1.6; }
@@ -99,6 +100,7 @@
         <tr><td>Techniques</td><td>1 2 3 4 (spend Spirit Energy)</td></tr>
         <tr><td>Dodge</td><td>Shift. When the screen goes purple, Spider-Sense is open: dodge for a Perfect Dodge.</td></tr>
         <tr><td>Loadout</td><td>Tab</td></tr>
+        <tr><td>Ultimate</td><td>G (Yuji: Sukuna for a minute · Megumi: summon Mahoraga)</td></tr>
       </table>
       <p style="font-size:12px;opacity:.75">Fire beats Wind, Wind beats Lightning, Lightning beats Earth, Earth beats Water, Water beats Fire.</p>
       <p style="margin-top:12px"><b>Choose your move set</b> <span style="opacity:.7;font-size:12px">(swap later with Tab; enemies still drop extra techniques)</span></p>
@@ -191,13 +193,23 @@ const SKILLS = {
   manji_kick:      { name: 'Manji Kick', origin: 'Yuji', nature: 'physical', cost: 8, cd: 3, type: 'dash', range: 8, power: 50, onHit: { knock: 28 }, desc: 'A spinning kick that launches the enemy across the street.' },
   piercing_blood:  { name: 'Piercing Blood', origin: 'Yuji', nature: 'cursed', cost: 14, cd: 6, type: 'projectile', speed: 62, radius: .45, power: 72, pierce: true, desc: 'Blood manipulation. A needle of blood that goes through everything.' },
   rct_heal:        { name: 'Reverse Cursed Technique', origin: 'Yuji', nature: 'cursed', cost: 22, cd: 18, type: 'heal', percent: .4, desc: 'Positive energy. Restores 40% HP.' },
+
+  // --- Megumi Fushiguro: Ten Shadows ---
+  divine_dogs:     { name: 'Divine Dogs', origin: 'Megumi', nature: 'earth', cost: 12, cd: 12, type: 'clones', mesh: 'dog', count: 2, duration: 12, power: 20, speed: 11, desc: 'Two shikigami hounds hunt whatever is nearest.' },
+  nue:             { name: 'Nue', origin: 'Megumi', nature: 'lightning', cost: 12, cd: 4, type: 'projectile', speed: 36, radius: 1.1, power: 62, onHit: { paralyze: 2 }, color: 0xffe45c, desc: 'The great bird dives with a lightning charge. Paralyzes.' },
+  toad_s:          { name: 'Toad', origin: 'Megumi', nature: 'water', cost: 8, cd: 4, type: 'yank', range: 26, power: 34, desc: 'The toad\'s tongue drags an enemy to you.' },
+  max_elephant:    { name: 'Max Elephant', origin: 'Megumi', nature: 'water', cost: 18, cd: 8, type: 'trap', range: 6, radius: 6.5, power: 72, color: 0x5aa9ff, onHit: { root: 1, knock: 10 }, desc: 'A flood-stomp. Everything nearby is crushed and soaked.' },
+  rabbit_escape:   { name: 'Rabbit Escape', origin: 'Megumi', nature: 'physical', cost: 10, cd: 14, type: 'evade', duration: 3, speedMul: 1.5, desc: 'A swarm of rabbits. Untouchable and fast for 3 seconds.' },
 };
 const STYLES = {
   gojo:   { name: 'Gojo: Limitless', blurb: 'Six Eyes, Infinity, Hollow Purple. High cost, absurd power.', pool: ['blue', 'red', 'hollow_purple', 'unlimited_void', 'infinity'], slots: ['blue', 'red', 'hollow_purple', 'infinity'] },
   naruto: { name: 'Naruto: Uzumaki', blurb: 'Clones, Rasengan, Sage Mode. Relentless and mobile.', pool: ['rasengan_n', 'multi_clone', 'rasenshuriken', 'sage_mode', 'tailed_beast_bomb'], slots: ['rasengan_n', 'multi_clone', 'rasenshuriken', 'sage_mode'] },
   sukuna: { name: 'Sukuna: King of Curses', blurb: 'Cleave, Dismantle, Fire Arrow. Cuts everything, leaves nothing.', pool: ['dismantle_s', 'cleave', 'fuga', 'world_slash', 'malevolent_shrine'], slots: ['dismantle_s', 'cleave', 'fuga', 'world_slash'] },
   spiderman: { name: 'Spider-Man: Neighborhood', blurb: 'Webs, kicks, Spider-Sense. Control the fight, then punish.', pool: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'web_trap'], slots: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t'] },
-  yuji: { name: 'Yuji: The Vessel', blurb: 'Fists, Black Flash, blood. Die once and Sukuna takes the wheel.', pool: ['divergent_fist', 'black_flash', 'manji_kick', 'piercing_blood', 'rct_heal'], slots: ['divergent_fist', 'black_flash', 'manji_kick', 'piercing_blood'], takeover: 'sukuna', m1BlackFlash: .7 },
+  yuji: { name: 'Yuji: The Vessel', blurb: 'Fists, Black Flash, blood. G: let Sukuna out for a minute. Die once and he takes the wheel.', pool: ['divergent_fist', 'black_flash', 'manji_kick', 'piercing_blood', 'rct_heal'], slots: ['divergent_fist', 'black_flash', 'manji_kick', 'piercing_blood'], takeover: 'sukuna', m1BlackFlash: .7,
+    ultimate: { kind: 'transform', into: 'sukuna', name: 'Sukuna Possession', cost: 30, cd: 120, duration: 60 } },
+  megumi: { name: 'Megumi: Ten Shadows', blurb: 'Shikigami do the fighting. G: summon Mahoraga.', pool: ['divine_dogs', 'nue', 'toad_s', 'max_elephant', 'rabbit_escape'], slots: ['divine_dogs', 'nue', 'toad_s', 'max_elephant'],
+    ultimate: { kind: 'mahoraga', name: 'Summon Mahoraga', cost: 50, cd: 90, duration: 30 } },
 };
 const ENEMIES = {
   cursed_toad:  { name: 'Cursed Toad', nature: 'water', hp: 130, atk: 14, speed: 4.2, size: 1.1, drops: 'acid_spit', shape: 'blob' },
@@ -307,7 +319,7 @@ const player = {
   learned: ['web_stun', 'fireball'], slots: ['web_stun', 'fireball', null, null], cooldowns: {},
   swinging: false, anchor: new THREE.Vector3(), rope: 0, releaseAt: -10,
   invulnUntil: 0, graceUntil: 0, nextDodge: 0, decoy: false, strikeCd: 0,
-  shield: 0, shieldUntil: 0, buff: null, style: null, evadeUntil: 0, sukunaUsed: false, flashRamp: 0, blackFlashes: 0,
+  shield: 0, shieldUntil: 0, buff: null, style: null, evadeUntil: 0, sukunaUsed: false, flashRamp: 0, blackFlashes: 0, ultCd: 0, transform: null,
   sense: { active: false, until: 0, attacker: null },
   kills: 0, dead: false,
 };
@@ -325,6 +337,7 @@ const webLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THR
 webLine.visible = false; webLine.frustumCulled = false; scene.add(webLine);
 let cloneMesh = null, shieldMesh = null, auraMesh = null;
 const fighterClones = [], effects = [];
+let mahoraga = null;
 
 const PHYS = { gravity: 30, walk: 9.5, air: 5.5, jump: 12.5, swingGravity: 1.6, pump: 20, maxSwing: 46, reel: 7, drag: .04, releaseUp: 5, releaseScale: 1.15, maxRope: 56, minAnchorHeight: 5 };
 const half = new THREE.Vector3(.4, .95, .4);
@@ -615,8 +628,7 @@ function sukunaTakeover() {
   const st = STYLES[STYLES[player.style].takeover];
   player.sukunaUsed = true; player.hp = player.maxHp; player.se = player.maxSe; player.invulnUntil = now + 2.5; player.cooldowns = {};
   closeSense(); releaseSwing(false); hitStop = .35; screenFlash(1); shake = 1.4;
-  torso.material.color.set(0x1a0508); head.material.color.set(0xe8d0c0); visor.material.color.set(0xff2d55);
-  center('SUKUNA TAKES OVER', 2200);
+  center('SUKUNA TAKES OVER', 2200); player.transform = null;
   log('"Know your place, fool." Sukuna has taken the body. Full health, full energy, his techniques.', true);
   applyStyle(STYLES[player.style].takeover, false);
   for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() < 16) { e.pos.addScaledVector(to.normalize(), 6); e.status.stun = 1.8; floatText(e.pos, '!', 'se'); } }
@@ -665,7 +677,7 @@ function activateSlot(i) {
   const dir = aimDir();
   player.yaw = Math.atan2(dir.x, dir.z);
   if (s.type === 'projectile') {
-    const m = outlined(new THREE.Mesh(new THREE.SphereGeometry(s.radius, 12, 10), new THREE.MeshBasicMaterial({ color: NATURE[s.nature].color })), .12);
+    const m = outlined(new THREE.Mesh(new THREE.SphereGeometry(s.radius, 12, 10), new THREE.MeshBasicMaterial({ color: s.color ?? NATURE[s.nature].color })), .12);
     if (s.spin) { const blades = new THREE.Mesh(new THREE.TorusGeometry(s.radius * 2.2, .18, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffffff })); blades.rotation.x = Math.PI / 2; m.add(blades); m.userData.spin = true; }
     m.position.copy(origin).addScaledVector(dir, 1); scene.add(m);
     projectiles.push({ m, v: dir.clone().multiplyScalar(s.speed), s, t: 0, trail: [] });
@@ -740,11 +752,14 @@ function activateSlot(i) {
   } else if (s.type === 'clones') {
     player.decoy = true;
     for (let i = 0; i < s.count; i++) {
-      const m = body.clone(); m.traverse((o) => { if (o.isMesh && o.material && o.material.color && o.material.side !== THREE.BackSide) { o.material = o.material.clone(); o.material.color.offsetHSL(0, 0, -.12); } });
+      let m;
+      if (s.mesh === 'dog') m = makeDogMesh(i === 0 ? 0xf2f2f2 : 0x111111);
+      else { m = body.clone(); m.traverse((o) => { if (o.isMesh && o.material && o.material.color && o.material.side !== THREE.BackSide) { o.material = o.material.clone(); o.material.color.offsetHSL(0, 0, -.12); } }); }
       const a = (i / s.count) * Math.PI * 2; m.position.copy(player.pos).add(new THREE.Vector3(Math.sin(a) * 1.6, 0, Math.cos(a) * 1.6)); scene.add(m);
-      fighterClones.push({ m, until: now + s.duration, next: now + .4 + i * .25, power: s.power });
+      fighterClones.push({ m, until: now + s.duration, next: now + .4 + i * .25, power: s.power, speed: s.speed ?? 8, nature: s.mesh === 'dog' ? s.nature : 'physical' });
     }
-    burst(origin, 0xffffff, 16); log('Multi Shadow Clone Jutsu!', true); center('SHADOW CLONES', 700);
+    if (s.mesh === 'dog') { player.decoy = false; burst(origin, 0x222222, 12); log('Divine Dogs: Totality!', true); center('DIVINE DOGS', 700); }
+    else { burst(origin, 0xffffff, 16); log('Multi Shadow Clone Jutsu!', true); center('SHADOW CLONES', 700); }
   } else if (s.type === 'heal') {
     const amt = Math.round(player.maxHp * s.percent); player.hp = Math.min(player.maxHp, player.hp + amt);
     floatText(player.pos, '+' + amt, 'heal'); burst(origin, 0x56e39f, 18); center('REVERSE CURSED TECHNIQUE', 900);
@@ -757,14 +772,15 @@ function activateSlot(i) {
     target.status.root = Math.max(target.status.root ?? 0, .9);
     center('WEB-PULL', 500);
   } else if (s.type === 'evade') {
-    player.evadeUntil = now + s.duration; $('#sense').classList.add('on'); setTimeout(() => { if (!player.sense.active) $('#sense').classList.remove('on'); }, s.duration * 1000);
-    center('SPIDER-SENSE', 800); log('Spider-Sense: every attack misses you for 4 seconds.', true);
+    player.evadeUntil = now + s.duration; $('#sense').classList.add('on');
+    if (s.speedMul) { player.buff = { until: now + s.duration, dmgMul: 1, speedMul: s.speedMul, quiet: true }; for (let i = 0; i < 6; i++) { const r = new THREE.Mesh(new THREE.SphereGeometry(.25, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffffff })); r.position.copy(player.pos).add(new THREE.Vector3((Math.random() - .5) * 3, .25, (Math.random() - .5) * 3)); scene.add(r); bursts.push({ m: r, v: new THREE.Vector3((Math.random() - .5) * 10, 6, (Math.random() - .5) * 10), t: 0 }); } } setTimeout(() => { if (!player.sense.active) $('#sense').classList.remove('on'); }, s.duration * 1000);
+    center(s.name.toUpperCase(), 800); log(`${s.name}: every attack misses you for ${s.duration} seconds.`, true);
   } else if (s.type === 'trap') {
     const centerP = origin.clone().addScaledVector(dir.clone().setY(0).normalize(), s.range).setY(.1);
-    const web = new THREE.Mesh(new THREE.RingGeometry(.5, s.radius, 24, 3), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: .6, wireframe: true }));
+    const web = new THREE.Mesh(new THREE.RingGeometry(.5, s.radius, 24, 3), new THREE.MeshBasicMaterial({ color: s.color ?? 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: .6, wireframe: true }));
     web.rotation.x = -Math.PI / 2; web.position.copy(centerP); scene.add(web); effects.push({ kind: 'beam', m: web, t: 0, life: 2.5 });
     for (const e of enemies) { if (e.dead) continue; if (e.pos.distanceTo(centerP) < s.radius + e.t.size) enemyTakeHit(e, s.power, s.nature, centerP, { ...s.onHit, knock: 0 }); }
-    burst(centerP.clone().add(new THREE.Vector3(0, 1, 0)), 0xffffff, 16); center('WEB TRAP', 500);
+    burst(centerP.clone().add(new THREE.Vector3(0, 1, 0)), s.color ?? 0xffffff, 16); center(s.name.toUpperCase(), 500); if (s.color) shake = .7;
   } else if (s.type === 'buff') {
     player.buff = { until: now + s.duration, dmgMul: s.dmgMul, speedMul: s.speedMul };
     torso.material.color.set(0xffa028); head.material.color.set(0xffe45c);
@@ -773,6 +789,57 @@ function activateSlot(i) {
     auraMesh.rotation.x = -Math.PI / 2; scene.add(auraMesh);
     burst(origin, 0xffb340, 20); screenFlash(.4); center('SAGE MODE', 1000);
     log('Sage Mode: damage x1.6, faster movement, chakra regenerates quickly.', true);
+  }
+}
+function useUltimate() {
+  const st = player.style ? STYLES[player.style] : null; const u = st?.ultimate;
+  if (!u) { log('No G ultimate for this move set. Yuji and Megumi have one.'); return; }
+  if (player.ultCd > now) { log(`${u.name} is recharging (${Math.ceil(player.ultCd - now)}s).`); return; }
+  if (player.se < u.cost) { log(`Not enough Spirit Energy for ${u.name}.`); return; }
+  player.se -= u.cost; player.ultCd = now + u.cd;
+  if (u.kind === 'transform') {
+    const from = player.style;
+    player.transform = { from, until: now + u.duration };
+    applyStyle(u.into, false); player.hp = Math.min(player.maxHp, player.hp + 150); player.cooldowns = {};
+    hitStop = .3; screenFlash(1); shake = 1.2; center('SUKUNA POSSESSION', 2000);
+    log(`"Finally." Sukuna has the body for ${u.duration} seconds. Yuji returns when it ends.`, true);
+    burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), 0xff2d55, 40);
+    for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() < 12) { e.pos.addScaledVector(to.normalize(), 4); e.status.stun = 1.2; } }
+  } else if (u.kind === 'mahoraga') {
+    if (mahoraga) { scene.remove(mahoraga.m); }
+    const m = makeMahoragaMesh(); m.position.copy(player.pos).add(new THREE.Vector3(-3, 0, -3)); scene.add(m);
+    mahoraga = { m, until: now + u.duration, next: now + 1, stomp: now + 4, adapt: new Map() };
+    hitStop = .35; screenFlash(1); shake = 1.6;
+    center('WITH THIS TREASURE I SUMMON', 1400); setTimeout(() => center('MAHORAGA', 1800), 1300);
+    log('Eight-Handled Sword Divergent Sila Divine General Mahoraga. It adapts: every hit on the same enemy is harder than the last.', true);
+    burst(m.position.clone().add(new THREE.Vector3(0, 2, 0)), 0xffffff, 40);
+    for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(m.position).setY(0); if (to.length() < 14) { e.pos.addScaledVector(to.normalize(), 5); e.status.stun = 1.5; } }
+  }
+  renderSlots();
+}
+function updateMahoraga(dt) {
+  if (!mahoraga) return;
+  const M = mahoraga;
+  if (now > M.until) { burst(M.m.position.clone().add(new THREE.Vector3(0, 2, 0)), 0x2a2a2a, 30); scene.remove(M.m); mahoraga = null; log('Mahoraga returns to the shadows.'); renderSlots(); return; }
+  M.m.userData.wheel.rotation.z += dt * (1 + M.adapt.size * .5);
+  let target = null, best = 40;
+  for (const e of enemies) { if (e.dead) continue; const d = e.pos.distanceTo(M.m.position); if (d < best) { best = d; target = e; } }
+  if (target) {
+    const to = target.pos.clone().sub(M.m.position).setY(0);
+    if (to.length() > 3.2) M.m.position.addScaledVector(to.normalize(), 6.5 * dt);
+    else if (now > M.next) {
+      M.next = now + 1;
+      const hits = (M.adapt.get(target.id) ?? 0) + 1; M.adapt.set(target.id, hits);
+      enemyTakeHit(target, 45 * (1 + .2 * (hits - 1)), 'physical', M.m.position, { knock: 14 });
+      if (hits > 1) floatText(target.pos, `ADAPTED x${hits}`, 'se');
+      M.m.rotation.x = -.25; setTimeout(() => M.m.rotation.x = 0, 150); shake = Math.max(shake, .35);
+    }
+    M.m.rotation.y = Math.atan2(to.x, to.z);
+  } else { const to = player.pos.clone().sub(M.m.position).setY(0); if (to.length() > 6) M.m.position.addScaledVector(to.normalize(), 6.5 * dt); }
+  if (now > M.stomp) {
+    M.stomp = now + 5; shake = 1; burst(M.m.position.clone(), 0xd9d4cc, 24);
+    const ring = new THREE.Mesh(new THREE.RingGeometry(1, 7, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: .6 })); ring.rotation.x = -Math.PI / 2; ring.position.copy(M.m.position).setY(.1); scene.add(ring); effects.push({ kind: 'beam', m: ring, t: 0, life: .5 });
+    for (const e of enemies) { if (e.dead) continue; if (e.pos.distanceTo(M.m.position) < 7 + e.t.size) enemyTakeHit(e, 40, 'physical', M.m.position, { knock: 18, root: .6 }); }
   }
 }
 function strike() {
@@ -872,14 +939,14 @@ function updateProjectiles(dt) {
     for (const e of enemies) { if (e.dead) continue; const d = e.pos.distanceTo(c.m.position); if (d < best) { best = d; target = e; } }
     if (target) {
       const to = target.pos.clone().sub(c.m.position).setY(0);
-      if (to.length() > 2) c.m.position.addScaledVector(to.normalize(), 8 * dt); else if (now > c.next) { c.next = now + .8; enemyTakeHit(target, c.power, 'physical', c.m.position, { knock: 2 }); c.m.rotation.x = -.5; setTimeout(() => c.m.rotation.x = 0, 120); }
+      if (to.length() > 2) c.m.position.addScaledVector(to.normalize(), c.speed * dt); else if (now > c.next) { c.next = now + .8; enemyTakeHit(target, c.power, c.nature, c.m.position, { knock: 2 }); c.m.rotation.x = -.5; setTimeout(() => c.m.rotation.x = 0, 120); }
       c.m.rotation.y = Math.atan2(to.x, to.z);
-    } else { const to = player.pos.clone().sub(c.m.position).setY(0); if (to.length() > 3) c.m.position.addScaledVector(to.normalize(), 8 * dt); }
+    } else { const to = player.pos.clone().sub(c.m.position).setY(0); if (to.length() > 3) c.m.position.addScaledVector(to.normalize(), c.speed * dt); }
   }
   for (let i = fighterClones.length - 1; i >= 0; i--) if (fighterClones[i].done) fighterClones.splice(i, 1);
 
   // Buff / shield upkeep
-  if (player.buff && now > player.buff.until) { player.buff = null; torso.material.color.set(0xd8323c); head.material.color.set(0xffe45c); if (auraMesh) { scene.remove(auraMesh); auraMesh = null; } log('Sage Mode faded.'); }
+  if (player.buff && now > player.buff.until) { const quiet = player.buff.quiet; player.buff = null; if (!quiet) { setLook(player.style); if (auraMesh) { scene.remove(auraMesh); auraMesh = null; } log('Sage Mode faded.'); } }
   if (player.buff) { player.se = Math.min(player.maxSe, player.se + 6 * dt); if (auraMesh) { auraMesh.position.copy(player.pos).add(new THREE.Vector3(0, .06, 0)); auraMesh.rotation.z += dt * 3; } }
   if (shieldMesh) { shieldMesh.position.copy(player.pos).add(new THREE.Vector3(0, 1.3, 0)); shieldMesh.rotation.y += dt; if (now > player.shieldUntil) { scene.remove(shieldMesh); shieldMesh = null; player.shield = 0; } }
 }
@@ -913,11 +980,41 @@ function renderSlots() {
     else d.innerHTML = `<span class="key">${i + 1}</span><div class="name" style="opacity:.6">empty</div>`;
     el.appendChild(d);
   });
+  const st = player.style ? STYLES[player.style] : null;
+  if (st?.ultimate) {
+    const u = st.ultimate; const d = document.createElement('div'); d.className = 'slot ult';
+    d.innerHTML = `<span class="key">G</span><span class="cost">${u.cost} SE</span><div class="name">${u.name}</div><div class="nature" style="color:var(--gold)">Ultimate · ${u.duration}s</div><div class="cd"></div>`;
+    el.appendChild(d);
+  } else if (player.transform) {
+    const d = document.createElement('div'); d.className = 'slot ult';
+    d.innerHTML = `<span class="key">G</span><div class="name">Sukuna Possession</div><div class="nature" style="color:var(--gold)" id="transform-left"></div>`;
+    el.appendChild(d);
+  }
+}
+const LOOKS = { default: [0xd8323c, 0xffe45c, 0xffffff], sukuna: [0x1a0508, 0xe8d0c0, 0xff2d55], megumi: [0x0d1230, 0xe8d0c0, 0x5aa9ff], yuji: [0x2a2a2a, 0xe8d0c0, 0xff8a8a], gojo: [0x0b0a14, 0xf0f0f0, 0x5ad4ff], naruto: [0xff8a1f, 0xffe45c, 0x5aa9ff] };
+function setLook(style) { const [t, h, v] = LOOKS[style] ?? LOOKS.default; torso.material.color.set(t); head.material.color.set(h); visor.material.color.set(v); }
+function makeDogMesh(color) {
+  const g = new THREE.Group();
+  const bodyM = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.35, 1, 4, 10), toon(color)), .08); bodyM.rotation.z = Math.PI / 2; bodyM.position.y = .7; g.add(bodyM);
+  const headM = outlined(new THREE.Mesh(new THREE.SphereGeometry(.3, 12, 8), toon(color)), .1); headM.position.set(0, .95, .8); g.add(headM);
+  for (const sx of [-1, 1]) { const ear = new THREE.Mesh(new THREE.ConeGeometry(.1, .3, 6), toon(color)); ear.position.set(sx * .18, 1.25, .8); g.add(ear); const eye = new THREE.Mesh(new THREE.SphereGeometry(.05, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff3b3b })); eye.position.set(sx * .12, 1.0, 1.05); g.add(eye); }
+  return g;
+}
+function makeMahoragaMesh() {
+  const g = new THREE.Group();
+  const bodyM = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.9, 2.4, 4, 14), toon(0xd9d4cc)), .05); bodyM.position.y = 2.4; g.add(bodyM);
+  const headM = outlined(new THREE.Mesh(new THREE.SphereGeometry(.6, 14, 10), toon(0xd9d4cc)), .08); headM.position.y = 4.3; g.add(headM);
+  const wheel = new THREE.Mesh(new THREE.TorusGeometry(1.1, .12, 8, 8), new THREE.MeshBasicMaterial({ color: 0x2a2a2a })); wheel.position.set(0, 5.6, -.4); g.add(wheel);
+  for (let i = 0; i < 8; i++) { const spoke = new THREE.Mesh(new THREE.BoxGeometry(.08, 2.2, .08), new THREE.MeshBasicMaterial({ color: 0x2a2a2a })); spoke.position.set(0, 5.6, -.4); spoke.rotation.z = i / 8 * Math.PI; wheel.add(spoke); spoke.position.set(0, 0, 0); }
+  for (const sx of [-1, 1]) { const arm = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.35, 1.8, 4, 10), toon(0xd9d4cc)), .06); arm.position.set(sx * 1.4, 2.3, 0); g.add(arm); }
+  g.userData.wheel = wheel;
+  return g;
 }
 function applyStyle(id, announce = true) {
   const st = STYLES[id]; player.style = id;
   for (const sk of st.pool) if (!player.learned.includes(sk)) player.learned.push(sk);
   player.slots = st.slots.slice();
+  setLook(id);
   renderSlots();
   if (announce) { log(`Move set: ${st.name}.`, true); center(st.name.toUpperCase(), 1400); }
 }
@@ -942,6 +1039,12 @@ function renderLoadout() {
 function updateHud() {
   $('#hp-bar').style.width = `${100 * Math.max(0, player.hp) / player.maxHp}%`; $('#hp-text').textContent = `${Math.max(0, Math.round(player.hp))} / ${player.maxHp}`;
   $('#se-bar').style.width = `${100 * player.se / player.maxSe}%`; $('#se-text').textContent = `${Math.round(player.se)} / ${player.maxSe}`;
+  const ult = $('#slots').querySelector('.slot.ult');
+  if (ult) {
+    const st = player.style ? STYLES[player.style] : null;
+    if (st?.ultimate) { const rem = Math.max(0, player.ultCd - now); const cd = ult.querySelector('.cd'); if (cd) cd.style.height = `${100 * rem / st.ultimate.cd}%`; ult.style.opacity = player.se < st.ultimate.cost || rem > 0 ? .55 : 1; if (mahoraga) ult.querySelector('.nature').textContent = `Mahoraga · ${Math.ceil(mahoraga.until - now)}s`; }
+    else if (player.transform) { const t = ult.querySelector('#transform-left'); if (t) t.textContent = `${Math.ceil(player.transform.until - now)}s left`; }
+  }
   player.slots.forEach((id, i) => {
     const cd = $('#slots').children[i]?.querySelector('.cd'); if (!cd) return;
     const s = SKILLS[id]; const rem = Math.max(0, (player.cooldowns[id] ?? 0) - now);
@@ -981,6 +1084,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') dodge();
   if (e.code === 'KeyF') strike();
   if (/^Digit[1-4]$/.test(e.code)) activateSlot(Number(e.code[5]) - 1);
+  if (e.code === 'KeyG') useUltimate();
 });
 addEventListener('keyup', (e) => { keys.delete(e.code); if (e.code === 'KeyE') releaseSwing(); });
 addEventListener('blur', () => keys.clear());
@@ -1016,6 +1120,8 @@ function frame(t) {
 
   updateEnemies(worldDt);
   updateProjectiles(worldDt);
+  updateMahoraga(worldDt);
+  if (player.transform && now > player.transform.until && !player.dead) { const back = player.transform.from; player.transform = null; applyStyle(back, false); center('YUJI IS BACK', 1200); log('Sukuna\'s time is up. Yuji has the body again.', true); burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), 0xff8a8a, 20); }
   for (const f of floats) { f.t += worldDt; f.pos.y += worldDt * 1.2; if (f.t > 1.1) { f.el.remove(); f.done = true; } }
   for (let i = floats.length - 1; i >= 0; i--) if (floats[i].done) floats.splice(i, 1);
   rift.rotation.z += worldDt * .8; riftLight.intensity = 30 + Math.sin(now * 4) * 12;
@@ -1026,7 +1132,7 @@ function frame(t) {
   renderer.render(scene, camera);
 }
 requestAnimationFrame(frame);
-window.__rift = { player, enemies, findAnchor, applyStyle, activateSlot, get wave() { return wave; } };
+window.__rift = { player, enemies, findAnchor, applyStyle, activateSlot, useUltimate, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
 
 function start(styleId) {
   $('#start').hidden = true; running = true; lastT = performance.now();
@@ -1044,7 +1150,7 @@ for (const [id, st] of Object.entries(STYLES)) {
 $('#retry').onclick = () => {
   for (const e of enemies) { if (!e.dead) { scene.remove(e.mesh); e.bar.remove(); } }
   enemies.length = 0; wave = 0; player.hp = player.maxHp; player.se = player.maxSe; player.dead = false; player.pos.set(0, 0, 8); player.vel.set(0, 0, 0);
-  player.sukunaUsed = false; player.flashRamp = 0; torso.material.color.set(0xd8323c); head.material.color.set(0xffe45c); visor.material.color.set(0xffffff);
+  player.sukunaUsed = false; player.flashRamp = 0; player.transform = null; player.ultCd = 0; if (mahoraga) { scene.remove(mahoraga.m); mahoraga = null; } setLook(player.style);
   $('#dead').hidden = true; spawnWave(); canvas.requestPointerLock?.();
 };
 })();
