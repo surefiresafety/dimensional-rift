@@ -413,13 +413,13 @@ for (let gx = -4; gx <= 4; gx++) for (let gz = -4; gz <= 4; gz++) {
   if (gx === 0 && (gz === 0 || gz === -1)) continue; // Times Square plaza + the rift
   const w = 12 + rng() * 10, d = 12 + rng() * 10, h = 14 + rng() * 48;
   const x = gx * 28 + (rng() - .5) * 4, z = gz * 28 + (rng() - .5) * 4;
-  const m = outlined(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), toon(palette[Math.floor(rng() * palette.length)])), .015);
+  const color = palette[Math.floor(rng() * palette.length)];
+  const m = outlined(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), toon(color)), .015);
   m.position.set(x, h / 2, z); m.castShadow = m.receiveShadow = true; scene.add(m);
   const box = new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(x, h / 2, z), new THREE.Vector3(w, h, d));
-  buildings.push({ mesh: m, box });
-  // Neon window strips
   const strip = new THREE.Mesh(new THREE.BoxGeometry(w * .8, .4, .3), new THREE.MeshBasicMaterial({ color: [0xff4fd8, 0x4fe0ff, 0xffe45c][Math.floor(rng() * 3)] }));
   strip.position.set(x, h * .6, z + d / 2 + .2); scene.add(strip);
+  buildings.push({ mesh: m, box, strip, x, z, w, d, h, color, hp: h * 26, maxHp: h * 26, dead: false });
 }
 // The rift: a glowing torus in the plaza.
 const rift = new THREE.Mesh(new THREE.TorusGeometry(6, .8, 12, 48), new THREE.MeshBasicMaterial({ color: 0xb06cff }));
@@ -427,6 +427,79 @@ rift.position.set(0, 10, -28); scene.add(rift);
 const riftCore = new THREE.Mesh(new THREE.CircleGeometry(5.4, 32), new THREE.MeshBasicMaterial({ color: 0x2a0b55, side: THREE.DoubleSide, transparent: true, opacity: .85 }));
 riftCore.position.copy(rift.position); scene.add(riftCore);
 const riftLight = new THREE.PointLight(0xb06cff, 40, 60); riftLight.position.copy(rift.position); scene.add(riftLight);
+
+// ---- Destruction ------------------------------------------------------------
+// Buildings hold real HP. Hits chip their height away and throw debris; when a
+// tower runs out it comes down and leaves rubble you can walk over.
+const debris = [];
+const debrisGeo = new THREE.BoxGeometry(1, 1, 1);
+function spawnDebris(pos, color, n, power) {
+  const mat = toon(color);
+  for (let i = 0; i < n; i++) {
+    if (debris.length > 240) { const old = debris.shift(); scene.remove(old.m); }
+    const size = .25 + Math.random() * .8;
+    const m = new THREE.Mesh(debrisGeo, mat);
+    m.scale.set(size, size * (.6 + Math.random()), size);
+    m.position.copy(pos).add(new THREE.Vector3((Math.random() - .5) * 3, Math.random() * 3, (Math.random() - .5) * 3));
+    m.castShadow = true; scene.add(m);
+    debris.push({ m, v: new THREE.Vector3((Math.random() - .5) * power, Math.random() * power * .7 + 3, (Math.random() - .5) * power),
+      rot: new THREE.Vector3((Math.random() - .5) * 8, (Math.random() - .5) * 8, (Math.random() - .5) * 8), t: 0 });
+  }
+}
+function updateDebris(dt) {
+  for (let i = debris.length - 1; i >= 0; i--) {
+    const d = debris[i];
+    d.t += dt; d.v.y -= 30 * dt;
+    d.m.position.addScaledVector(d.v, dt);
+    d.m.rotation.x += d.rot.x * dt; d.m.rotation.y += d.rot.y * dt; d.m.rotation.z += d.rot.z * dt;
+    if (d.m.position.y < d.m.scale.y * .5) {
+      d.m.position.y = d.m.scale.y * .5;
+      d.v.y *= -.32; d.v.x *= .68; d.v.z *= .68; d.rot.multiplyScalar(.5);
+      if (Math.abs(d.v.y) < 1.2) d.v.y = 0;
+    }
+    if (d.t > 14) { scene.remove(d.m); debris.splice(i, 1); }
+  }
+}
+function reshapeBuilding(b) {
+  const h = Math.max(.02, b.h * b.mesh.scale.y);
+  b.mesh.position.y = h / 2;
+  b.box.setFromCenterAndSize(new THREE.Vector3(b.x, h / 2, b.z), new THREE.Vector3(b.w, h, b.d));
+  if (b.strip) b.strip.visible = h > b.h * .62;
+}
+function collapseBuilding(b) {
+  b.dead = true; b.collapse = 0;
+  spawnDebris(new THREE.Vector3(b.x, b.h * b.mesh.scale.y * .5, b.z), b.color, 26, 16);
+  if (b.strip) b.strip.visible = false;
+  b.box.makeEmpty();
+  shake = Math.max(shake, 1.7);
+  log('A tower comes down.');
+}
+function damageBuildings(point, radius, amount) {
+  if (amount <= 0) return;
+  for (const b of buildings) {
+    if (b.dead) continue;
+    const cl = new THREE.Vector3(
+      THREE.MathUtils.clamp(point.x, b.box.min.x, b.box.max.x),
+      THREE.MathUtils.clamp(point.y, b.box.min.y, b.box.max.y),
+      THREE.MathUtils.clamp(point.z, b.box.min.z, b.box.max.z));
+    if (cl.distanceTo(point) > radius) continue;
+    b.hp -= amount;
+    spawnDebris(cl, b.color, Math.min(12, 2 + Math.round(amount / 28)), 6 + amount * .05);
+    if (b.hp <= 0) { collapseBuilding(b); continue; }
+    b.mesh.scale.y = Math.max(.14, b.hp / b.maxHp);
+    reshapeBuilding(b);
+  }
+}
+function updateCollapses(dt) {
+  for (const b of buildings) {
+    if (!b.dead || b.collapse === undefined) continue;
+    b.collapse += dt;
+    b.mesh.scale.y = Math.max(.015, b.mesh.scale.y - dt * .8);
+    b.mesh.position.y = b.h * b.mesh.scale.y / 2;
+    b.mesh.rotation.z = Math.sin(b.collapse * 9) * .015 * (1 - Math.min(1, b.collapse));
+    if (b.mesh.scale.y <= .016) { b.mesh.rotation.z = 0; b.collapse = undefined; }
+  }
+}
 
 // =============================================================================
 // Helpers: HUD, floats, log
@@ -464,15 +537,206 @@ const player = {
   sense: { active: false, until: 0, attacker: null },
   kills: 0, dead: false,
 };
+// ---- Character rigs ---------------------------------------------------------
+// Every fighter is built from the same skeleton: pelvis, chest, head, two arms
+// with elbows, two legs with knees. Joints are empty Groups, so rotating one
+// swings everything below it. That is what the animation code drives.
+const CHARACTERS = {
+  default:   { skin: 0xf3c9a0, hair: 0x3a2a1a, hairStyle: 'short',  top: 0xd8323c, bottom: 0x2a2a3a, accent: 0xffe45c, eye: 0x2a2a2a },
+  naruto:    { skin: 0xf3c9a0, hair: 0xffd23f, hairStyle: 'spiky',  top: 0xff8a1f, bottom: 0x2a2a4a, accent: 0x1a1a2a, eye: 0x2f6fb5, headband: 0x2a4a8a, whiskers: true, sleeves: 0x2a2a4a },
+  sasuke:    { skin: 0xf7dcc0, hair: 0x1a1a2e, hairStyle: 'swept',  top: 0x14163a, bottom: 0xe0e0ec, accent: 0x9b6cff, eye: 0x9b2020, rinnegan: true },
+  gojo:      { skin: 0xf7dcc0, hair: 0xf2f2ff, hairStyle: 'spiky',  top: 0x14141c, bottom: 0x14141c, accent: 0x5ad4ff, eye: 0x5ad4ff, blindfold: 0x1a1a22, collar: 0x2a2a36 },
+  sukuna:    { skin: 0xf0d2c2, hair: 0xf7c6c6, hairStyle: 'spiky',  top: 0x1a0508, bottom: 0x1a0508, accent: 0xff2d55, eye: 0xff2d55, markings: true, fourArms: true },
+  yuji:      { skin: 0xf3c9a0, hair: 0xff9aa2, hairStyle: 'short',  top: 0x24242c, bottom: 0x24242c, accent: 0xff8a8a, eye: 0x8a4a2a },
+  megumi:    { skin: 0xf7dcc0, hair: 0x14183a, hairStyle: 'spiky',  top: 0x141838, bottom: 0x141838, accent: 0x5aa9ff, eye: 0x2f6f5f },
+  toji:      { skin: 0xe8c8a0, hair: 0x16161a, hairStyle: 'short',  top: 0x1c2a1c, bottom: 0x18181c, accent: 0x9fe870, eye: 0x35502f, scar: true, bare: true },
+  kashimo:   { skin: 0xf3d6b8, hair: 0xf5e6a0, hairStyle: 'long',   top: 0x2a2340, bottom: 0x2a2340, accent: 0xffe45c, eye: 0xffe45c },
+  spiderman: { skin: 0xd8323c, hair: 0xd8323c, hairStyle: 'none',   top: 0xd8323c, bottom: 0x1f2f8f, accent: 0xffffff, eye: 0xffffff, mask: true, webs: true },
+};
+
+function limbSeg(len, rad, color) {
+  const g = new THREE.Group();
+  const m = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(rad, len, 4, 8), toon(color)), .1);
+  m.position.y = -len / 2 - rad * .4; m.castShadow = true;
+  g.add(m);
+  return g;
+}
+
+function buildCharacter(L) {
+  const root = new THREE.Group();
+  const ink = new THREE.MeshBasicMaterial({ color: 0x07030a });
+
+  const pelvis = new THREE.Group(); pelvis.position.y = .98; root.add(pelvis);
+  const hips = outlined(new THREE.Mesh(new THREE.BoxGeometry(.44, .24, .3), toon(L.bottom)), .08);
+  hips.castShadow = true; pelvis.add(hips);
+
+  const chest = new THREE.Group(); chest.position.y = .12; pelvis.add(chest);
+  const chestMesh = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.27, .4, 4, 10), toon(L.top)), .08);
+  chestMesh.position.y = .3; chestMesh.castShadow = true; chest.add(chestMesh);
+  if (L.collar) { const c = new THREE.Mesh(new THREE.TorusGeometry(.24, .05, 6, 16), toon(L.collar)); c.rotation.x = Math.PI / 2; c.position.y = .56; chest.add(c); }
+  if (L.webs) for (let i = 0; i < 4; i++) { const w = new THREE.Mesh(new THREE.TorusGeometry(.09 + i * .055, .012, 4, 14), ink); w.rotation.x = Math.PI / 2 - .35; w.position.set(0, .32, .18); chest.add(w); }
+  if (L.markings) for (const y of [.5, .3, .12]) { const b = new THREE.Mesh(new THREE.TorusGeometry(.28, .022, 6, 20), ink); b.rotation.x = Math.PI / 2; b.position.y = y; chest.add(b); }
+
+  const neck = new THREE.Group(); neck.position.y = .58; chest.add(neck);
+  const head = outlined(new THREE.Mesh(new THREE.SphereGeometry(.235, 16, 12), toon(L.skin)), .11);
+  head.scale.set(1, 1.12, .96); head.castShadow = true; neck.add(head);
+
+  if (!L.mask) {
+    for (const sx of [-1, 1]) {
+      const e = new THREE.Mesh(new THREE.SphereGeometry(.045, 8, 8), new THREE.MeshBasicMaterial({ color: L.eye }));
+      e.position.set(sx * .095, .03, .215); neck.add(e);
+      if (L.rinnegan) { const r = new THREE.Mesh(new THREE.TorusGeometry(.07, .012, 6, 16), new THREE.MeshBasicMaterial({ color: 0x9b6cff })); r.position.set(sx * .095, .03, .215); neck.add(r); }
+    }
+  } else {
+    for (const sx of [-1, 1]) {
+      const o = new THREE.Mesh(new THREE.SphereGeometry(.1, 10, 8), ink);
+      o.scale.set(1.3, .9, .45); o.position.set(sx * .105, .03, .185); neck.add(o);
+      const e = new THREE.Mesh(new THREE.SphereGeometry(.085, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      e.scale.set(1.25, .85, .5); e.position.set(sx * .105, .03, .205); neck.add(e);
+    }
+  }
+  if (L.whiskers) for (const sx of [-1, 1]) for (const yy of [-.06, -.01, .04]) {
+    const w = new THREE.Mesh(new THREE.BoxGeometry(.11, .015, .015), ink);
+    w.position.set(sx * .17, yy, .17); neck.add(w);
+  }
+  if (L.scar) { const sc = new THREE.Mesh(new THREE.BoxGeometry(.02, .11, .02), ink); sc.position.set(.09, -.06, .21); sc.rotation.z = .2; neck.add(sc); }
+  if (L.markings) for (const sx of [-1, 1]) {
+    for (const yy of [.02, -.04]) { const m2 = new THREE.Mesh(new THREE.BoxGeometry(.1, .022, .02), ink); m2.position.set(sx * .13, yy, .2); m2.rotation.z = sx * .3; neck.add(m2); }
+    const m3 = new THREE.Mesh(new THREE.BoxGeometry(.09, .022, .02), ink); m3.position.set(sx * .09, .13, .19); m3.rotation.z = -sx * .5; neck.add(m3);
+    const ex = new THREE.Mesh(new THREE.SphereGeometry(.03, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff2d55 })); ex.position.set(sx * .085, -.03, .215); neck.add(ex);
+  }
+  if (L.blindfold) { const bf = new THREE.Mesh(new THREE.BoxGeometry(.5, .13, .48), toon(L.blindfold)); bf.position.set(0, .04, .02); neck.add(bf); }
+  if (L.headband) {
+    const hb = new THREE.Mesh(new THREE.BoxGeometry(.5, .1, .47), toon(L.headband)); hb.position.set(0, .17, 0); neck.add(hb);
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(.22, .085, .04), new THREE.MeshBasicMaterial({ color: 0xb8c0cc })); plate.position.set(0, .17, .215); neck.add(plate);
+  }
+  const hairMat = toon(L.hair);
+  if (L.hairStyle === 'spiky') {
+    for (let i = 0; i < 11; i++) {
+      const a = (i / 11) * Math.PI * 2, r = .12 + (i % 3) * .03;
+      const sp = new THREE.Mesh(new THREE.ConeGeometry(.075, .3 + (i % 4) * .04, 5), hairMat);
+      sp.position.set(Math.cos(a) * r, .21, Math.sin(a) * r * .9);
+      sp.rotation.set(Math.sin(a) * .75, 0, -Math.cos(a) * .75); neck.add(sp);
+    }
+  } else if (L.hairStyle === 'swept') {
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(.25, 14, 10, 0, Math.PI * 2, 0, Math.PI * .62), hairMat);
+    cap.position.y = .03; cap.scale.z = 1.08; neck.add(cap);
+    for (let i = 0; i < 6; i++) { const sp = new THREE.Mesh(new THREE.ConeGeometry(.08, .34, 5), hairMat); sp.position.set((i - 2.5) * .08, .17, -.16); sp.rotation.x = 2.5; neck.add(sp); }
+    for (const sx of [-1, 1]) { const fr = new THREE.Mesh(new THREE.ConeGeometry(.06, .3, 5), hairMat); fr.position.set(sx * .16, .13, .13); fr.rotation.set(.5, 0, -sx * .5); neck.add(fr); }
+  } else if (L.hairStyle === 'long') {
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(.25, 14, 10, 0, Math.PI * 2, 0, Math.PI * .62), hairMat);
+    cap.position.y = .03; neck.add(cap);
+    const tail = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.1, .8, 4, 8), hairMat), .07);
+    tail.position.set(0, -.35, -.22); tail.rotation.x = -.25; neck.add(tail);
+  } else if (L.hairStyle === 'short') {
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(.252, 14, 10, 0, Math.PI * 2, 0, Math.PI * .58), hairMat);
+    cap.position.y = .025; cap.scale.set(1.02, 1.05, 1.02); neck.add(cap);
+    for (let i = 0; i < 5; i++) { const sp = new THREE.Mesh(new THREE.ConeGeometry(.06, .16, 5), hairMat); sp.position.set((i - 2) * .09, .21, .05); sp.rotation.x = -.3; neck.add(sp); }
+  }
+
+  const arms = {};
+  const armRows = L.fourArms ? [{ y: .46, key: '' }, { y: .16, key: '2' }] : [{ y: .46, key: '' }];
+  for (const row of armRows) for (const side of [-1, 1]) {
+    const sh = new THREE.Group(); sh.position.set(side * .31, row.y, 0); chest.add(sh);
+    const upper = limbSeg(.3, .095, L.bare ? L.skin : L.top); sh.add(upper);
+    const elbow = new THREE.Group(); elbow.position.y = -.4; upper.add(elbow);
+    const fore = limbSeg(.28, .085, L.sleeves ?? L.skin); elbow.add(fore);
+    const hand = outlined(new THREE.Mesh(new THREE.SphereGeometry(.088, 8, 6), toon(L.skin)), .12);
+    hand.position.y = -.38; elbow.add(hand);
+    if (L.markings) { const band = new THREE.Mesh(new THREE.TorusGeometry(.1, .018, 5, 14), ink); band.rotation.x = Math.PI / 2; band.position.y = -.2; upper.add(band); }
+    arms[(side < 0 ? 'l' : 'r') + row.key] = { shoulder: sh, elbow, hand };
+  }
+  const legs = {};
+  for (const side of [-1, 1]) {
+    const hip = new THREE.Group(); hip.position.set(side * .14, -.1, 0); pelvis.add(hip);
+    const thigh = limbSeg(.36, .115, L.bottom); hip.add(thigh);
+    const knee = new THREE.Group(); knee.position.y = -.46; thigh.add(knee);
+    const shin = limbSeg(.34, .095, L.bottom); knee.add(shin);
+    const foot = outlined(new THREE.Mesh(new THREE.BoxGeometry(.16, .1, .28), toon(0x1a1a1a)), .1);
+    foot.position.set(0, -.46, .05); knee.add(foot);
+    legs[side < 0 ? 'l' : 'r'] = { hip, knee, foot };
+  }
+  return { root, pelvis, chest, neck, arms, legs, look: L, baseY: .98 };
+}
+
+/** Drive a rig from a movement/attack state. Procedural, no keyframes. */
+function poseRig(rig, st) {
+  if (!rig) return;
+  const { arms, legs, chest, pelvis, neck } = rig;
+  const A = arms.l, B = arms.r;
+  const setArm = (a, x, z, e) => { if (!a) return; a.shoulder.rotation.x = x; a.shoulder.rotation.z = z; a.elbow.rotation.x = e; };
+  const setLeg = (l, x, k) => { l.hip.rotation.x = x; l.knee.rotation.x = k; };
+  pelvis.position.y = rig.baseY; pelvis.rotation.set(0, 0, 0);
+  chest.rotation.set(0, 0, 0); neck.rotation.set(0, 0, 0);
+
+  if (st.attack) {
+    const k = st.attack.k;
+    const p = Math.sin(Math.min(1, k * 1.6) * Math.PI);
+    if (st.attack.kind === 'slash') {
+      setArm(B, -2.6 + p * 3.4, -.5 + p * .8, -.3);
+      setArm(A, .6 - p * .5, .5, -1.1);
+      chest.rotation.y = -.7 + p * 1.4; pelvis.rotation.y = -.3 + p * .6;
+      setLeg(legs.l, -.35, .2); setLeg(legs.r, .3, .35);
+    } else if (st.attack.kind === 'punch') {
+      setArm(B, -p * 1.9, 0, -.15 - (1 - p) * 1.5);
+      setArm(A, .5, .35, -1.6);
+      chest.rotation.y = .5 - p * .95; pelvis.rotation.y = .2 - p * .4;
+      setLeg(legs.l, -.4, .25); setLeg(legs.r, .35, .3);
+    } else if (st.attack.kind === 'kick') {
+      setLeg(legs.r, -p * 2, .1); setLeg(legs.l, .25, .5);
+      setArm(A, -.9, .9, -.6); setArm(B, .9, -.5, -.9);
+      chest.rotation.x = p * .5; pelvis.position.y = rig.baseY - .1;
+    } else {
+      setArm(A, -1.5 * p - .2, .5 - p * .35, -1.5 + p * 1.2);
+      setArm(B, -1.5 * p - .2, -.5 + p * .35, -1.5 + p * 1.2);
+      if (arms.l2) { setArm(arms.l2, -1.2 * p, .7, -1.2 + p); setArm(arms.r2, -1.2 * p, -.7, -1.2 + p); }
+      chest.rotation.x = .35 - p * .6;
+      setLeg(legs.l, -.45, .3); setLeg(legs.r, .35, .45);
+      pelvis.position.y = rig.baseY - .06;
+    }
+    if (arms.l2 && st.attack.kind !== 'cast') { setArm(arms.l2, .5, .8, -.8); setArm(arms.r2, .5, -.8, -.8); }
+    return;
+  }
+  if (st.swing) {
+    setArm(A, -2.7, .35, -.25); setArm(B, -2.4, -.5, -.5);
+    setLeg(legs.l, -.7 + Math.sin(st.phase) * .3, .9);
+    setLeg(legs.r, -.35 - Math.sin(st.phase) * .3, .5);
+    chest.rotation.x = -.35;
+    if (arms.l2) { setArm(arms.l2, -1.4, .9, -.7); setArm(arms.r2, -1.4, -.9, -.7); }
+    return;
+  }
+  if (st.air) {
+    setArm(A, -1.9, .55, -.7); setArm(B, -1.9, -.55, -.7);
+    setLeg(legs.l, -.85, 1.25); setLeg(legs.r, -.35, .7);
+    chest.rotation.x = .12;
+    if (arms.l2) { setArm(arms.l2, -1.2, .9, -.6); setArm(arms.r2, -1.2, -.9, -.6); }
+    return;
+  }
+  if (st.moving) {
+    const sw = Math.sin(st.phase) * st.amp;
+    const co = Math.cos(st.phase);
+    setLeg(legs.l, sw, Math.max(0, -sw) * 1.5);
+    setLeg(legs.r, -sw, Math.max(0, sw) * 1.5);
+    setArm(A, -sw * .85, .18, -.45 - Math.max(0, -sw) * .5);
+    setArm(B, sw * .85, -.18, -.45 - Math.max(0, sw) * .5);
+    pelvis.position.y = rig.baseY + Math.abs(co) * .05 * st.amp;
+    pelvis.rotation.y = sw * .12;
+    chest.rotation.y = -sw * .18; chest.rotation.x = st.amp * .18;
+    if (arms.l2) { setArm(arms.l2, sw * .5, .7, -.6); setArm(arms.r2, -sw * .5, -.7, -.6); }
+    return;
+  }
+  const b = Math.sin(st.phase * .9);
+  setArm(A, .06, .17 + b * .02, -.28); setArm(B, .06, -.17 - b * .02, -.28);
+  setLeg(legs.l, .04, .05); setLeg(legs.r, -.04, .05);
+  pelvis.position.y = rig.baseY + b * .018;
+  chest.rotation.x = -b * .03;
+  neck.rotation.y = Math.sin(st.phase * .4) * .12;
+  if (arms.l2) { setArm(arms.l2, .1, .55, -.5); setArm(arms.r2, .1, -.55, -.5); }
+}
+
 const body = new THREE.Group();
-const torso = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.38, .9, 4, 12), toon(0xd8323c)), .08);
-torso.position.y = 1.05; torso.castShadow = true; body.add(torso);
-const head = outlined(new THREE.Mesh(new THREE.SphereGeometry(.32, 16, 12), toon(0xffe45c)), .1);
-head.position.y = 1.95; body.add(head);
-const visor = new THREE.Mesh(new THREE.BoxGeometry(.5, .12, .1), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-visor.position.set(0, 1.98, .28); body.add(visor);
-const spider = new THREE.Mesh(new THREE.BoxGeometry(.22, .22, .05), new THREE.MeshBasicMaterial({ color: 0x0b0a14 }));
-spider.position.set(0, 1.25, .4); body.add(spider);
+let playerRig = null, animState = null, animPhase = 0;
+function playAnim(kind, dur = .38) { animState = { kind, t: 0, dur, k: 0 }; }
 scene.add(body);
 const webLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0xffffff }));
 webLine.visible = false; webLine.frustumCulled = false; scene.add(webLine);
@@ -602,9 +866,9 @@ function physWalk(dt) {
   void speed;
 }
 function updateCamera(dt) {
-  const targetDist = player.swinging ? 10 : 7.5;
+  const targetDist = player.swinging ? 9.5 : 6.2;
   camDist += (targetDist - camDist) * Math.min(1, 4 * dt);
-  const focus = player.pos.clone().add(new THREE.Vector3(0, 1.6, 0));
+  const focus = player.pos.clone().add(new THREE.Vector3(0, 1.5, 0));
   const off = new THREE.Vector3(Math.sin(camYaw) * Math.cos(camPitch), Math.sin(camPitch), Math.cos(camYaw) * Math.cos(camPitch)).multiplyScalar(-camDist);
   const want = focus.clone().add(off);
   // keep camera out of buildings
@@ -614,7 +878,7 @@ function updateCamera(dt) {
   camera.position.lerp(want, Math.min(1, 12 * dt));
   if (shake > 0) { camera.position.add(new THREE.Vector3((Math.random() - .5), (Math.random() - .5), (Math.random() - .5)).multiplyScalar(shake)); shake = Math.max(0, shake - dt * 2.5); }
   camera.lookAt(focus);
-  camera.fov += ((player.vel.length() > 25 ? 82 : 70) - camera.fov) * Math.min(1, 3 * dt);
+  camera.fov += ((player.vel.length() > 25 ? 80 : 66) - camera.fov) * Math.min(1, 3 * dt);
   camera.updateProjectionMatrix();
 }
 
@@ -622,9 +886,25 @@ function updateCamera(dt) {
 // Enemies
 // =============================================================================
 const enemies = [];
+const ENEMY_LOOKS = {
+  rogue_ninja: { skin: 0xe8c8a0, hair: 0x1a1a22, hairStyle: 'short', top: 0x2a2f45, bottom: 0x1a1e2e, eye: 0xffe45c, headband: 0x4a2a2a },
+  clone_ninja: { skin: 0xd8c0b0, hair: 0x2a2a2a, hairStyle: 'spiky', top: 0x3a3a46, bottom: 0x24242c, eye: 0xff8a8a },
+  hanami:      { skin: 0x8fbf6a, hair: 0x3f7a3a, hairStyle: 'spiky', top: 0x5b7a3a, bottom: 0x3f5a2a, eye: 0xffe45c, markings: true },
+  jogo:        { skin: 0xd88a4a, hair: 0x2a1a14, hairStyle: 'none',  top: 0x6a2a1a, bottom: 0x4a1a14, eye: 0xffd54a, markings: true },
+};
 function makeEnemyMesh(t) {
   const g = new THREE.Group();
   const col = NATURE[t.nature].color;
+  if (t.shape === 'human') {
+    const look = ENEMY_LOOKS[t.id] ?? { skin: 0xd8c0b0, hair: 0x1a1a22, hairStyle: 'short', top: col, bottom: 0x24242c, eye: 0xffe45c };
+    const rig = buildCharacter(look);
+    rig.root.scale.setScalar(t.size);
+    g.add(rig.root);
+    g.userData.rig = rig;
+    const ring = new THREE.Mesh(new THREE.RingGeometry(1.6 * t.size, 2 * t.size, 32), new THREE.MeshBasicMaterial({ color: 0xff3b3b, side: THREE.DoubleSide, transparent: true, opacity: 0 }));
+    ring.rotation.x = -Math.PI / 2; ring.position.y = .05; g.add(ring); g.userData.ring = ring;
+    return g;
+  }
   if (t.shape === 'blob') {
     const b = outlined(new THREE.Mesh(new THREE.SphereGeometry(.9 * t.size, 18, 14), toon(col)), .06);
     b.position.y = .9 * t.size; b.scale.y = .8; b.castShadow = true; g.add(b);
@@ -642,10 +922,10 @@ function makeEnemyMesh(t) {
   return g;
 }
 function spawnEnemy(typeId, pos) {
-  const t = ENEMIES[typeId];
+  const t = { ...ENEMIES[typeId], id: typeId };
   const mesh = makeEnemyMesh(t); mesh.position.copy(pos); scene.add(mesh);
   const bar = document.createElement('div'); bar.className = 'ehp'; bar.innerHTML = `<b>${t.name}${t.boss ? ' ★' : ''}</b><i><b style="width:100%"></b></i>`; $('#floats').appendChild(bar);
-  const e = { id: typeId, t, mesh, bar, pos: mesh.position, hp: t.hp, maxHp: t.hp, state: 'idle', timer: 0, wander: pos.clone(), status: {}, defMul: 1, dead: false, hitFlash: 0 };
+  const e = { id: typeId, t, mesh, bar, pos: mesh.position, hp: t.hp, maxHp: t.hp, state: 'idle', timer: 0, wander: pos.clone(), status: {}, defMul: 1, dead: false, hitFlash: 0, rig: mesh.userData.rig ?? null, phase: Math.random() * 6, lastPos: pos.clone() };
   enemies.push(e); return e;
 }
 function enemyTakeHit(e, power, nature, from, onHit = {}) {
@@ -720,6 +1000,17 @@ function updateEnemies(dt) {
       e.timer -= dt; if (e.timer <= 0) e.state = 'chase';
     }
     if (dist < 40) { const a = Math.atan2(toP.x, toP.z); e.mesh.rotation.y = a; }
+    if (e.rig) {
+      const moved = e.pos.distanceTo(e.lastPos) / Math.max(dt, .0001);
+      e.lastPos.copy(e.pos);
+      const walking = moved > .5 && !e.status.stun && !e.status.root;
+      e.phase += dt * (walking ? Math.min(18, 5 + moved * 1.6) : 2);
+      poseRig(e.rig, {
+        phase: e.phase, moving: walking, amp: Math.min(.9, .3 + moved * .06), air: false, swing: false,
+        attack: e.state === 'windup' ? { kind: 'punch', k: 1 - Math.max(0, e.timer) / (e.t.boss ? .9 : .7) }
+          : e.state === 'recover' ? { kind: 'punch', k: 1 } : null,
+      });
+    }
     if (e.hitFlash > 0) { e.hitFlash -= dt; e.mesh.position.y = Math.random() * .1; } else e.mesh.position.y = 0;
     // Keep on the ground / out of buildings (cheap)
     for (const b of buildings) {
@@ -796,6 +1087,7 @@ function die() {
 const projectiles = [], bursts = [], absorbParticles = [];
 const partGeo = new THREE.SphereGeometry(.12, 6, 5);
 function burst(pos, color, n) {
+  damageBuildings(pos, 2.5 + n * .12, n * 1.8);
   const mat = new THREE.MeshBasicMaterial({ color });
   for (let i = 0; i < n; i++) {
     const m = new THREE.Mesh(partGeo, mat); m.position.copy(pos); scene.add(m);
@@ -830,6 +1122,9 @@ function castSkill(id, opts = {}) {
   }
   const slotEl = opts.slot != null ? $('#slots').children[opts.slot] : null;
   if (slotEl) { slotEl.classList.add('flash'); setTimeout(() => slotEl.classList.remove('flash'), 350); }
+  playAnim(s.type === 'melee' ? (currentWeapon() ? 'slash' : 'punch')
+    : s.type === 'dash' ? 'kick'
+    : s.type === 'teleport' ? 'slash' : 'cast', s.type === 'melee' ? .34 : .45);
   const B = consumeOutput();   // the stored charge is spent on this ability
   const origin = player.pos.clone().add(new THREE.Vector3(0, 1.4, 0));
   const dir = aimDir();
@@ -866,7 +1161,7 @@ function castSkill(id, opts = {}) {
   } else if (s.type === 'self' && s.decoy) {
     player.decoy = true;
     if (cloneMesh) scene.remove(cloneMesh);
-    cloneMesh = body.clone(); cloneMesh.position.copy(player.pos).add(new THREE.Vector3(1.2, 0, 0)); scene.add(cloneMesh);
+    cloneMesh = buildCharacter(CHARACTERS[player.style] ?? CHARACTERS.default).root; cloneMesh.position.copy(player.pos).add(new THREE.Vector3(1.2, 0, 0)); cloneMesh.rotation.y = body.rotation.y; scene.add(cloneMesh);
     burst(origin, 0xffffff, 10); log('Shadow Clone Jutsu! A clone will take the next hit.');
   } else if (s.type === 'pull') {
     // Blue: a vortex at the aim point that drags enemies in, then detonates.
@@ -886,6 +1181,7 @@ function castSkill(id, opts = {}) {
     hitStop = .14; shake = 1.2; screenFlash(.9); center(s.name.toUpperCase(), 1200);
     const seg = new THREE.Line3(origin, end); const cp = new THREE.Vector3();
     for (const e of enemies) { if (e.dead) continue; seg.closestPointToPoint(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), true, cp); if (cp.distanceTo(e.pos.clone().add(new THREE.Vector3(0, 1, 0))) < s.radius + e.t.size) enemyTakeHit(e, s.power * B, s.nature, origin, { knock: 30 }); }
+    for (let i = 1; i <= 12; i++) damageBuildings(origin.clone().addScaledVector(d, s.range * i / 12), s.radius + 2, s.power * .5);
     player.vel.addScaledVector(d, -6);
   } else if (s.type === 'domain' && s.mode === 'slash') {
     center('DOMAIN EXPANSION', 1500); setTimeout(() => center('MALEVOLENT SHRINE', 1600), 900);
@@ -933,8 +1229,8 @@ function castSkill(id, opts = {}) {
     for (let i = 0; i < s.count; i++) {
       let m;
       if (s.mesh === 'dog') m = makeDogMesh(i === 0 ? 0xf2f2f2 : 0x111111);
-      else if (s.mesh === 'spider') { m = body.clone(); m.traverse((o) => { if (o.isMesh && o.material && o.material.color && o.material.side !== THREE.BackSide) { o.material = o.material.clone(); o.material.color.setHex([0x1f2f8f, 0x111111, 0xd8323c][i % 3]); } }); }
-      else { m = body.clone(); m.traverse((o) => { if (o.isMesh && o.material && o.material.color && o.material.side !== THREE.BackSide) { o.material = o.material.clone(); o.material.color.offsetHSL(0, 0, -.12); } }); }
+      else if (s.mesh === 'spider') m = buildCharacter({ ...CHARACTERS.spiderman, top: [0xd8323c, 0x111122, 0x1f2f8f][i % 3], bottom: [0x1f2f8f, 0x2a2a2a, 0xd8323c][i % 3] }).root;
+      else m = buildCharacter({ ...(CHARACTERS[player.style] ?? CHARACTERS.default), top: 0x8a8a96, bottom: 0x6a6a76 }).root;
       const a = (i / s.count) * Math.PI * 2; m.position.copy(player.pos).add(new THREE.Vector3(Math.sin(a) * 1.6, 0, Math.cos(a) * 1.6)); scene.add(m);
       fighterClones.push({ m, until: now + s.duration, next: now + .4 + i * .25, power: s.power * B, speed: s.speed ?? 8, nature: s.mesh === 'dog' ? s.nature : 'physical' });
     }
@@ -981,7 +1277,7 @@ function castSkill(id, opts = {}) {
       const skull = new THREE.Mesh(new THREE.SphereGeometry(1.5, 14, 10), mat); skull.position.y = 8.6; avatarMesh.add(skull);
       for (const sx of [-1, 1]) { const arm = new THREE.Mesh(new THREE.CapsuleGeometry(.8, 4, 6, 10), mat); arm.position.set(sx * 3.4, 4.6, 0); arm.rotation.z = sx * .3; avatarMesh.add(arm); }
       scene.add(avatarMesh);
-    } else { torso.material.color.set(col); }
+    }
     if (auraMesh) scene.remove(auraMesh);
     auraMesh = new THREE.Mesh(new THREE.RingGeometry(.9, 1.4, 32), new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide, transparent: true, opacity: .8 }));
     auraMesh.rotation.x = -Math.PI / 2; scene.add(auraMesh);
@@ -1085,6 +1381,7 @@ function releaseCharge() {
     const ring = new THREE.Mesh(new THREE.RingGeometry(1, 14, 48), new THREE.MeshBasicMaterial({ color: 0xff2d55, side: THREE.DoubleSide, transparent: true, opacity: .7 }));
     ring.rotation.x = -Math.PI / 2; ring.position.copy(player.pos).setY(.1); scene.add(ring); effects.push({ kind: 'beam', m: ring, t: 0, life: .6 });
     for (const e of enemies) { if (e.dead) continue; if (e.pos.distanceTo(player.pos) < 14 + e.t.size) enemyTakeHit(e, 60, 'physical', player.pos, { knock: 26, root: .8 }); }
+    damageBuildings(player.pos, 16, 320);
   }
 }
 function updateCharge(dt) {
@@ -1185,7 +1482,7 @@ function strike() {
   if (player.strikeCd > now || player.dead || player.charging) return;
   player.strikeCd = now + .38;
   const dir = aimDir(); player.yaw = Math.atan2(dir.x, dir.z);
-  torso.rotation.x = -.5; setTimeout(() => torso.rotation.x = 0, 120);
+  playAnim(currentWeapon() ? 'slash' : 'punch', .32);
   let hit = false;
   // Yuji: most basic hits spark into Black Flash.
   const bfChance = player.style ? STYLES[player.style].m1BlackFlash ?? 0 : 0;
@@ -1213,6 +1510,7 @@ function updateProjectiles(dt) {
       // Rasenshuriken / Tailed Beast Bomb: the storm after the impact.
       burst(p.m.position, NATURE[p.s.nature].color, 30); shake = Math.max(shake, .9); screenFlash(.4); hitStop = Math.max(hitStop, .1);
       const ring = new THREE.Mesh(new THREE.SphereGeometry(p.s.aoe, 20, 14), new THREE.MeshBasicMaterial({ color: NATURE[p.s.nature].color, transparent: true, opacity: .35 })); ring.position.copy(p.m.position); scene.add(ring); effects.push({ kind: 'beam', m: ring, t: 0, life: .5 });
+      damageBuildings(p.m.position, p.s.aoe + 3, p.s.power * 1.6);
       for (const e of enemies) { if (e.dead) continue; if (e.pos.distanceTo(p.m.position) < p.s.aoe + e.t.size) enemyTakeHit(e, p.s.power * .6 * (p.boost ?? 1), p.s.nature, p.m.position, { ...p.s.onHit, knock: 20 }); }
     }
     if (p.done) scene.remove(p.m);
@@ -1276,6 +1574,7 @@ function updateProjectiles(dt) {
           scene.add(line); bursts.push({ m: line, t: 0, line: true });
         }
         shake = Math.max(shake, .2);
+        damageBuildings(f.origin, f.s.range * .6, 70);
       }
     } else if (f.kind === 'beam') {
       f.m.material.opacity = Math.max(0, .85 * (1 - f.t / f.life)); f.m.material.transparent = true; if (f.t >= f.life) f.done = true;
@@ -1379,44 +1678,16 @@ function renderSlots() {
   }
 }
 const LOOKS = { default: [0xd8323c, 0xffe45c, 0xffffff], sukuna: [0x1a0508, 0xe8d0c0, 0xff2d55], megumi: [0x0d1230, 0xe8d0c0, 0x5aa9ff], yuji: [0x2a2a2a, 0xe8d0c0, 0xff8a8a], gojo: [0x0b0a14, 0xf0f0f0, 0x5ad4ff], naruto: [0xff8a1f, 0xffe45c, 0x5aa9ff], toji: [0x1c2a1c, 0xe8d0c0, 0x9fe870], sasuke: [0x14163a, 0xe8d0c0, 0x9b6cff], kashimo: [0x2a2340, 0xe8d0c0, 0xffe45c] };
-let sukunaParts = null, sukunaAura = null, sukunaEmber = 0;
-function buildSukunaParts() {
-  const g = new THREE.Group();
-  const ink = new THREE.MeshBasicMaterial({ color: 0x07030a });
-  const skin = toon(0xe8d0c0);
-  // Face markings: lines under the eyes and across the cheeks, forehead bars.
-  for (const sx of [-1, 1]) {
-    const cheek = new THREE.Mesh(new THREE.BoxGeometry(.16, .035, .02), ink); cheek.position.set(sx * .17, 1.9, .3); cheek.rotation.z = sx * .35; g.add(cheek);
-    const cheek2 = new THREE.Mesh(new THREE.BoxGeometry(.14, .035, .02), ink); cheek2.position.set(sx * .19, 1.82, .29); cheek2.rotation.z = sx * .35; g.add(cheek2);
-    const brow = new THREE.Mesh(new THREE.BoxGeometry(.12, .035, .02), ink); brow.position.set(sx * .12, 2.12, .28); brow.rotation.z = -sx * .5; g.add(brow);
-    // Second pair of eyes on the cheekbones.
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(.035, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff2d55 })); eye.position.set(sx * .12, 1.86, .31); g.add(eye);
-  }
-  // Body markings: black bands round the torso and the second face on the stomach.
-  for (const y of [1.45, 1.15, .85]) { const band = new THREE.Mesh(new THREE.TorusGeometry(.4, .025, 6, 24), ink); band.position.y = y; band.rotation.x = Math.PI / 2; g.add(band); }
-  for (const sx of [-1, 1]) { const e = new THREE.Mesh(new THREE.SphereGeometry(.05, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff2d55 })); e.position.set(sx * .12, 1.02, .38); g.add(e); }
-  const mouth = new THREE.Mesh(new THREE.BoxGeometry(.28, .05, .02), new THREE.MeshBasicMaterial({ color: 0xffffff })); mouth.position.set(0, .9, .4); g.add(mouth);
-  const mouthInk = new THREE.Mesh(new THREE.BoxGeometry(.32, .09, .015), ink); mouthInk.position.set(0, .9, .395); g.add(mouthInk);
-  // Four arms: the upper pair raised, the lower pair hanging.
-  const armGeo = new THREE.CapsuleGeometry(.11, .7, 4, 8);
-  for (const sx of [-1, 1]) {
-    const upper = outlined(new THREE.Mesh(armGeo, skin), .1); upper.position.set(sx * .62, 1.55, .05); upper.rotation.z = sx * 1.1; g.add(upper);
-    const lower = outlined(new THREE.Mesh(armGeo, skin), .1); lower.position.set(sx * .58, 1.05, -.05); lower.rotation.z = sx * .35; g.add(lower);
-    for (const [arm, yy] of [[upper, 1.55], [lower, 1.05]]) { const band = new THREE.Mesh(new THREE.TorusGeometry(.12, .02, 6, 16), ink); band.position.copy(arm.position); band.rotation.z = arm.rotation.z; band.rotation.x = Math.PI / 2; g.add(band); void yy; }
-  }
-  return g;
-}
+let sukunaAura = null, sukunaEmber = 0;
 function setLook(style) {
-  const [t, h, v] = LOOKS[style] ?? LOOKS.default; torso.material.color.set(t); head.material.color.set(h); visor.material.color.set(v);
-  const isSukuna = style === 'sukuna';
-  if (isSukuna && !sukunaParts) {
-    sukunaParts = buildSukunaParts(); body.add(sukunaParts);
+  const L = CHARACTERS[style] ?? CHARACTERS.default;
+  if (playerRig) body.remove(playerRig.root);
+  playerRig = buildCharacter(L);
+  body.add(playerRig.root);
+  if (sukunaAura) { body.remove(sukunaAura); sukunaAura = null; }
+  if (L.markings) {
     sukunaAura = new THREE.Mesh(new THREE.RingGeometry(.8, 1.5, 32), new THREE.MeshBasicMaterial({ color: 0xff2d55, side: THREE.DoubleSide, transparent: true, opacity: .55 }));
     sukunaAura.rotation.x = -Math.PI / 2; sukunaAura.position.y = .06; body.add(sukunaAura);
-    torso.material.color.set(0x1a0508); head.material.color.set(0xe8d0c0); visor.material.color.set(0xff2d55);
-    visor.scale.set(1.15, 1, 1);
-  } else if (!isSukuna && sukunaParts) {
-    body.remove(sukunaParts); body.remove(sukunaAura); sukunaParts = null; sukunaAura = null; visor.scale.set(1, 1, 1);
   }
 }
 function makeDogMesh(color) {
@@ -1556,11 +1827,23 @@ function frame(t) {
   const targetYaw = player.swinging ? Math.atan2(player.vel.x, player.vel.z) : player.yaw;
   let dyaw = targetYaw - body.rotation.y; dyaw = Math.atan2(Math.sin(dyaw), Math.cos(dyaw)); body.rotation.y += dyaw * Math.min(1, 14 * playerDt);
   body.rotation.x = player.swinging ? THREE.MathUtils.clamp(-player.vel.y * .02, -.5, .5) : 0;
+  {
+    const spd = Math.hypot(player.vel.x, player.vel.z);
+    const walking = spd > .6 && player.onGround && !player.swinging;
+    animPhase += playerDt * (walking ? Math.min(20, 5 + spd * 1.5) : 2.2);
+    if (animState) { animState.t += playerDt; animState.k = animState.t / animState.dur; if (animState.k >= 1) animState = null; }
+    poseRig(playerRig, {
+      phase: animPhase, moving: walking, amp: Math.min(1, .3 + spd * .055),
+      air: !player.onGround && !player.swinging, swing: player.swinging, attack: animState,
+    });
+  }
   if (player.swinging) { webLine.geometry.setFromPoints([player.pos.clone().add(new THREE.Vector3(0, 1.4, 0)), player.anchor]); }
   if (cloneMesh) cloneMesh.rotation.y += worldDt;
   if (sukunaAura) { sukunaAura.rotation.z += real * 2.5; sukunaAura.material.opacity = .4 + .25 * Math.sin(now * 6); sukunaEmber += real; if (sukunaEmber > .12) { sukunaEmber = 0; const g = new THREE.Mesh(partGeo, new THREE.MeshBasicMaterial({ color: Math.random() < .5 ? 0xff2d55 : 0x120008 })); g.position.copy(player.pos).add(new THREE.Vector3((Math.random() - .5) * 1.6, .2, (Math.random() - .5) * 1.6)); scene.add(g); bursts.push({ m: g, v: new THREE.Vector3((Math.random() - .5) * 2, 4 + Math.random() * 3, (Math.random() - .5) * 2), t: 0, float: true }); } }
 
   updateCharge(playerDt);
+  updateDebris(worldDt);
+  updateCollapses(worldDt);
   updateEnemies(worldDt);
   updateProjectiles(worldDt);
   updateMahoraga(worldDt);
@@ -1575,7 +1858,7 @@ function frame(t) {
   renderer.render(scene, camera);
 }
 requestAnimationFrame(frame);
-window.__rift = { player, enemies, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, startCharge, releaseCharge, hurtPlayer, castSkill, OUTPUT_TIERS, WEAPONS, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
+window.__rift = { player, enemies, buildings, debris, damageBuildings, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, startCharge, releaseCharge, hurtPlayer, castSkill, OUTPUT_TIERS, WEAPONS, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
 
 function start(styleId) {
   $('#start').hidden = true; running = true; lastT = performance.now();
@@ -1630,7 +1913,9 @@ $('#ms-close').onclick = () => { $('#movesets').hidden = true; canvas.requestPoi
 $('#retry').onclick = () => {
   for (const e of enemies) { if (!e.dead) { scene.remove(e.mesh); e.bar.remove(); } }
   enemies.length = 0; wave = 0; player.hp = player.maxHp; player.se = player.maxSe; player.dead = false; player.pos.set(0, 0, 8); player.vel.set(0, 0, 0);
-  player.sukunaUsed = false; player.flashRamp = 0; player.transform = null; player.ultCd = 0; player.output = null; player.charging = null; player.freezeUntil = 0; player.shieldReflect = 0; player.infinity = false; history.length = 0; if (chargeAura) { scene.remove(chargeAura); chargeAura = null; } if (avatarMesh) { scene.remove(avatarMesh); avatarMesh = null; } $('#charge').hidden = true; $('#freeze').hidden = true; if (mahoraga) { scene.remove(mahoraga.m); mahoraga = null; } setLook(player.style);
+  player.sukunaUsed = false; player.flashRamp = 0; player.transform = null; player.ultCd = 0; player.output = null; player.charging = null; player.freezeUntil = 0; player.shieldReflect = 0; player.infinity = false; history.length = 0; if (chargeAura) { scene.remove(chargeAura); chargeAura = null; } if (avatarMesh) { scene.remove(avatarMesh); avatarMesh = null; }
+  for (const d of debris) scene.remove(d.m); debris.length = 0;
+  for (const b of buildings) { b.hp = b.maxHp; b.dead = false; b.collapse = undefined; b.mesh.scale.y = 1; b.mesh.rotation.z = 0; if (b.strip) b.strip.visible = true; reshapeBuilding(b); } $('#charge').hidden = true; $('#freeze').hidden = true; if (mahoraga) { scene.remove(mahoraga.m); mahoraga = null; } setLook(player.style);
   $('#dead').hidden = true; spawnWave(); canvas.requestPointerLock?.();
 };
 })();
