@@ -66,6 +66,13 @@
   #loadout .row b { width: 150px; }
   #loadout .row small { flex: 1; opacity: .75; }
   #loadout .tag { width: 26px; color: var(--gold); font-weight: 700; }
+  #charge { position: absolute; left: 50%; top: 74%; transform: translateX(-50%); width: 420px; text-align: center; }
+  #charge .track { position: relative; height: 20px; background: rgba(0,0,0,.7); border: 2px solid var(--line); border-radius: 4px; overflow: hidden; }
+  #charge .fill { height: 100%; width: 0; background: linear-gradient(90deg, #5aa9ff, #ffd54a 50%, #ff2d55); }
+  #charge .mark { position: absolute; top: -3px; bottom: -3px; width: 2px; background: rgba(255,255,255,.75); }
+  #charge .tier { font-size: 22px; margin-bottom: 4px; text-shadow: 0 0 12px #000, 2px 2px 0 #000; }
+  #charge .hint { font-size: 12px; opacity: .8; margin-top: 4px; }
+  #output { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); font-size: 17px; padding: 4px 14px; border: 2px solid var(--gold); border-radius: 20px; background: rgba(0,0,0,.55); }
   /* Move set screen */
   #movesets .card { max-width: 1040px; width: calc(100vw - 40px); max-height: calc(100vh - 40px); overflow: auto; }
   #ms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin-top: 10px; }
@@ -108,9 +115,11 @@
     </div>
     <div id="wave"><div class="display" id="wave-title">Wave 1</div><small id="wave-sub"></small></div>
     <div id="slots"></div>
-    <div id="basic">LMB Strike · RMB / E hold: Web-Swing · Shift Dodge<br>Space Jump · 1–4 Techniques · G Ultimate · Tab Loadout · M Move sets</div>
+    <div id="basic">LMB Strike · RMB / E hold: Web-Swing · Shift Dodge<br>Space Jump · 1–4 Techniques · G Ultimate<br>Hold B Output charge · Tab Loadout · M Move sets</div>
     <div id="log"></div>
     <div id="center"></div>
+    <div id="charge" hidden><div class="tier display"></div><div class="track"><i class="fill"></i><span class="mark" style="left:50%"></span><span class="mark" style="left:100%"></span></div><div class="hint">Hold B. Release to lock in your output.</div></div>
+    <div id="output" class="display" hidden></div>
     <div id="floats"></div>
   </div>
 
@@ -127,6 +136,7 @@
         <tr><td>Loadout</td><td>Tab</td></tr>
         <tr><td>Ultimate</td><td>G (Yuji: Sukuna for a minute · Megumi: summon Mahoraga)</td></tr>
         <tr><td>Move sets</td><td>M</td></tr>
+        <tr><td>Output charge</td><td>Hold B to power up. Tap = Minimum, 15 s = Medium, 30 s = Maximum. Every move is buffed.</td></tr>
       </table>
       <p style="font-size:12px;opacity:.75">Fire beats Wind, Wind beats Lightning, Lightning beats Earth, Earth beats Water, Water beats Fire.</p>
       <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
@@ -192,6 +202,14 @@ function effectiveness(a, d) {
   return 1;
 }
 const MAX_SLOTS = 4;
+// Hold B to power up. A tap is Minimum Output; 15 s is Medium; 30 s is Maximum.
+const CHARGE_MAX = 30;
+const OUTPUT_TIERS = [
+  { at: 0,  name: 'Minimum Output', dmg: 1.3, cost: 1,   duration: 12, color: 0x5aa9ff, css: '#5aa9ff' },
+  { at: 15, name: 'Medium Output',  dmg: 1.8, cost: .75, duration: 25, color: 0xffd54a, css: '#ffd54a' },
+  { at: 30, name: 'Maximum Output', dmg: 2.5, cost: .5,  duration: 40, color: 0xff2d55, css: '#ff2d55' },
+];
+const tierFor = (held) => OUTPUT_TIERS.reduce((best, t) => (held >= t.at ? t : best), OUTPUT_TIERS[0]);
 const SKILLS = {
   web_stun:        { name: 'Web-Stun', origin: 'Marvel', nature: 'physical', cost: 4, cd: 2.5, type: 'projectile', speed: 42, radius: .55, power: 12, onHit: { root: 2.5, defDown: .3 }, desc: 'Roots the target and lowers its defense.' },
   fireball:        { name: 'Fireball Jutsu', origin: 'Naruto', nature: 'fire', cost: 10, cd: 3, type: 'projectile', speed: 30, radius: .8, power: 48, onHit: { burn: 3 }, desc: 'Uchiha signature. May burn.' },
@@ -365,7 +383,7 @@ const player = {
   learned: ['web_stun', 'fireball'], slots: ['web_stun', 'fireball', null, null], cooldowns: {},
   swinging: false, anchor: new THREE.Vector3(), rope: 0, releaseAt: -10,
   invulnUntil: 0, graceUntil: 0, nextDodge: 0, decoy: false, strikeCd: 0,
-  shield: 0, shieldUntil: 0, buff: null, style: null, evadeUntil: 0, sukunaUsed: false, flashRamp: 0, blackFlashes: 0, ultCd: 0, transform: null,
+  shield: 0, shieldUntil: 0, buff: null, style: null, evadeUntil: 0, sukunaUsed: false, flashRamp: 0, blackFlashes: 0, ultCd: 0, transform: null, charging: null, output: null,
   sense: { active: false, until: 0, attacker: null },
   kills: 0, dead: false,
 };
@@ -555,7 +573,7 @@ function spawnEnemy(typeId, pos) {
 function enemyTakeHit(e, power, nature, from, onHit = {}) {
   if (e.dead) return;
   const eff = effectiveness(nature, e.t.nature);
-  const buffMul = player.buff && now < player.buff.until ? player.buff.dmgMul : 1;
+  const buffMul = (player.buff && now < player.buff.until ? player.buff.dmgMul : 1) * outputDmg();
   const dmg = Math.round(power * eff * e.defMul * buffMul * (0.9 + Math.random() * .2));
   e.hp -= dmg; e.hitFlash = .12;
   floatText(e.pos, dmg, eff > 1 ? 'se' : eff < 1 ? 'nve' : '');
@@ -684,6 +702,7 @@ function sukunaTakeover() {
   void st;
 }
 function die() {
+  if (player.charging) { player.charging = null; if (chargeAura) { scene.remove(chargeAura); chargeAura = null; } $('#charge').hidden = true; }
   if (player.style && STYLES[player.style].takeover && !player.sukunaUsed) { sukunaTakeover(); return; }
   player.dead = true; closeSense(); releaseSwing(false);
   $('#dead-text').textContent = `You reached wave ${wave + 1} with ${player.kills} extractions. Techniques learned: ${player.learned.map((s) => SKILLS[s].name).join(', ')}.`;
@@ -712,12 +731,13 @@ function aimDir() {
   return best ?? camF;
 }
 function activateSlot(i) {
-  const id = player.slots[i]; if (!id || player.dead) return;
+  const id = player.slots[i]; if (!id || player.dead || player.charging) return;
   const s = SKILLS[id];
   const slotEl = $('#slots').children[i];
   if ((player.cooldowns[id] ?? 0) > now) return;
-  if (player.se < s.cost) { log(`Not enough Spirit Energy for ${s.name}.`); slotEl.classList.remove('flash'); return; }
-  player.se -= s.cost; player.regenBlockedUntil = now + 2.5; player.cooldowns[id] = now + s.cd;
+  const cost = Math.ceil(s.cost * outputCost());
+  if (player.se < cost) { log(`Not enough Spirit Energy for ${s.name}.`); slotEl.classList.remove('flash'); return; }
+  player.se -= cost; player.regenBlockedUntil = now + 2.5; player.cooldowns[id] = now + s.cd;
   slotEl.classList.add('flash'); setTimeout(() => slotEl.classList.remove('flash'), 350);
   const origin = player.pos.clone().add(new THREE.Vector3(0, 1.4, 0));
   const dir = aimDir();
@@ -837,12 +857,92 @@ function activateSlot(i) {
     log('Sage Mode: damage x1.6, faster movement, chakra regenerates quickly.', true);
   }
 }
+// ---- Output charge (hold B) -------------------------------------------------------
+let chargeAura = null, chargeEmber = 0;
+const wallNow = () => performance.now() / 1000;
+function outputDmg() { return player.output && wallNow() < player.output.until ? player.output.dmg : 1; }
+function outputCost() { return player.output && wallNow() < player.output.until ? player.output.cost : 1; }
+function startCharge() {
+  if (player.charging || player.dead) return;
+  player.charging = { start: wallNow(), tier: OUTPUT_TIERS[0] };
+  chargeAura = new THREE.Group();
+  const orb = new THREE.Mesh(new THREE.SphereGeometry(.95, 16, 12), new THREE.MeshBasicMaterial({ color: 0x5aa9ff, transparent: true, opacity: .18, wireframe: true, depthWrite: false }));
+  orb.position.y = 1.2; chargeAura.add(orb); chargeAura.userData.orb = orb;
+  const ring = new THREE.Mesh(new THREE.RingGeometry(1.25, 1.55, 32), new THREE.MeshBasicMaterial({ color: 0x5aa9ff, side: THREE.DoubleSide, transparent: true, opacity: .45, depthWrite: false }));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = .07; chargeAura.add(ring); chargeAura.userData.ring = ring;
+  scene.add(chargeAura);
+  $('#charge').hidden = false;
+  log('Powering up. Hold B: 15 s for Medium Output, 30 s for Maximum.', true);
+}
+function releaseCharge() {
+  if (!player.charging) return;
+  const held = wallNow() - player.charging.start;
+  const tier = tierFor(held);
+  player.output = { until: wallNow() + tier.duration, dmg: tier.dmg, cost: tier.cost, name: tier.name, tier };
+  player.charging = null;
+  if (chargeAura) { scene.remove(chargeAura); chargeAura = null; }
+  $('#charge').hidden = true;
+  center(tier.name.toUpperCase(), 1600); screenFlash(tier === OUTPUT_TIERS[2] ? 1 : .5);
+  hitStop = tier === OUTPUT_TIERS[2] ? .2 : .08; shake = tier === OUTPUT_TIERS[2] ? 1.5 : .6;
+  burst(player.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), tier.color, tier === OUTPUT_TIERS[2] ? 44 : 18);
+  log(`${tier.name}: x${tier.dmg} damage${tier.cost < 1 ? `, ${Math.round((1 - tier.cost) * 100)}% cheaper` : ''}, ${tier.duration}s.`, true);
+  if (tier === OUTPUT_TIERS[2]) {
+    const ring = new THREE.Mesh(new THREE.RingGeometry(1, 14, 48), new THREE.MeshBasicMaterial({ color: 0xff2d55, side: THREE.DoubleSide, transparent: true, opacity: .7 }));
+    ring.rotation.x = -Math.PI / 2; ring.position.copy(player.pos).setY(.1); scene.add(ring); effects.push({ kind: 'beam', m: ring, t: 0, life: .6 });
+    for (const e of enemies) { if (e.dead) continue; if (e.pos.distanceTo(player.pos) < 14 + e.t.size) enemyTakeHit(e, 60, 'physical', player.pos, { knock: 26, root: .8 }); }
+  }
+}
+function updateCharge(dt) {
+  const bar = $('#charge');
+  if (player.charging) {
+    const held = wallNow() - player.charging.start;
+    const tier = tierFor(held);
+    if (tier !== player.charging.tier) { player.charging.tier = tier; screenFlash(.35); shake = Math.max(shake, .5); center(tier.name.toUpperCase() + ' REACHED', 900); burst(player.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), tier.color, 20); }
+    const pct = Math.min(1, held / CHARGE_MAX);
+    bar.querySelector('.fill').style.width = `${pct * 100}%`;
+    bar.querySelector('.tier').textContent = `${tier.name} - ${held.toFixed(1)}s`;
+    bar.querySelector('.tier').style.color = tier.css;
+    if (chargeAura) {
+      const grow = 1 + pct * .7;
+      chargeAura.position.copy(player.pos);
+      chargeAura.userData.orb.scale.setScalar(grow * (1 + .05 * Math.sin(now * 14)));
+      chargeAura.userData.orb.material.color.set(tier.color);
+      chargeAura.userData.orb.material.opacity = .12 + pct * .18;
+      chargeAura.userData.ring.material.color.set(tier.color);
+      chargeAura.userData.ring.scale.setScalar(grow);
+      chargeAura.userData.ring.rotation.z += dt * (2 + pct * 8);
+    }
+    chargeEmber += dt;
+    if (chargeEmber > Math.max(.03, .16 - pct * .13)) {
+      chargeEmber = 0;
+      const g = new THREE.Mesh(partGeo, new THREE.MeshBasicMaterial({ color: tier.color }));
+      const a = Math.random() * Math.PI * 2, r = 2 + Math.random() * 2;
+      g.position.copy(player.pos).add(new THREE.Vector3(Math.cos(a) * r, Math.random() * .4, Math.sin(a) * r));
+      scene.add(g);
+      bursts.push({ m: g, v: player.pos.clone().add(new THREE.Vector3(0, 1.2, 0)).sub(g.position).multiplyScalar(2.2), t: 0, float: true });
+    }
+    shake = Math.max(shake, pct * .35);
+    player.vel.x *= .82; player.vel.z *= .82;
+  } else if (!bar.hidden) bar.hidden = true;
+
+  const out = $('#output');
+  if (player.output && wallNow() < player.output.until) {
+    out.hidden = false;
+    out.textContent = `${player.output.name} - x${player.output.dmg} - ${Math.ceil(player.output.until - wallNow())}s`;
+    out.style.borderColor = player.output.tier.css; out.style.color = player.output.tier.css;
+  } else {
+    if (player.output) { log(`${player.output.name} faded.`); player.output = null; }
+    out.hidden = true;
+  }
+}
 function useUltimate() {
+  if (player.charging) return;
   const st = player.style ? STYLES[player.style] : null; const u = st?.ultimate;
   if (!u) { log('No G ultimate for this move set. Yuji and Megumi have one.'); return; }
   if (player.ultCd > now) { log(`${u.name} is recharging (${Math.ceil(player.ultCd - now)}s).`); return; }
-  if (player.se < u.cost) { log(`Not enough Spirit Energy for ${u.name}.`); return; }
-  player.se -= u.cost; player.ultCd = now + u.cd;
+  const ucost = Math.ceil(u.cost * outputCost());
+  if (player.se < ucost) { log(`Not enough Spirit Energy for ${u.name}.`); return; }
+  player.se -= ucost; player.ultCd = now + u.cd;
   if (u.kind === 'transform') {
     const from = player.style;
     player.transform = { from, until: now + u.duration };
@@ -889,7 +989,7 @@ function updateMahoraga(dt) {
   }
 }
 function strike() {
-  if (player.strikeCd > now || player.dead) return;
+  if (player.strikeCd > now || player.dead || player.charging) return;
   player.strikeCd = now + .38;
   const dir = aimDir(); player.yaw = Math.atan2(dir.x, dir.z);
   torso.rotation.x = -.5; setTimeout(() => torso.rotation.x = 0, 120);
@@ -1172,9 +1272,10 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyF') strike();
   if (/^Digit[1-4]$/.test(e.code)) activateSlot(Number(e.code[5]) - 1);
   if (e.code === 'KeyG') useUltimate();
+  if (e.code === 'KeyB' && !e.repeat) startCharge();
 });
-addEventListener('keyup', (e) => { keys.delete(e.code); if (e.code === 'KeyE') releaseSwing(); });
-addEventListener('blur', () => keys.clear());
+addEventListener('keyup', (e) => { keys.delete(e.code); if (e.code === 'KeyE') releaseSwing(); if (e.code === 'KeyB') releaseCharge(); });
+addEventListener('blur', () => { keys.clear(); releaseCharge(); });
 
 // =============================================================================
 // Loop
@@ -1206,6 +1307,7 @@ function frame(t) {
   if (cloneMesh) cloneMesh.rotation.y += worldDt;
   if (sukunaAura) { sukunaAura.rotation.z += real * 2.5; sukunaAura.material.opacity = .4 + .25 * Math.sin(now * 6); sukunaEmber += real; if (sukunaEmber > .12) { sukunaEmber = 0; const g = new THREE.Mesh(partGeo, new THREE.MeshBasicMaterial({ color: Math.random() < .5 ? 0xff2d55 : 0x120008 })); g.position.copy(player.pos).add(new THREE.Vector3((Math.random() - .5) * 1.6, .2, (Math.random() - .5) * 1.6)); scene.add(g); bursts.push({ m: g, v: new THREE.Vector3((Math.random() - .5) * 2, 4 + Math.random() * 3, (Math.random() - .5) * 2), t: 0, float: true }); } }
 
+  updateCharge(playerDt);
   updateEnemies(worldDt);
   updateProjectiles(worldDt);
   updateMahoraga(worldDt);
@@ -1220,7 +1322,7 @@ function frame(t) {
   renderer.render(scene, camera);
 }
 requestAnimationFrame(frame);
-window.__rift = { player, enemies, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
+window.__rift = { player, enemies, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, startCharge, releaseCharge, OUTPUT_TIERS, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
 
 function start(styleId) {
   $('#start').hidden = true; running = true; lastT = performance.now();
@@ -1274,7 +1376,7 @@ $('#ms-close').onclick = () => { $('#movesets').hidden = true; canvas.requestPoi
 $('#retry').onclick = () => {
   for (const e of enemies) { if (!e.dead) { scene.remove(e.mesh); e.bar.remove(); } }
   enemies.length = 0; wave = 0; player.hp = player.maxHp; player.se = player.maxSe; player.dead = false; player.pos.set(0, 0, 8); player.vel.set(0, 0, 0);
-  player.sukunaUsed = false; player.flashRamp = 0; player.transform = null; player.ultCd = 0; if (mahoraga) { scene.remove(mahoraga.m); mahoraga = null; } setLook(player.style);
+  player.sukunaUsed = false; player.flashRamp = 0; player.transform = null; player.ultCd = 0; player.output = null; player.charging = null; if (chargeAura) { scene.remove(chargeAura); chargeAura = null; } $('#charge').hidden = true; if (mahoraga) { scene.remove(mahoraga.m); mahoraga = null; } setLook(player.style);
   $('#dead').hidden = true; spawnWave(); canvas.requestPointerLock?.();
 };
 })();
