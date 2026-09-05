@@ -314,7 +314,7 @@ const SKILLS = {
   rabbit_escape:   { name: 'Rabbit Escape', origin: 'Megumi', nature: 'physical', cost: 10, cd: 14, type: 'evade', duration: 3, speedMul: 1.5, desc: 'A swarm of rabbits. Untouchable and fast for 3 seconds.' },
 };
 const STYLES = {
-  gojo: { name: 'Gojo: Limitless', blurb: 'Six Eyes and Limitless. Nothing reaches him, everything reaches you.',
+  gojo: { name: 'Gojo: Limitless', blurb: 'Six Eyes and Limitless. Nothing reaches him, everything reaches you.', energy: Infinity,
     passives: ['All Cursed: never weak, never super effective. Raw numbers instead.'],
     pool: ['blue', 'red', 'hollow_purple', 'infinity', 'rct_heal'], slots: ['blue', 'red', 'hollow_purple', 'infinity', 'rct_heal'],
     ultimate: { skill: 'unlimited_void', name: 'Domain: Unlimited Void', cost: 40, cd: 90, duration: 5 } },
@@ -456,7 +456,7 @@ function project(v) { const p = v.clone().project(camera); return { x: (p.x + 1)
 // =============================================================================
 const player = {
   pos: new THREE.Vector3(0, 0, 8), vel: new THREE.Vector3(), yaw: Math.PI, onGround: true,
-  hp: 500, maxHp: 500, se: 100, maxSe: 100, regenBlockedUntil: 0, nature: 'physical',
+  hp: 500, maxHp: 500, se: 1000, maxSe: 1000, regenBlockedUntil: 0, nature: 'physical',
   learned: ['web_stun', 'fireball'], slots: ['web_stun', 'fireball', null, null], cooldowns: {},
   swinging: false, anchor: new THREE.Vector3(), rope: 0, releaseAt: -10,
   invulnUntil: 0, graceUntil: 0, nextDodge: 0, decoy: false, strikeCd: 0,
@@ -1427,6 +1427,8 @@ function applyStyle(id, announce = true) {
   for (const sk of st.pool) if (!player.learned.includes(sk)) player.learned.push(sk);
   player.slots = st.slots.slice();
   player.weapon = id === 'toji' ? (player.weapon && WEAPONS[player.weapon] ? player.weapon : WEAPON_ORDER[0]) : null;
+  player.maxSe = st.energy ?? 1000;
+  player.se = player.maxSe;
   setLook(id);
   renderSlots();
   if (announce) { log(`Move set: ${st.name}.`, true); center(st.name.toUpperCase(), 1400); }
@@ -1451,7 +1453,9 @@ function renderLoadout() {
 }
 function updateHud() {
   $('#hp-bar').style.width = `${100 * Math.max(0, player.hp) / player.maxHp}%`; $('#hp-text').textContent = `${Math.max(0, Math.round(player.hp))} / ${player.maxHp}`;
-  $('#se-bar').style.width = `${100 * player.se / player.maxSe}%`; $('#se-text').textContent = `${Math.round(player.se)} / ${player.maxSe}`;
+  const inf = !isFinite(player.maxSe);
+  $('#se-bar').style.width = inf ? '100%' : `${100 * player.se / player.maxSe}%`;
+  $('#se-text').textContent = inf ? '\u221e' : `${Math.round(player.se)} / ${player.maxSe}`;
   const ult = $('#slots').querySelector('.slot.ult');
   if (ult) {
     const st = player.style ? STYLES[player.style] : null;
@@ -1527,7 +1531,7 @@ function frame(t) {
 
   if (!player.dead) {
     if (player.swinging) physSwing(playerDt); else physWalk(playerDt);
-    if (player.se < player.maxSe && now > player.regenBlockedUntil) player.se = Math.min(player.maxSe, player.se + 4 * playerDt);
+    if (player.se < player.maxSe && now > player.regenBlockedUntil) player.se = Math.min(player.maxSe, player.se + 40 * playerDt);
     if (player.pos.y < -5) { player.pos.set(0, 0, 8); player.vel.set(0, 0, 0); }
     // Rolling snapshots so Reverse Time has somewhere to rewind to.
     if (!history.length || wallNow() - history[0].t > .25) {
@@ -1576,6 +1580,7 @@ function moveSetCard(id, st) {
   const tech = st.pool.map((k) => { const sk = SKILLS[k]; const slot = st.slots.indexOf(k);
     return `<li><i style="background:${hex(NATURE[sk.nature].color)}"></i><span><b>${sk.name}</b> <span style="opacity:.6">${NATURE[sk.nature].label} · ${sk.cost} SE</span><small>${sk.desc}</small></span>${slot >= 0 ? `<span class="slotno">slot ${slot + 1}</span>` : '<span class="pool">pool</span>'}</li>`; }).join('');
   const extra = [];
+  extra.push(`<b>Spirit Energy</b> — ${isFinite(st.energy ?? 1000) ? (st.energy ?? 1000) : 'infinite, nothing he does costs him anything'}.`);
   if (st.ultimate) extra.push(`<b>G · ${st.ultimate.name}</b> — ${st.ultimate.cost} SE, ${st.ultimate.duration}s, ${st.ultimate.cd}s cooldown.`);
   for (const p of st.passives ?? []) extra.push(p);
   card.innerHTML = `<div class="ms-head"><div class="ms-portrait" style="background:${hex(t)}${id === 'sukuna' ? ';background-image:repeating-linear-gradient(180deg,transparent 0 9px,#07030a 9px 11px)' : ''}"><i style="background:${hex(h)}"></i><b style="background:${hex(v)}"></b></div><div><div class="display ms-name">${st.name}</div><div class="ms-blurb">${st.blurb}</div></div></div>
