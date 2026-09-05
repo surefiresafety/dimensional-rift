@@ -378,7 +378,7 @@ function physSwing(dt) {
 const keys = new Set();
 let camYaw = Math.PI, camPitch = .28, camDist = 7.5;
 function moveInput() {
-  const f = new THREE.Vector3(Math.sin(camYaw), 0, Math.cos(camYaw)), r = new THREE.Vector3(f.z, 0, -f.x);
+  const f = new THREE.Vector3(Math.sin(camYaw), 0, Math.cos(camYaw)), r = new THREE.Vector3(-f.z, 0, f.x);
   const v = new THREE.Vector3();
   if (keys.has('KeyW') || keys.has('ArrowUp')) v.add(f);
   if (keys.has('KeyS') || keys.has('ArrowDown')) v.sub(f);
