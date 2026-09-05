@@ -72,6 +72,12 @@
   #charge .mark { position: absolute; top: -3px; bottom: -3px; width: 2px; background: rgba(255,255,255,.75); }
   #charge .tier { font-size: 22px; margin-bottom: 4px; text-shadow: 0 0 12px #000, 2px 2px 0 #000; }
   #charge .hint { font-size: 12px; opacity: .8; margin-top: 4px; }
+  #dead { background: rgba(6,4,10,.82); backdrop-filter: grayscale(1) contrast(1.1); }
+  #wasted { position: absolute; left: 0; right: 0; top: 22%; text-align: center; pointer-events: none; }
+  #wasted .bar { background: rgba(0,0,0,.72); padding: 18px 0; border-top: 2px solid rgba(255,255,255,.12); border-bottom: 2px solid rgba(255,255,255,.12); animation: wasted 1.1s ease-out; }
+  #wasted span { font-family: Bangers, Impact, serif; font-size: 84px; letter-spacing: .1em; color: #c0392b; text-shadow: 0 0 26px rgba(192,57,43,.8), 3px 3px 0 #000; }
+  @keyframes wasted { 0% { opacity: 0; transform: scale(1.5); filter: blur(8px); } 60% { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { #wasted .bar { animation: none; } }
   #freeze { position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(120,200,255,.05), rgba(90,169,255,.35)); box-shadow: inset 0 0 200px rgba(140,220,255,.6); }
   #output { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); font-size: 17px; padding: 4px 14px; border: 2px solid var(--gold); border-radius: 20px; background: rgba(0,0,0,.55); }
   /* Move set screen */
@@ -133,7 +139,7 @@
         <tr><td>Move / Look</td><td>WASD · mouse (click to capture, or drag)</td></tr>
         <tr><td>Web-Swing</td><td>Hold Right Mouse or E, release to let go. Aim high at a building.</td></tr>
         <tr><td>Strike</td><td>Left Mouse</td></tr>
-        <tr><td>Techniques</td><td>1 2 3 4 5. No cooldowns; Spirit Energy is the only limit.</td></tr>
+        <tr><td>Techniques</td><td>1 2 3 4 5. Everyone waits on cooldowns except Gojo, who never does.</td></tr>
         <tr><td>Dodge</td><td>Shift. When the screen goes purple, Spider-Sense is open: dodge for a Perfect Dodge.</td></tr>
         <tr><td>Loadout</td><td>Tab</td></tr>
         <tr><td>Ultimate</td><td>G (Yuji: Sukuna for a minute · Megumi: summon Mahoraga)</td></tr>
@@ -143,7 +149,7 @@
       <p style="font-size:12px;opacity:.75">Fire beats Wind, Wind beats Lightning, Lightning beats Earth, Earth beats Water, Water beats Fire.</p>
       <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
         <button id="open-movesets">Choose your move set</button>
-        <span style="opacity:.7;font-size:12px">Nine characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
+        <span style="opacity:.7;font-size:12px">Twenty characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
       </div>
     </div>
   </div>
@@ -175,8 +181,9 @@
   </div>
 
   <div id="dead" class="overlay" hidden>
+    <div id="wasted"><div class="bar"><span>WASTED</span></div></div>
     <div class="card" style="text-align:center">
-      <h1 class="display" style="font-size:44px">You collapsed</h1>
+      <h1 class="display" style="font-size:38px;color:#c0392b">You collapsed</h1>
       <p id="dead-text"></p>
       <button id="retry">Rise again</button>
     </div>
@@ -206,22 +213,42 @@ function effectiveness(a, d) {
 const MAX_SLOTS = 5;
 // Toji's arsenal. Slot 5 cycles these; the drawn weapon rewrites his basic
 // attack and scales every one of his moves.
-const WEAPONS = {
-  spear_chain: { id: 'spear_chain', name: 'Inverted Spear of Heaven', sub: 'Chain of a Thousand Miles attached', color: 0x9fe870,
-    m1: 34, mul: 1, range: 1.4, ignoreDef: true, breaksBarrier: true, pull: true, knock: 4,
-    note: 'Breaks Infinity. Nothing it touches gets to keep a barrier, and the chain drags them in.' },
-  split_soul: { id: 'split_soul', name: 'Split Soul Katana', sub: 'cuts the soul behind the body', color: 0xff6b6b,
-    m1: 30, mul: 1.15, range: 1, ignoreDef: true, soul: { mul: .55, delay: .4 }, knock: 6,
-    note: 'Every hit lands twice: the body, then the soul a beat later.' },
-  playful_cloud: { id: 'playful_cloud', name: 'Playful Cloud', sub: 'sharpened three-section staff', color: 0xffd54a,
-    m1: 38, mul: 1.35, range: 1.35, knock: 30,
-    note: 'The heaviest swings he has, with reach and enormous knockback.' },
-  slaughter_demon: { id: 'slaughter_demon', name: 'Slaughter Demon', sub: 'fast and low', color: 0xe8eaf2,
-    m1: 22, mul: .78, range: .95, cdMul: .5, costMul: .55, knock: 3,
-    note: 'Lighter hits, but half the cooldowns and almost half the cost.' },
+// Arsenals: a character can carry a set of weapons or suits. The drawn one
+// rewrites the basic attack and scales every move marked weaponScaled.
+const ARSENALS = {
+  toji: { key: '5', order: ['spear_chain', 'split_soul', 'playful_cloud', 'slaughter_demon'], items: {
+    spear_chain: { name: 'Inverted Spear of Heaven', sub: 'Chain of a Thousand Miles attached', color: 0x9fe870, m1: 34, mul: 1, range: 1.4, ignoreDef: true, breaksBarrier: true, pull: true, knock: 4, note: 'Breaks Infinity. Nothing it touches keeps a barrier, and the chain drags them in.' },
+    split_soul: { name: 'Split Soul Katana', sub: 'cuts the soul behind the body', color: 0xff6b6b, m1: 30, mul: 1.15, range: 1, ignoreDef: true, soul: { mul: .55, delay: .4 }, knock: 6, note: 'Every hit lands twice: the body, then the soul.' },
+    playful_cloud: { name: 'Playful Cloud', sub: 'sharpened three-section staff', color: 0xffd54a, m1: 38, mul: 1.35, range: 1.35, knock: 30, note: 'The heaviest swings he has, with reach and enormous knockback.' },
+    slaughter_demon: { name: 'Slaughter Demon', sub: 'fast and low', color: 0xe8eaf2, m1: 22, mul: .78, range: .95, cdMul: .5, costMul: .55, knock: 3, note: 'Lighter hits, half the cooldowns and cost.' },
+  } },
+  yuji: { key: 'r', order: ['fists', 'knife', 'slaughter'], items: {
+    fists: { name: 'Fists', sub: 'nothing but him', color: 0xff8a8a, m1: 16, mul: 1, range: 1, knock: 5, note: 'Bare hands, and 70% of them come out as Black Flash.' },
+    knife: { name: 'Cursed Knife', sub: 'school issue', color: 0xdcdce8, m1: 24, mul: 1.12, range: 1.15, knock: 4, note: 'Faster reach and a cleaner cut.' },
+    slaughter: { name: 'Slaughter Demon', sub: "Toji's blade", color: 0x9fe870, m1: 30, mul: 1.3, range: 1.25, ignoreDef: true, knock: 6, note: 'A real cursed tool. Ignores hardened defence.' },
+  } },
+  ironman: { key: '5', order: ['mark42', 'hulkbuster', 'bleeding', 'warmachine'], items: {
+    mark42: { name: 'Mark 42', sub: 'the everyday suit', color: 0xd4302a, m1: 30, mul: 1, range: 1.1, knock: 8, note: 'Balanced armour. Nothing it does badly.' },
+    hulkbuster: { name: 'Hulkbuster', sub: 'Veronica', color: 0xe06010, m1: 48, mul: 1.5, range: 1.5, knock: 40, cdMul: 1.4, costMul: 1.4, note: 'Enormous damage and knockback, slower and thirstier.' },
+    bleeding: { name: 'Bleeding Edge', sub: 'nanotech', color: 0x5ad4ff, m1: 24, mul: .82, range: 1, cdMul: .45, costMul: .5, knock: 4, note: 'Half the cooldowns and half the cost. Death by a thousand cuts.' },
+    warmachine: { name: 'War Machine', sub: 'guns, mostly', color: 0x8a8a96, m1: 34, mul: 1.15, range: 1.2, ignoreDef: true, knock: 12, note: 'Armour piercing. Defence does not apply.' },
+  } },
+  tophat: { key: '5', order: ['pistol', 'rifle', 'sniper', 'rpg', 'knife'], items: {
+    pistol: { name: 'Pistol', sub: 'always loaded', color: 0xffffff, m1: 26, mul: .9, range: 1, cdMul: .5, costMul: .5, knock: 4, note: 'Quick and cheap. Keeps the pressure on.' },
+    rifle: { name: 'Rifle', sub: 'full auto', color: 0xdcdcdc, m1: 34, mul: 1.15, range: 1.15, cdMul: .75, knock: 6, note: 'The all-rounder.' },
+    sniper: { name: 'Sniper', sub: 'one shot', color: 0xb0b0b0, m1: 60, mul: 1.9, range: 2.2, ignoreDef: true, cdMul: 1.6, costMul: 1.5, knock: 10, note: 'Huge damage at range, punches through anything, slow to come back.' },
+    rpg: { name: 'RPG', sub: 'ask questions later', color: 0x8a8a8a, m1: 44, mul: 1.6, range: 1.3, cdMul: 1.5, costMul: 1.6, knock: 44, note: 'Everything it hits leaves the ground.' },
+    knife: { name: 'Knife', sub: 'when it is quiet', color: 0xf0f0f0, m1: 30, mul: 1.05, range: .8, cdMul: .35, costMul: .35, soul: { mul: .5, delay: .3 }, knock: 3, note: 'Close, fast, and it cuts twice.' },
+  } },
 };
-const WEAPON_ORDER = ['spear_chain', 'split_soul', 'playful_cloud', 'slaughter_demon'];
-const currentWeapon = () => (player.weapon ? WEAPONS[player.weapon] : null);
+const arsenalOf = (style) => ARSENALS[style] ?? null;
+const currentWeapon = () => { const a = arsenalOf(player.style); return a && player.weapon ? a.items[player.weapon] : null; };
+function cycleWeapon() {
+  const a = arsenalOf(player.style); if (!a) return null;
+  const i = a.order.indexOf(player.weapon);
+  player.weapon = a.order[(i + 1) % a.order.length];
+  return a.items[player.weapon];
+}
 // Hold B to power up. A tap is Minimum Output; 15 s is Medium; 30 s is Maximum.
 const CHARGE_MAX = 10;
 // A charge is stored, not timed: it waits until you spend it on one ability.
@@ -247,7 +274,7 @@ const SKILLS = {
   blue:            { name: 'Lapse: Blue', origin: 'Gojo', nature: 'cursed', cost: 12, cd: 4, type: 'pull', range: 9, radius: 8, duration: .9, power: 45, color: 0x2f6fff, desc: 'A point of infinite attraction. Drags enemies together, then crushes.' },
   red:             { name: 'Reversal: Red', origin: 'Gojo', nature: 'cursed', cost: 14, cd: 4.5, type: 'melee', range: 6, arc: .2, power: 65, knock: 40, color: 0xff2d55, desc: 'Repulsion blast. Sends enemies flying.' },
   hollow_purple:   { name: 'Hollow Purple', origin: 'Gojo', nature: 'cursed', cost: 30, cd: 12, type: 'beam', range: 45, radius: 3.2, power: 190, color: 0xb06cff, desc: 'Blue and Red collide. Erases everything in a line.' },
-  unlimited_void:  { name: 'Domain: Unlimited Void', origin: 'Gojo', nature: 'cursed', cost: 40, cd: 30, type: 'domain', duration: 5, power: 25, desc: 'Every enemy is flooded with infinite information and cannot act.' },
+  unlimited_void:  { name: 'Domain: Unlimited Void', origin: 'Gojo', nature: 'cursed', cost: 40, cd: 30, type: 'domain', duration: 5, radius: 38, power: 25, stun: true, stunWord: 'VOID', color: 0x0a0618, floor: 0x1a1030, edge: 0x9b6cff, sky: 0x05030c, sunLevel: .5, title: 'UNLIMITED VOID', desc: 'The barrier closes and everyone inside is flooded with infinite information. They cannot act at all.' },
   infinity:        { name: 'Infinity', origin: 'Gojo', nature: 'cursed', cost: 15, cd: 0, type: 'toggle', desc: 'Nothing reaches you, for as long as you leave it up. Press 4 again to drop it.' },
 
   // --- Naruto: Uzumaki ---
@@ -262,7 +289,7 @@ const SKILLS = {
   cleave:          { name: 'Cleave', origin: 'Sukuna', nature: 'wind', cost: 12, cd: 4, type: 'melee', range: 3.8, arc: .1, power: 80, percentMax: .12, knock: 12, desc: 'One slash that adjusts to the target: adds 12% of its max HP.' },
   fuga:            { name: 'Fire Arrow (Fuga)', origin: 'Sukuna', nature: 'fire', cost: 22, cd: 8, type: 'projectile', speed: 44, radius: .9, power: 95, pierce: true, onHit: { burn: 4 }, desc: 'Open. A flame arrow that pierces every enemy in its path.' },
   world_slash:     { name: 'World Cutting Slash', origin: 'Sukuna', nature: 'wind', cost: 32, cd: 14, type: 'beam', range: 60, radius: 4, power: 170, color: 0xff3b3b, desc: 'Space itself is cut. Everything in the line is halved.' },
-  malevolent_shrine: { name: 'Domain: Malevolent Shrine', origin: 'Sukuna', nature: 'wind', cost: 40, cd: 30, type: 'domain', mode: 'slash', duration: 6, tick: .35, radius: 30, power: 20, desc: 'No barrier. Everything within 30 m is dismantled, over and over.' },
+  malevolent_shrine: { name: 'Domain: Malevolent Shrine', origin: 'Sukuna', nature: 'wind', cost: 40, cd: 30, type: 'domain', mode: 'slash', duration: 6, tick: .3, radius: 30, power: 62, color: 0x3a0808, floor: 0x6a0c0c, edge: 0xff2a2a, sky: 0x1a0406, sunColor: 0xff6a5a, title: 'MALEVOLENT SHRINE', desc: 'The barrier closes and the shrine takes it apart. Tighter than the incomplete one, and far deadlier.' },
 
   // --- Spider-Man: Friendly Neighborhood ---
   web_shooters:    { name: 'Web-Shooters', origin: 'Spider-Man', nature: 'physical', cost: 5, cd: 1.1, type: 'projectile', speed: 52, radius: .5, power: 14, onHit: { root: 1.2, webbed: 6, defDown: .25 }, desc: 'Thwip. Webs the target: rooted, slowed, and it takes more damage.' },
@@ -277,14 +304,14 @@ const SKILLS = {
   manji_kick:      { name: 'Manji Kick', origin: 'Yuji', nature: 'physical', cost: 8, cd: 3, type: 'dash', range: 8, power: 50, onHit: { knock: 28 }, desc: 'A spinning kick that launches the enemy across the street.' },
   piercing_blood:  { name: 'Piercing Blood', origin: 'Yuji', nature: 'cursed', cost: 14, cd: 6, type: 'projectile', speed: 62, radius: .45, power: 72, pierce: true, desc: 'Blood manipulation. A needle of blood that goes through everything.' },
   rct_heal:        { name: 'Reverse Cursed Technique', origin: 'Jujutsu', nature: 'cursed', cost: 22, cd: 16, type: 'heal', percent: .4, desc: 'Turn cursed energy positive and stitch yourself back together. Restores 40% HP.' },
-  incomplete_shrine: { name: 'Incomplete Shrine', origin: 'Sukuna', nature: 'wind', cost: 20, cd: 10, type: 'shrine', range: 18, arc: .25, power: 50, ticks: 6, tick: .3, desc: 'A shrine with no barrier: a cone of dismantles carved out in front of you.' },
+  incomplete_shrine: { name: 'Incomplete Shrine', origin: 'Sukuna', nature: 'wind', cost: 26, cd: 22, type: 'domain', mode: 'slash', open: true, radius: 44, duration: 6, tick: .4, power: 34, color: 0xff2a2a, floor: 0x5a0c0c, edge: 0xff6b6b, sky: 0x2a0a08, sunColor: 0xff8a6a, title: 'INCOMPLETE SHRINE', desc: 'The shrine without its barrier. Wider reach than the real thing, but it cuts less deep.' },
 
   // --- Toji Fushiguro: Heavenly Restriction ---
   sorcerer_killer: { name: 'Sorcerer Killer', origin: 'Toji', nature: 'physical', cost: 8, cd: 3, type: 'dash', range: 13, power: 62, weaponScaled: true, onHit: { knock: 10 }, desc: 'Crosses the gap in a blink and cuts through on the way past.' },
   wide_sweep:      { name: 'Wide Sweep', origin: 'Toji', nature: 'physical', cost: 7, cd: 2.4, type: 'melee', range: 5.5, arc: -.45, power: 58, knock: 14, weaponScaled: true, desc: 'A full circle swing that catches everything standing around him.' },
   inventory_throw: { name: 'Inventory Curse', origin: 'Toji', nature: 'physical', cost: 6, cd: 2, type: 'projectile', speed: 58, radius: .55, power: 60, pierce: true, weaponScaled: true, desc: 'Pulls the drawn weapon out of the curse and throws it clean through a line.' },
   execution:       { name: 'Execution', origin: 'Toji', nature: 'physical', cost: 12, cd: 5, type: 'melee', range: 4.4, arc: .35, power: 92, knock: 8, weaponScaled: true, finisher: .9, desc: 'A committed killing blow, far heavier against anything already hurt.' },
-  weapon_switch:   { name: 'Switch Weapon', origin: 'Toji', nature: 'physical', cost: 0, cd: .45, type: 'switch', desc: 'Draw the next weapon: Inverted Spear of Heaven with the Chain attached, Split Soul Katana, Playful Cloud, Slaughter Demon. It changes your basic attack and every move.' },
+  weapon_switch:   { name: 'Switch Weapon', origin: 'Toji', nature: 'physical', cost: 0, cd: 0, type: 'switch', desc: 'Draw the next weapon: Inverted Spear of Heaven with the Chain attached, Split Soul Katana, Playful Cloud, Slaughter Demon. It changes your basic attack and every move.' },
   heavenly_restriction: { name: 'Heavenly Restriction', origin: 'Toji', nature: 'physical', cost: 30, cd: 80, type: 'buff', duration: 20, dmgMul: 1.9, speedMul: 1.6, costMul: 0, color: 0x9fe870, desc: 'Not a drop of cursed energy. Pure body: faster, far stronger, and every weapon is free.' },
 
   // --- Sasuke Uchiha: Rinnegan ---
@@ -296,6 +323,83 @@ const SKILLS = {
   susanoo:         { name: 'Perfect Susanoo', origin: 'Sasuke', nature: 'lightning', cost: 40, cd: 95, type: 'buff', duration: 25, dmgMul: 2, speedMul: 1, shield: 5, avatar: true, color: 0x9b6cff, desc: 'A giant avatar of chakra closes around you: double damage, and it eats five hits.' },
 
   // --- Ultimates ---
+  // --- Suguru Geto: Cursed Spirit Manipulation ---
+  spirit_barrage:  { name: 'Cursed Spirit Barrage', origin: 'Geto', nature: 'cursed', cost: 10, cd: 3, type: 'projectile', speed: 40, radius: .9, power: 66, aoe: 4, desc: 'Throws a swallowed spirit at them and lets it burst.' },
+  spirit_summon:   { name: 'Spirit Manipulation', origin: 'Geto', nature: 'cursed', cost: 16, cd: 14, type: 'clones', mesh: 'spirit', count: 3, duration: 16, power: 26, speed: 9, desc: 'Releases three curses from his collection to hunt for him.' },
+  rainbow_dragon:  { name: 'Rainbow Dragon', origin: 'Geto', nature: 'water', cost: 22, cd: 8, type: 'beam', range: 46, radius: 3, power: 150, color: 0x6cffd6, desc: 'A serpent of cursed energy tears down the street.' },
+  uzumaki:         { name: 'Maximum: Uzumaki', origin: 'Geto', nature: 'cursed', cost: 34, cd: 12, type: 'trap', range: 8, radius: 12, power: 175, color: 0x8a4fd8, onHit: { knock: 24, root: 1.2 }, desc: 'Crushes every curse he owns into one sphere and drops it.' },
+  geto_domain:     { name: 'Domain: Coffin of the Curses', origin: 'Geto', nature: 'cursed', cost: 40, cd: 90, type: 'domain', duration: 6, radius: 34, power: 42, tick: .45, color: 0x2a1040, floor: 0x4a1a6a, edge: 0x8a4fd8, sky: 0x140820, title: 'COFFIN OF THE CURSES', desc: 'The barrier fills with everything he has ever swallowed.' },
+
+  // --- Kenjaku ---
+  body_swap:       { name: 'Body Swap', origin: 'Kenjaku', nature: 'cursed', cost: 18, cd: 16, type: 'possess', range: 12, duration: 20, power: 40, heal: 120, desc: 'Steps into an enemy and wears it. The body then fights for you.' },
+  curse_womb:      { name: 'Cursed Womb', origin: 'Kenjaku', nature: 'cursed', cost: 14, cd: 4, type: 'projectile', speed: 30, radius: 1.1, power: 78, aoe: 5, onHit: { poison: 5 }, desc: 'Plants a womb that splits open on impact.' },
+  antigravity:     { name: 'Antigravity System', origin: 'Kenjaku', nature: 'wind', cost: 16, cd: 7, type: 'trap', range: 9, radius: 9, power: 60, color: 0x9b6cff, onHit: { root: 2.5, knock: 8 }, desc: 'Rips gravity out from under them and holds them there.' },
+  kenjaku_domain:  { name: 'Domain: Womb Profusion', origin: 'Kenjaku', nature: 'cursed', cost: 40, cd: 90, type: 'domain', duration: 6, radius: 33, power: 44, tick: .4, color: 0x241a30, floor: 0x3a2a50, edge: 0xb06cff, sky: 0x120a1c, title: 'WOMB PROFUSION', desc: 'The barrier is lined with wombs, and all of them are hungry.' },
+
+  // --- Choso: Blood Manipulation ---
+  piercing_blood_c: { name: 'Piercing Blood', origin: 'Choso', nature: 'cursed', cost: 12, cd: 4, type: 'projectile', speed: 70, radius: .5, power: 92, pierce: true, color: 0x9b1a2a, desc: 'Blood fired at the speed of sound, straight through a line.' },
+  flowing_red:     { name: 'Flowing Red Scale', origin: 'Choso', nature: 'cursed', cost: 20, cd: 22, type: 'buff', duration: 18, dmgMul: 1.8, speedMul: 1.3, regen: 9, color: 0x9b1a2a, desc: 'Boils his own blood: everything he throws lands harder.' },
+  blood_meteorite: { name: 'Blood Meteorite', origin: 'Choso', nature: 'cursed', cost: 14, cd: 5, type: 'dash', range: 14, power: 105, onHit: { knock: 26 }, desc: 'Launches himself as one condensed mass of blood.' },
+  supernova:       { name: 'Supernova', origin: 'Choso', nature: 'fire', cost: 34, cd: 14, type: 'beam', range: 52, radius: 4, power: 210, color: 0xff3b3b, desc: 'A convergence of blood that flattens everything in the line.' },
+
+  // --- Mahito: Idle Transfiguration ---
+  idle_transfig:   { name: 'Idle Transfiguration', origin: 'Mahito', nature: 'cursed', cost: 10, cd: 2, type: 'melee', range: 4, arc: .25, power: 96, ignoreDef: true, desc: 'A touch that reshapes the soul. Defence means nothing to it.' },
+  body_repel:      { name: 'Body Repel', origin: 'Mahito', nature: 'cursed', cost: 14, cd: 6, type: 'trap', range: 0, radius: 9, power: 74, color: 0x6cd8c0, onHit: { knock: 30, root: .8 }, desc: 'Blows his own body outward and puts it back together.' },
+  soul_multiplicity: { name: 'Soul Multiplicity', origin: 'Mahito', nature: 'cursed', cost: 20, cd: 16, type: 'clones', mesh: 'spirit', count: 4, duration: 16, power: 30, speed: 10, desc: 'Splits his soul into four bodies and sets them loose.' },
+  polymorphic:     { name: 'Polymorphic Soul Isomer', origin: 'Mahito', nature: 'water', cost: 24, cd: 8, type: 'projectile', speed: 34, radius: 1.5, power: 128, aoe: 6, onHit: { poison: 6 }, desc: 'Throws a transfigured human that bursts into rot.' },
+  mahito_domain:   { name: 'Domain: Self-Embodiment of Perfection', origin: 'Mahito', nature: 'cursed', cost: 40, cd: 90, type: 'domain', duration: 6, radius: 32, power: 50, tick: .4, color: 0x1a3a34, floor: 0x2a5a4a, edge: 0x6cd8c0, sky: 0x0a1a18, title: 'SELF-EMBODIMENT OF PERFECTION', desc: 'Inside the barrier he can touch every soul at once.' },
+
+  // --- Jogo ---
+  ember_insects:   { name: 'Ember Insects', origin: 'Jogo', nature: 'fire', cost: 12, cd: 3, type: 'projectile', speed: 36, radius: .8, power: 70, aoe: 4, onHit: { burn: 5 }, desc: 'A swarm of burning insects poured out of his head.' },
+  volcano_head:    { name: 'Mount Fuji', origin: 'Jogo', nature: 'fire', cost: 24, cd: 9, type: 'beam', range: 44, radius: 3.4, power: 165, color: 0xff6b3d, desc: 'The volcano on his shoulders erupts down the street.' },
+  maximum_meteor:  { name: 'Maximum: Meteor', origin: 'Jogo', nature: 'fire', cost: 36, cd: 15, type: 'projectile', speed: 24, radius: 2.6, power: 200, aoe: 11, onHit: { burn: 8 }, desc: 'Drops a meteor. Nothing under it survives.' },
+  jogo_domain:     { name: 'Domain: Coffin of the Molten Mountain', origin: 'Jogo', nature: 'fire', cost: 40, cd: 90, type: 'domain', duration: 6, radius: 33, power: 48, tick: .4, color: 0x3a1206, floor: 0x7a2a10, edge: 0xff8a3d, sky: 0x2a0e06, sunColor: 0xff8a4a, title: 'COFFIN OF THE MOLTEN MOUNTAIN', desc: 'The barrier fills with ash and the ground turns to lava.' },
+
+  // --- Hanami ---
+  flower_field:    { name: 'Flower Field', origin: 'Hanami', nature: 'earth', cost: 16, cd: 8, type: 'trap', range: 8, radius: 10, power: 72, color: 0x8fbf6a, onHit: { root: 3, poison: 5 }, desc: 'Blossoms erupt through the road and hold everything in place.' },
+  wood_spikes:     { name: 'Wooden Ball', origin: 'Hanami', nature: 'earth', cost: 12, cd: 4, type: 'projectile', speed: 32, radius: 1.2, power: 84, aoe: 5, desc: 'A ball of packed wood that bursts into spikes.' },
+  drain_life:      { name: 'Drain', origin: 'Hanami', nature: 'earth', cost: 14, cd: 10, type: 'heal', percent: .3, desc: 'Pulls life out of the ground and back into himself.' },
+  hanami_domain:   { name: 'Domain: Garden of Rot', origin: 'Hanami', nature: 'earth', cost: 40, cd: 90, type: 'domain', duration: 6, radius: 34, power: 46, tick: .45, color: 0x1c3a14, floor: 0x35662a, edge: 0x8fbf6a, sky: 0x0e1e0a, sunColor: 0xa8d86a, title: 'GARDEN OF ROT', desc: 'The barrier fills with roots and everything inside is slowly taken apart.' },
+
+  // --- Dagon ---
+  water_shikigami: { name: 'Water Shikigami', origin: 'Dagon', nature: 'water', cost: 16, cd: 14, type: 'clones', mesh: 'fish', count: 4, duration: 16, power: 28, speed: 11, desc: 'Fish of pure water peel off him and hunt.' },
+  tidal_wave:      { name: 'Tidal Wave', origin: 'Dagon', nature: 'water', cost: 22, cd: 8, type: 'beam', range: 42, radius: 4, power: 150, color: 0x5aa9ff, desc: 'A wall of water driven down the road.' },
+  whirlpool:       { name: 'Whirlpool', origin: 'Dagon', nature: 'water', cost: 16, cd: 6, type: 'pull', range: 11, radius: 10, duration: 1, power: 82, color: 0x2f6fb5, desc: 'Opens a drain in the street and drags them into it.' },
+  death_swarm:     { name: 'Death Swarm', origin: 'Dagon', nature: 'water', cost: 20, cd: 7, type: 'projectile', speed: 40, radius: 1.3, power: 118, aoe: 7, desc: 'Sends the whole shoal at once.' },
+  dagon_domain:    { name: 'Domain: Horizon of the Captivating Skandha', origin: 'Dagon', nature: 'water', cost: 40, cd: 90, type: 'domain', duration: 6, radius: 36, power: 46, tick: .4, color: 0x0e2a44, floor: 0x1f5f8a, edge: 0x6cd8ff, sky: 0x081a2a, sunColor: 0x8ac8ff, title: 'HORIZON OF THE CAPTIVATING SKANDHA', desc: 'The barrier becomes a shoreline, and the tide never stops coming in.' },
+
+  // --- Eleven ---
+  tk_push:         { name: 'Telekinetic Push', origin: 'Eleven', nature: 'physical', cost: 10, cd: 3, type: 'trap', range: 7, radius: 10, power: 78, color: 0xb06cff, onHit: { knock: 40, root: .8 }, desc: 'Throws out a hand and everything in front of her leaves the ground.' },
+  tk_lift:         { name: 'Lift', origin: 'Eleven', nature: 'physical', cost: 12, cd: 5, type: 'pull', range: 12, radius: 10, duration: 1.2, power: 70, color: 0x9b6cff, desc: 'Picks them all up and holds them there before dropping them.' },
+  tk_crush:        { name: 'Crush', origin: 'Eleven', nature: 'physical', cost: 14, cd: 4, type: 'melee', range: 15, arc: .5, power: 118, ignoreDef: true, desc: 'Closes her fist. Distance does not help them and neither does armour.' },
+  mind_flay:       { name: 'Mind Flay', origin: 'Eleven', nature: 'cursed', cost: 24, cd: 9, type: 'beam', range: 44, radius: 3, power: 165, color: 0x8a4fd8, desc: 'Reaches into every mind in a line at once.' },
+  nosebleed:       { name: 'Push Past the Nosebleed', origin: 'Eleven', nature: 'physical', cost: 22, cd: 24, type: 'buff', duration: 18, dmgMul: 2, speedMul: 1.3, regen: 10, color: 0xff6b6b, desc: 'She pushes harder than she should. Everything hits twice as hard.' },
+  the_gate:        { name: 'Open the Gate', origin: 'Eleven', nature: 'cursed', cost: 40, cd: 90, type: 'domain', duration: 6, radius: 34, power: 52, tick: .4, color: 0x2a0f1a, floor: 0x5a1a2a, edge: 0xff6b6b, sky: 0x140810, title: 'THE GATE', desc: 'Tears the world open. Everything caught inside is dragged through it slowly.' },
+
+  // --- Jean Grey ---
+  tk_blast:        { name: 'Telekinetic Blast', origin: 'Jean Grey', nature: 'physical', cost: 10, cd: 2.5, type: 'projectile', speed: 46, radius: 1, power: 80, aoe: 4, color: 0xffb340, desc: 'A fist of pure thought thrown across the street.' },
+  psi_stun:        { name: 'Psychic Stun', origin: 'Jean Grey', nature: 'cursed', cost: 18, cd: 14, type: 'freeze', duration: 4, hold: 2, power: 30, desc: 'Every mind on the field stops at once.' },
+  psi_shield:      { name: 'Telekinetic Shield', origin: 'Jean Grey', nature: 'physical', cost: 14, cd: 12, type: 'shield', charges: 3, duration: 12, reflect: 70, color: 0xffb340, desc: 'A wall of thought that stops three hits and throws them back.' },
+  psi_bolt:        { name: 'Psi-Bolt', origin: 'Jean Grey', nature: 'cursed', cost: 22, cd: 8, type: 'beam', range: 46, radius: 3.2, power: 172, color: 0xffd54a, desc: 'A lance of psychic force straight down the road.' },
+  phoenix_flare:   { name: 'Phoenix Flare', origin: 'Jean Grey', nature: 'fire', cost: 26, cd: 10, type: 'projectile', speed: 30, radius: 1.8, power: 150, aoe: 9, onHit: { burn: 7 }, desc: 'A bird of fire that bursts over them.' },
+  phoenix_force:   { name: 'The Phoenix Force', origin: 'Jean Grey', nature: 'fire', cost: 40, cd: 95, type: 'buff', duration: 24, dmgMul: 2.4, speedMul: 1.4, costMul: .5, regen: 12, chain: { power: 55, radius: 18, every: .7 }, color: 0xff7a10, desc: 'It takes her over. Everything burns near her without being asked.' },
+
+  // --- Iron Man ---
+  repulsor:        { name: 'Repulsor', origin: 'Iron Man', nature: 'lightning', cost: 8, cd: 1.6, type: 'projectile', speed: 56, radius: .8, power: 66, aoe: 3, weaponScaled: true, color: 0x9fe0ff, desc: 'Palm blast. The suit decides how hard.' },
+  unibeam:         { name: 'Unibeam', origin: 'Iron Man', nature: 'lightning', cost: 24, cd: 9, type: 'beam', range: 46, radius: 3.4, power: 175, weaponScaled: true, color: 0x9fe0ff, desc: 'Everything the reactor has, in a straight line.' },
+  micro_missiles:  { name: 'Micro-Missiles', origin: 'Iron Man', nature: 'fire', cost: 18, cd: 6, type: 'projectile', speed: 40, radius: 1.2, power: 120, aoe: 8, weaponScaled: true, onHit: { burn: 4 }, desc: 'Shoulder pods open and empty themselves.' },
+  flight_boost:    { name: 'Flight', origin: 'Iron Man', nature: 'physical', cost: 10, cd: 4, type: 'dash', range: 16, power: 70, weaponScaled: true, onHit: { knock: 26 }, desc: 'Boots and gauntlets at full burn, straight through them.' },
+  change_suit:     { name: 'Change Suit', origin: 'Iron Man', nature: 'physical', cost: 0, cd: 0, type: 'switch', desc: 'Call down the next suit: Mark 42, Hulkbuster, Bleeding Edge, War Machine. Each one changes your basic attack and every move.' },
+  house_party:     { name: 'House Party Protocol', origin: 'Iron Man', nature: 'physical', cost: 36, cd: 85, type: 'clones', mesh: 'suit', count: 4, duration: 22, power: 36, speed: 12, desc: 'The whole hall of armour flies in and fights without him.' },
+
+  // --- Top Hat ---
+  gun_shot:        { name: 'Fire', origin: 'Top Hat', nature: 'physical', cost: 6, cd: 1.4, type: 'projectile', speed: 68, radius: .5, power: 70, pierce: true, weaponScaled: true, color: 0xffffff, desc: 'Whatever is in his hands, pointed at you.' },
+  quick_draw:      { name: 'Quick Draw', origin: 'Top Hat', nature: 'physical', cost: 9, cd: 3.5, type: 'dash', range: 13, power: 82, weaponScaled: true, onHit: { knock: 18 }, desc: 'Crosses the gap and empties the magazine on the way.' },
+  grenade:         { name: 'Grenade', origin: 'Top Hat', nature: 'fire', cost: 14, cd: 5, type: 'projectile', speed: 30, radius: 1.1, power: 110, aoe: 8, weaponScaled: true, onHit: { burn: 4 }, desc: 'Pulls the pin and lets the panel do the rest.' },
+  execute_shot:    { name: 'Execute', origin: 'Top Hat', nature: 'physical', cost: 13, cd: 6, type: 'melee', range: 5, arc: .4, power: 96, finisher: 1, weaponScaled: true, desc: 'Point blank, and much worse for anything already bleeding.' },
+  switch_gun:      { name: 'Switch Weapon', origin: 'Top Hat', nature: 'physical', cost: 0, cd: 0, type: 'switch', desc: 'Rack the next one: pistol, rifle, sniper, RPG, knife. It changes your basic attack and every move.' },
+  bullet_time:     { name: 'Bullet Time', origin: 'Top Hat', nature: 'physical', cost: 34, cd: 80, type: 'freeze', duration: 7, power: 40, desc: 'The panel holds. He keeps moving; nothing else does.' },
+
   // --- Kashimo Hajime: Mythical Beast Amber ---
   kashimo_amber:   { name: 'Mythical Beast Amber', origin: 'Kashimo', nature: 'lightning', cost: 12, cd: 3, type: 'projectile', speed: 46, radius: .9, power: 78, aoe: 4, onHit: { paralyze: 2.5 }, desc: 'His cursed technique: stored electricity thrown out in a bolt that bursts on impact.' },
   lightning_guard: { name: 'Lightning Guard', origin: 'Kashimo', nature: 'lightning', cost: 14, cd: 12, type: 'shield', charges: 3, duration: 10, reflect: 60, color: 0xffe45c, desc: 'A shell of electricity. It eats the next three hits and shocks whoever threw them.' },
@@ -347,6 +451,50 @@ const STYLES = {
     passives: ['Lightning Guard shocks whoever hits it.', 'Almost everything he does paralyses.'],
     pool: ['kashimo_amber', 'lightning_guard', 'thunder_staff', 'discharge', 'rct_heal'], slots: ['kashimo_amber', 'lightning_guard', 'thunder_staff', 'discharge', 'rct_heal'],
     ultimate: { skill: 'amber_maximum', name: 'Amber: Maximum', cost: 38, cd: 90, duration: 22 } },
+  geto: { name: 'Geto: Cursed Spirit Manipulation', blurb: 'He swallowed a thousand curses and can throw any of them at you.',
+    passives: ['Spirits he releases hunt on their own.'],
+    pool: ['spirit_barrage', 'spirit_summon', 'rainbow_dragon', 'uzumaki', 'rct_heal'], slots: ['spirit_barrage', 'spirit_summon', 'rainbow_dragon', 'uzumaki', 'rct_heal'],
+    ultimate: { skill: 'geto_domain', name: 'Domain: Coffin of the Curses', cost: 40, cd: 90, duration: 6 } },
+  kenjaku: { name: 'Kenjaku: The Wearer', blurb: 'A thousand years old and never once in his own body.',
+    passives: ['Body Swap takes an enemy and turns it into your fighter.'],
+    pool: ['body_swap', 'curse_womb', 'antigravity', 'spirit_summon', 'rct_heal'], slots: ['body_swap', 'curse_womb', 'antigravity', 'spirit_summon', 'rct_heal'],
+    ultimate: { skill: 'kenjaku_domain', name: 'Domain: Womb Profusion', cost: 40, cd: 90, duration: 6 } },
+  choso: { name: 'Choso: Blood Manipulation', blurb: 'Half curse, half human, and every drop of him is a weapon.',
+    passives: ['Flowing Red Scale makes everything else land harder.'],
+    pool: ['piercing_blood_c', 'flowing_red', 'blood_meteorite', 'supernova', 'rct_heal'], slots: ['piercing_blood_c', 'flowing_red', 'blood_meteorite', 'supernova', 'rct_heal'],
+    ultimate: { skill: 'supernova', name: 'Supernova', cost: 34, cd: 45, duration: 1 } },
+  mahito: { name: 'Mahito: Idle Transfiguration', blurb: 'He touches your soul and rebuilds it into whatever amuses him.',
+    passives: ['Idle Transfiguration ignores defence entirely.'],
+    pool: ['idle_transfig', 'body_repel', 'soul_multiplicity', 'polymorphic', 'rct_heal'], slots: ['idle_transfig', 'body_repel', 'soul_multiplicity', 'polymorphic', 'rct_heal'],
+    ultimate: { skill: 'mahito_domain', name: 'Domain: Self-Embodiment of Perfection', cost: 40, cd: 90, duration: 6 } },
+  jogo: { name: 'Jogo: Disaster Flames', blurb: 'A volcano that walks, and it is furious about being looked down on.',
+    passives: ['Almost everything he throws sets the target on fire.'],
+    pool: ['disaster_flames', 'ember_insects', 'volcano_head', 'maximum_meteor', 'rct_heal'], slots: ['disaster_flames', 'ember_insects', 'volcano_head', 'maximum_meteor', 'rct_heal'],
+    ultimate: { skill: 'jogo_domain', name: 'Domain: Coffin of the Molten Mountain', cost: 40, cd: 90, duration: 6 } },
+  hanami: { name: 'Hanami: Disaster Plants', blurb: 'The forest sent him to take the city back.',
+    passives: ['Roots and blossoms hold enemies still for a long time.'],
+    pool: ['hanami_roots', 'flower_field', 'wood_spikes', 'drain_life', 'rct_heal'], slots: ['hanami_roots', 'flower_field', 'wood_spikes', 'drain_life', 'rct_heal'],
+    ultimate: { skill: 'hanami_domain', name: 'Domain: Garden of Rot', cost: 40, cd: 90, duration: 6 } },
+  dagon: { name: 'Dagon: Disaster Tides', blurb: 'Still a child by curse standards, and already an ocean.',
+    passives: ['His shikigami hunt on their own while he keeps casting.'],
+    pool: ['water_shikigami', 'tidal_wave', 'whirlpool', 'death_swarm', 'rct_heal'], slots: ['water_shikigami', 'tidal_wave', 'whirlpool', 'death_swarm', 'rct_heal'],
+    ultimate: { skill: 'dagon_domain', name: 'Domain: Horizon of the Captivating Skandha', cost: 40, cd: 90, duration: 6 } },
+  eleven: { name: 'Eleven: Telekinesis', blurb: 'A nosebleed and a raised hand, and the street rearranges itself.',
+    passives: ['Crush reaches 15 m and ignores defence.'],
+    pool: ['tk_push', 'tk_lift', 'tk_crush', 'mind_flay', 'nosebleed'], slots: ['tk_push', 'tk_lift', 'tk_crush', 'mind_flay', 'nosebleed'],
+    ultimate: { skill: 'the_gate', name: 'Open the Gate', cost: 40, cd: 90, duration: 6 } },
+  jean: { name: 'Jean Grey: Phoenix', blurb: 'The strongest telepath alive, with something older sitting behind her eyes.',
+    passives: ['Telekinetic Shield throws attacks back at whoever threw them.'],
+    pool: ['tk_blast', 'psi_stun', 'psi_shield', 'psi_bolt', 'phoenix_flare'], slots: ['tk_blast', 'psi_stun', 'psi_shield', 'psi_bolt', 'phoenix_flare'],
+    ultimate: { skill: 'phoenix_force', name: 'The Phoenix Force', cost: 40, cd: 95, duration: 24 } },
+  ironman: { name: 'Iron Man: Suit Up', blurb: 'Genius, billionaire, and a hangar full of answers.',
+    passives: ['Key 5 calls down the next suit, and the suit changes your basic attack and every move.'],
+    pool: ['repulsor', 'unibeam', 'micro_missiles', 'flight_boost', 'change_suit'], slots: ['repulsor', 'unibeam', 'micro_missiles', 'flight_boost', 'change_suit'],
+    ultimate: { skill: 'house_party', name: 'House Party Protocol', cost: 36, cd: 85, duration: 22 } },
+  tophat: { name: 'Top Hat', blurb: 'Ink and paper. He stepped out of a black and white panel and he is armed.',
+    passives: ['Key 5 racks the next weapon: pistol, rifle, sniper, RPG, knife.', 'Drawn in monochrome; only his muzzle flash has colour.'],
+    pool: ['gun_shot', 'quick_draw', 'grenade', 'execute_shot', 'switch_gun'], slots: ['gun_shot', 'quick_draw', 'grenade', 'execute_shot', 'switch_gun'],
+    ultimate: { skill: 'bullet_time', name: 'Bullet Time', cost: 34, cd: 80, duration: 7 } },
   sasuke: { name: 'Sasuke: Rinnegan', blurb: 'Space and time bend around him. Teleport, stop the clock, take it back.',
     passives: ['Work in progress: more Rinnegan techniques to come.'],
     pool: ['amenotejikara', 'time_freeze', 'frozen_world', 'reverse_time', 'amaterasu'], slots: ['amenotejikara', 'time_freeze', 'frozen_world', 'reverse_time', 'amaterasu'],
@@ -501,6 +649,78 @@ function updateCollapses(dt) {
   }
 }
 
+// ---- Street life ------------------------------------------------------------
+// Parked cars that cook off when something lands near them, and civilians who
+// run for it once the fighting starts.
+const cars = [], civilians = [];
+function makeCar(x, z, rot) {
+  const col = [0xc23b3b, 0x2f6fb5, 0xe8e8e8, 0x2a2a2a, 0xffd54a][Math.floor(Math.random() * 5)];
+  const g = new THREE.Group();
+  const bodyM = outlined(new THREE.Mesh(new THREE.BoxGeometry(2, .9, 4.4), toon(col)), .05);
+  bodyM.position.y = .7; bodyM.castShadow = true; g.add(bodyM);
+  const cabin = outlined(new THREE.Mesh(new THREE.BoxGeometry(1.8, .7, 2), toon(0x1a2230)), .05);
+  cabin.position.set(0, 1.4, -.2); g.add(cabin);
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(.36, .36, .28, 10), toon(0x141418));
+    wheel.rotation.z = Math.PI / 2; wheel.position.set(sx * 1.02, .36, sz * 1.5); g.add(wheel);
+  }
+  g.position.set(x, 0, z); g.rotation.y = rot; scene.add(g);
+  cars.push({ g, hp: 120, dead: false, col });
+}
+function makeCivilian(x, z) {
+  const palette = [0x3a5a8a, 0x8a3a4a, 0x4a7a5a, 0x7a6a3a, 0x5a3a7a];
+  const look = { skin: [0xf3c9a0, 0xe0b088, 0xc99060][Math.floor(Math.random() * 3)],
+    hair: [0x2a1a12, 0x14141a, 0x6a4a2a, 0xd8c070][Math.floor(Math.random() * 4)], hairStyle: 'short',
+    top: palette[Math.floor(Math.random() * palette.length)], bottom: 0x2a2a34, sleeves: 0xf3c9a0, eye: 0x2a2a2a };
+  const rig = buildCharacter(look);
+  rig.root.scale.setScalar(.92);
+  rig.root.position.set(x, 0, z);
+  scene.add(rig.root);
+  civilians.push({ rig, pos: rig.root.position, phase: Math.random() * 6, target: new THREE.Vector3(x, 0, z), panic: 0 });
+}
+function populateStreets() {
+  if (cars.length) return;
+  for (let i = 0; i < 26; i++) { const a = Math.random() * Math.PI * 2, r = 16 + Math.random() * 90; makeCar(Math.cos(a) * r, Math.sin(a) * r, Math.random() * Math.PI); }
+  for (let i = 0; i < 14; i++) { const a = Math.random() * Math.PI * 2, r = 12 + Math.random() * 55; makeCivilian(Math.cos(a) * r, Math.sin(a) * r); }
+}
+function damageCars(point, radius, amount) {
+  for (const c of cars) {
+    if (c.dead) continue;
+    if (c.g.position.distanceTo(point) > radius + 2.4) continue;
+    c.hp -= amount;
+    if (c.hp > 0) continue;
+    c.dead = true;
+    spawnDebris(c.g.position.clone().add(new THREE.Vector3(0, .8, 0)), c.col, 12, 14);
+    shake = Math.max(shake, .8);
+    c.g.rotation.z = (Math.random() - .5) * .6; c.g.position.y = .1;
+    c.g.traverse((o) => { if (o.isMesh && o.material && o.material.color && o.material.side !== THREE.BackSide) { o.material = o.material.clone(); o.material.color.setHex(0x2a2020); } });
+    for (const civ of civilians) civ.panic = Math.max(civ.panic, 8);
+  }
+}
+function updateStreets(dt) {
+  for (const civ of civilians) {
+    let threat = null, best = 22;
+    const check = (p) => { const d = p.distanceTo(civ.pos); if (d < best) { best = d; threat = p; } };
+    check(player.pos);
+    for (const e of enemies) if (!e.dead) check(e.pos);
+    if (threat) civ.panic = Math.max(civ.panic, 3);
+    civ.panic = Math.max(0, civ.panic - dt);
+    let dir;
+    if (civ.panic > 0 && threat) dir = civ.pos.clone().sub(threat).setY(0).normalize();
+    else {
+      if (civ.pos.distanceTo(civ.target) < 2) civ.target.set(civ.pos.x + (Math.random() - .5) * 40, 0, civ.pos.z + (Math.random() - .5) * 40);
+      dir = civ.target.clone().sub(civ.pos).setY(0).normalize();
+    }
+    if (!isFinite(dir.x)) continue;
+    const spd = civ.panic > 0 ? 9 : 2.4;
+    civ.pos.addScaledVector(dir, spd * dt); civ.pos.y = 0;
+    if (civ.pos.length() > 130) civ.pos.multiplyScalar(.98);
+    civ.rig.root.rotation.y = Math.atan2(dir.x, dir.z);
+    civ.phase += dt * (civ.panic > 0 ? 16 : 6);
+    poseRig(civ.rig, { phase: civ.phase, moving: true, amp: civ.panic > 0 ? .95 : .4, air: false, swing: false, attack: null });
+  }
+}
+
 // =============================================================================
 // Helpers: HUD, floats, log
 // =============================================================================
@@ -542,17 +762,36 @@ const player = {
 // with elbows, two legs with knees. Joints are empty Groups, so rotating one
 // swings everything below it. That is what the animation code drives.
 const CHARACTERS = {
-  default:   { skin: 0xf3c9a0, hair: 0x3a2a1a, hairStyle: 'short',  top: 0xd8323c, bottom: 0x2a2a3a, accent: 0xffe45c, eye: 0x2a2a2a },
-  naruto:    { skin: 0xf3c9a0, hair: 0xffd23f, hairStyle: 'spiky',  top: 0xff8a1f, bottom: 0x2a2a4a, accent: 0x1a1a2a, eye: 0x2f6fb5, headband: 0x2a4a8a, whiskers: true, sleeves: 0x2a2a4a },
-  sasuke:    { skin: 0xf7dcc0, hair: 0x1a1a2e, hairStyle: 'swept',  top: 0x14163a, bottom: 0xe0e0ec, accent: 0x9b6cff, eye: 0x9b2020, rinnegan: true },
-  gojo:      { skin: 0xf7dcc0, hair: 0xf2f2ff, hairStyle: 'spiky',  top: 0x14141c, bottom: 0x14141c, accent: 0x5ad4ff, eye: 0x5ad4ff, blindfold: 0x1a1a22, collar: 0x2a2a36 },
-  sukuna:    { skin: 0xf0d2c2, hair: 0xf7c6c6, hairStyle: 'spiky',  top: 0x1a0508, bottom: 0x1a0508, accent: 0xff2d55, eye: 0xff2d55, markings: true, fourArms: true },
-  yuji:      { skin: 0xf3c9a0, hair: 0xff9aa2, hairStyle: 'short',  top: 0x24242c, bottom: 0x24242c, accent: 0xff8a8a, eye: 0x8a4a2a },
-  megumi:    { skin: 0xf7dcc0, hair: 0x14183a, hairStyle: 'spiky',  top: 0x141838, bottom: 0x141838, accent: 0x5aa9ff, eye: 0x2f6f5f },
-  toji:      { skin: 0xe8c8a0, hair: 0x16161a, hairStyle: 'short',  top: 0x1c2a1c, bottom: 0x18181c, accent: 0x9fe870, eye: 0x35502f, scar: true, bare: true },
-  kashimo:   { skin: 0xf3d6b8, hair: 0xf5e6a0, hairStyle: 'long',   top: 0x2a2340, bottom: 0x2a2340, accent: 0xffe45c, eye: 0xffe45c },
-  spiderman: { skin: 0xd8323c, hair: 0xd8323c, hairStyle: 'none',   top: 0xd8323c, bottom: 0x1f2f8f, accent: 0xffffff, eye: 0xffffff, mask: true, webs: true },
+  default:   { skin: 0xf3c9a0, hair: 0x3a2a1a, hairStyle: 'short',  top: 0xd8323c, bottom: 0x2a2a3a, eye: 0x2a2a2a },
+  // Naruto: orange jumpsuit with the black shoulder panels, leaf headband, whiskers, blue eyes.
+  naruto:    { skin: 0xf3c9a0, hair: 0xffd23f, hairStyle: 'spiky',  top: 0xff7a10, bottom: 0xff7a10, sleeves: 0xff7a10, shoulders: 0x1e1e2c, eye: 0x3f8fd0, headband: 0x2a4a8a, whiskers: true, sandals: 0x2244aa, belt: 0x1e1e2c, hairLen: 1.05 },
+  // Sasuke: dark shirt, high collar, rope belt, swept blue-black hair, Rinnegan.
+  sasuke:    { skin: 0xf7dcc0, hair: 0x191b34, hairStyle: 'swept',  top: 0x171a3c, bottom: 0xdcdce8, sleeves: 0x171a3c, eye: 0x9b2020, rinnegan: true, collar: 0x101228, sash: 0x7a4fbf, cape: 0x101228 },
+  // Gojo: black high-collar uniform, white spikes, blindfold.
+  gojo:      { skin: 0xf7dcc0, hair: 0xf4f4ff, hairStyle: 'spiky',  top: 0x101018, bottom: 0x101018, sleeves: 0x101018, eye: 0x5ad4ff, blindfold: 0x191922, collar: 0x1e1e2a, belt: 0x1e1e2a, hairLen: 1.1 },
+  // Sukuna: pale pink hair, black markings everywhere, four arms, dark kimono.
+  sukuna:    { skin: 0xf2d6c6, hair: 0xf7c6c6, hairStyle: 'spiky',  top: 0x180508, bottom: 0x180508, sleeves: 0xf2d6c6, eye: 0xff2d55, markings: true, fourArms: true, sash: 0x6a0c14 },
+  // Yuji: black school uniform, hood, pink hair.
+  yuji:      { skin: 0xf3c9a0, hair: 0xff8f9c, hairStyle: 'short',  top: 0x22222a, bottom: 0x22222a, sleeves: 0x22222a, eye: 0x8a4a2a, hood: 0x2c2c36, collar: 0x2c2c36 },
+  // Megumi: black uniform, tall spiky black hair, green eyes.
+  megumi:    { skin: 0xf7dcc0, hair: 0x101430, hairStyle: 'spiky',  top: 0x13163a, bottom: 0x13163a, sleeves: 0x13163a, eye: 0x3f7f6a, collar: 0x0d1028, hairLen: 1.25 },
+  // Toji: black shirt, bare arms, the scar across his mouth.
+  toji:      { skin: 0xe8c8a0, hair: 0x141418, hairStyle: 'short',  top: 0x16161c, bottom: 0x141418, eye: 0x35502f, scar: true, bare: true, belt: 0x2a2a30 },
+  kashimo:   { skin: 0xf3d6b8, hair: 0xf5e6a0, hairStyle: 'long',   top: 0x2a2340, bottom: 0x2a2340, sleeves: 0x2a2340, eye: 0xffe45c, sash: 0xffd54a },
+  spiderman: { skin: 0xd8323c, hair: 0xd8323c, hairStyle: 'none',   top: 0xd8323c, bottom: 0x1f2f8f, sleeves: 0xd8323c, eye: 0xffffff, mask: true, webs: true },
+  geto:      { skin: 0xf3d6b8, hair: 0x14141c, hairStyle: 'long',   top: 0x2a2030, bottom: 0x1a1622, sleeves: 0x2a2030, eye: 0x6a4a7a, collar: 0x3a2c44 },
+  kenjaku:   { skin: 0xe8d8c0, hair: 0x1a1a22, hairStyle: 'long',   top: 0x24202c, bottom: 0x1a1622, sleeves: 0x24202c, eye: 0xb06cff, stitches: true },
+  choso:     { skin: 0xf0d2b8, hair: 0x1a1a22, hairStyle: 'short',  top: 0x2a1a20, bottom: 0x1a1218, sleeves: 0x9b1a2a, eye: 0x9b1a2a, markStripe: true },
+  mahito:    { skin: 0xd8e0d8, hair: 0x8fa8b8, hairStyle: 'short',  top: 0x2a4a46, bottom: 0x1e3a36, sleeves: 0xd8e0d8, eye: 0x6cd8c0, stitches: true },
+  jogoC:     { skin: 0xd88a4a, hair: 0x2a1a14, hairStyle: 'none',   top: 0x6a2a1a, bottom: 0x4a1a14, sleeves: 0xd88a4a, eye: 0xffd54a, volcano: true },
+  hanamiC:   { skin: 0x8fbf6a, hair: 0x3f7a3a, hairStyle: 'none',   top: 0x5b7a3a, bottom: 0x3f5a2a, sleeves: 0x8fbf6a, eye: 0xffe45c, horns: true },
+  dagonC:    { skin: 0xbfe0f0, hair: 0x2f6fb5, hairStyle: 'none',   top: 0x2a6a8a, bottom: 0x1f4f6a, sleeves: 0xbfe0f0, eye: 0x6cd8ff, horns: true },
+  eleven:    { skin: 0xf3d6c0, hair: 0x6a4a2a, hairStyle: 'short', top: 0xf0e0d0, bottom: 0x2a3a5a, sleeves: 0xf0e0d0, eye: 0x4a3a2a, nosebleed: true },
+  jean:      { skin: 0xf7dcc0, hair: 0xd94f1a, hairStyle: 'long',  top: 0x1f7a3a, bottom: 0xd4302a, sleeves: 0x1f7a3a, eye: 0x3f8f5f, sash: 0xffd54a },
+  ironman:   { skin: 0xd4302a, hair: 0xd4302a, hairStyle: 'none',  top: 0xd4302a, bottom: 0xd4302a, sleeves: 0xffc83d, eye: 0x9fe0ff, mask: true, reactor: true, shoulders: 0xffc83d },
+  tophat:    { skin: 0xf0f0f0, hair: 0x101010, hairStyle: 'none',  top: 0x181818, bottom: 0x101010, sleeves: 0xf0f0f0, eye: 0x101010, tophat: true, mono: true, collar: 0xf0f0f0 },
 };
+CHARACTERS.jogo = CHARACTERS.jogoC; CHARACTERS.hanami = CHARACTERS.hanamiC; CHARACTERS.dagon = CHARACTERS.dagonC;
 
 function limbSeg(len, rad, color) {
   const g = new THREE.Group();
@@ -573,7 +812,20 @@ function buildCharacter(L) {
   const chest = new THREE.Group(); chest.position.y = .12; pelvis.add(chest);
   const chestMesh = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.27, .4, 4, 10), toon(L.top)), .08);
   chestMesh.position.y = .3; chestMesh.castShadow = true; chest.add(chestMesh);
-  if (L.collar) { const c = new THREE.Mesh(new THREE.TorusGeometry(.24, .05, 6, 16), toon(L.collar)); c.rotation.x = Math.PI / 2; c.position.y = .56; chest.add(c); }
+  if (L.shoulders) for (const sx of [-1, 1]) {   // Naruto's black shoulder panels
+    const pad = outlined(new THREE.Mesh(new THREE.SphereGeometry(.16, 10, 8), toon(L.shoulders)), .08);
+    pad.scale.set(1, .8, 1); pad.position.set(sx * .22, .48, 0); chest.add(pad);
+  }
+  if (L.belt) { const bl = new THREE.Mesh(new THREE.TorusGeometry(.27, .045, 6, 18), toon(L.belt)); bl.rotation.x = Math.PI / 2; bl.position.y = .07; chest.add(bl); }
+  if (L.sash) { const sa = new THREE.Mesh(new THREE.BoxGeometry(.5, .14, .34), toon(L.sash)); sa.position.y = .1; chest.add(sa);
+    const knot = new THREE.Mesh(new THREE.BoxGeometry(.14, .3, .12), toon(L.sash)); knot.position.set(.2, -.02, .16); chest.add(knot); }
+  if (L.cape) { const cp = outlined(new THREE.Mesh(new THREE.BoxGeometry(.62, .95, .09), toon(L.cape)), .05); cp.position.set(0, .22, -.24); chest.add(cp); }
+  if (L.hood) { const hd = outlined(new THREE.Mesh(new THREE.SphereGeometry(.27, 12, 9, 0, Math.PI * 2, 0, Math.PI * .55), toon(L.hood)), .06); hd.rotation.x = 1.5; hd.position.set(0, .5, -.2); chest.add(hd); }
+  if (L.reactor) { const rc = new THREE.Mesh(new THREE.CylinderGeometry(.11, .11, .06, 16), new THREE.MeshBasicMaterial({ color: 0xdff6ff })); rc.rotation.x = Math.PI / 2; rc.position.set(0, .36, .24); chest.add(rc);
+    const glow = new THREE.Mesh(new THREE.TorusGeometry(.14, .022, 6, 18), new THREE.MeshBasicMaterial({ color: 0x9fe0ff })); glow.position.set(0, .36, .24); chest.add(glow); }
+  if (L.markStripe) { const st = new THREE.Mesh(new THREE.BoxGeometry(.06, .5, .3), new THREE.MeshBasicMaterial({ color: 0x9b1a2a })); st.position.set(0, .34, .16); chest.add(st); }
+  if (L.stitches) for (let i = 0; i < 4; i++) { const th = new THREE.Mesh(new THREE.BoxGeometry(.3, .02, .02), new THREE.MeshBasicMaterial({ color: 0x2a2a2a })); th.position.set(0, .18 + i * .12, .25); th.rotation.z = i % 2 ? .2 : -.2; chest.add(th); }
+  if (L.collar) { const c = new THREE.Mesh(new THREE.CylinderGeometry(.26, .22, .22, 12, 1, true), toon(L.collar)); c.position.y = .58; chest.add(c); }
   if (L.webs) for (let i = 0; i < 4; i++) { const w = new THREE.Mesh(new THREE.TorusGeometry(.09 + i * .055, .012, 4, 14), ink); w.rotation.x = Math.PI / 2 - .35; w.position.set(0, .32, .18); chest.add(w); }
   if (L.markings) for (const y of [.5, .3, .12]) { const b = new THREE.Mesh(new THREE.TorusGeometry(.28, .022, 6, 20), ink); b.rotation.x = Math.PI / 2; b.position.y = y; chest.add(b); }
 
@@ -612,9 +864,11 @@ function buildCharacter(L) {
   }
   const hairMat = toon(L.hair);
   if (L.hairStyle === 'spiky') {
-    for (let i = 0; i < 11; i++) {
-      const a = (i / 11) * Math.PI * 2, r = .12 + (i % 3) * .03;
-      const sp = new THREE.Mesh(new THREE.ConeGeometry(.075, .3 + (i % 4) * .04, 5), hairMat);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(.245, 14, 10, 0, Math.PI * 2, 0, Math.PI * .55), hairMat);
+    cap.position.y = .04; neck.add(cap);
+    for (let i = 0; i < 13; i++) {
+      const a = (i / 13) * Math.PI * 2, r = .12 + (i % 3) * .035;
+      const sp = new THREE.Mesh(new THREE.ConeGeometry(.075, (.3 + (i % 4) * .05) * (L.hairLen ?? 1), 5), hairMat);
       sp.position.set(Math.cos(a) * r, .21, Math.sin(a) * r * .9);
       sp.rotation.set(Math.sin(a) * .75, 0, -Math.cos(a) * .75); neck.add(sp);
     }
@@ -634,6 +888,18 @@ function buildCharacter(L) {
     for (let i = 0; i < 5; i++) { const sp = new THREE.Mesh(new THREE.ConeGeometry(.06, .16, 5), hairMat); sp.position.set((i - 2) * .09, .21, .05); sp.rotation.x = -.3; neck.add(sp); }
   }
 
+  if (L.tophat) {
+    const brim = outlined(new THREE.Mesh(new THREE.CylinderGeometry(.42, .42, .04, 18), toon(0x101010)), .05);
+    brim.position.y = .22; neck.add(brim);
+    const crown = outlined(new THREE.Mesh(new THREE.CylinderGeometry(.24, .25, .55, 18), toon(0x101010)), .05);
+    crown.position.y = .5; neck.add(crown);
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(.255, .255, .1, 18), new THREE.MeshBasicMaterial({ color: 0xf0f0f0 }));
+    band.position.y = .28; neck.add(band);
+  }
+  if (L.nosebleed) { const nb = new THREE.Mesh(new THREE.BoxGeometry(.03, .12, .02), new THREE.MeshBasicMaterial({ color: 0xc0392b })); nb.position.set(.03, -.11, .21); neck.add(nb); }
+  if (L.horns) for (const sx of [-1, 1]) { const hn = new THREE.Mesh(new THREE.ConeGeometry(.09, .42, 6), toon(L.hair)); hn.position.set(sx * .16, .26, -.02); hn.rotation.z = sx * .35; neck.add(hn); }
+  if (L.volcano) { const v = outlined(new THREE.Mesh(new THREE.ConeGeometry(.3, .5, 10, 1, true), toon(0x4a1a12)), .06); v.position.y = .3; neck.add(v);
+    const lava = new THREE.Mesh(new THREE.CircleGeometry(.2, 12), new THREE.MeshBasicMaterial({ color: 0xff6b3d })); lava.rotation.x = -Math.PI / 2; lava.position.y = .5; neck.add(lava); }
   const arms = {};
   const armRows = L.fourArms ? [{ y: .46, key: '' }, { y: .16, key: '2' }] : [{ y: .46, key: '' }];
   for (const row of armRows) for (const side of [-1, 1]) {
@@ -652,7 +918,7 @@ function buildCharacter(L) {
     const thigh = limbSeg(.36, .115, L.bottom); hip.add(thigh);
     const knee = new THREE.Group(); knee.position.y = -.46; thigh.add(knee);
     const shin = limbSeg(.34, .095, L.bottom); knee.add(shin);
-    const foot = outlined(new THREE.Mesh(new THREE.BoxGeometry(.16, .1, .28), toon(0x1a1a1a)), .1);
+    const foot = outlined(new THREE.Mesh(new THREE.BoxGeometry(.16, .1, .28), toon(L.sandals ?? 0x1a1a1a)), .1);
     foot.position.set(0, -.46, .05); knee.add(foot);
     legs[side < 0 ? 'l' : 'r'] = { hip, knee, foot };
   }
@@ -1088,6 +1354,7 @@ const projectiles = [], bursts = [], absorbParticles = [];
 const partGeo = new THREE.SphereGeometry(.12, 6, 5);
 function burst(pos, color, n) {
   damageBuildings(pos, 2.5 + n * .12, n * 1.8);
+  damageCars(pos, 2.5 + n * .12, n * 2.5);
   const mat = new THREE.MeshBasicMaterial({ color });
   for (let i = 0; i < n; i++) {
     const m = new THREE.Mesh(partGeo, mat); m.position.copy(pos); scene.add(m);
@@ -1103,6 +1370,7 @@ function aimDir() {
   for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().add(new THREE.Vector3(0, 1, 0)).sub(player.pos.clone().add(new THREE.Vector3(0, 1.4, 0))); const d = to.length(); if (d < bestD && (d < 4.5 || to.clone().normalize().dot(camF) > .5)) { best = to.normalize(); bestD = d; } }
   return best ?? camF;
 }
+const noCooldowns = () => player.style === 'gojo';
 function buffCost() { return player.buff && now < player.buff.until ? (player.buff.costMul ?? 1) : 1; }
 function activateSlot(i) {
   const id = player.slots[i]; if (!id) return;
@@ -1115,10 +1383,12 @@ function castSkill(id, opts = {}) {
   const W = s.weaponScaled ? currentWeapon() : null;   // Toji's drawn weapon
   const WM = W?.mul ?? 1;
   if (!opts.free) {
-    // No cooldowns: Spirit Energy is the only thing holding you back.
+    // Gojo alone ignores cooldowns; everyone else waits.
+    if (!noCooldowns() && (player.cooldowns[id] ?? 0) > now) return false;
     const cost = Math.ceil(s.cost * (W?.costMul ?? 1) * outputCost() * buffCost());
     if (player.se < cost) { log(`Not enough Spirit Energy for ${s.name}.`); return false; }
     player.se -= cost; player.regenBlockedUntil = now + 2.5;
+    if (!noCooldowns()) player.cooldowns[id] = now + s.cd * (W?.cdMul ?? 1);
   }
   const slotEl = opts.slot != null ? $('#slots').children[opts.slot] : null;
   if (slotEl) { slotEl.classList.add('flash'); setTimeout(() => slotEl.classList.remove('flash'), 350); }
@@ -1183,40 +1453,48 @@ function castSkill(id, opts = {}) {
     for (const e of enemies) { if (e.dead) continue; seg.closestPointToPoint(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), true, cp); if (cp.distanceTo(e.pos.clone().add(new THREE.Vector3(0, 1, 0))) < s.radius + e.t.size) enemyTakeHit(e, s.power * B, s.nature, origin, { knock: 30 }); }
     for (let i = 1; i <= 12; i++) damageBuildings(origin.clone().addScaledVector(d, s.range * i / 12), s.radius + 2, s.power * .5);
     player.vel.addScaledVector(d, -6);
-  } else if (s.type === 'domain' && s.mode === 'slash') {
-    center('DOMAIN EXPANSION', 1500); setTimeout(() => center('MALEVOLENT SHRINE', 1600), 900);
-    screenFlash(1); hitStop = .25; shake = 1;
-    scene.background.set(0x1a0406); scene.fog.color.set(0x2a0608); sun.intensity = .9; sun.color.set(0xff6a5a);
-    const shrine = new THREE.Group();
-    const floor = new THREE.Mesh(new THREE.RingGeometry(s.radius - .6, s.radius, 64), new THREE.MeshBasicMaterial({ color: 0xff2a2a, side: THREE.DoubleSide, transparent: true, opacity: .8 })); floor.rotation.x = -Math.PI / 2; floor.position.y = .08; shrine.add(floor);
-    for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; const pillar = outlined(new THREE.Mesh(new THREE.BoxGeometry(1.2, 10, 1.2), toon(0x2a0a0a)), .05); pillar.position.set(Math.sin(a) * (s.radius - 3), 5, Math.cos(a) * (s.radius - 3)); shrine.add(pillar); const skull = new THREE.Mesh(new THREE.SphereGeometry(.9, 10, 8), new THREE.MeshBasicMaterial({ color: 0xe8dcc8 })); skull.position.set(Math.sin(a) * (s.radius - 3), 10.6, Math.cos(a) * (s.radius - 3)); shrine.add(skull); }
-    shrine.position.copy(player.pos); scene.add(shrine);
-    effects.push({ kind: 'domain', mode: 'slash', m: shrine, t: 0, life: s.duration, s, next: 0, boost: B });
-    log('Domain Expansion: Malevolent Shrine. Everything within 30 m is cut apart.', true);
   } else if (s.type === 'domain') {
-    center('DOMAIN EXPANSION', 1500); setTimeout(() => center('UNLIMITED VOID', 1600), 900);
-    screenFlash(1); hitStop = .25; shake = .8;
-    scene.background.set(0x05030c); scene.fog.color.set(0x05030c); sun.intensity = .6;
-    const sphere = new THREE.Mesh(new THREE.SphereGeometry(70, 32, 24), new THREE.MeshBasicMaterial({ color: 0x120a2a, side: THREE.BackSide, transparent: true, opacity: .96 }));
-    sphere.position.copy(player.pos); scene.add(sphere);
-    effects.push({ kind: 'domain', m: sphere, t: 0, life: s.duration, s, boost: B });
-    for (const e of enemies) { if (e.dead) continue; e.status.stun = s.duration; e.state = 'chase'; e.mesh.scale.setScalar(1); floatText(e.pos, 'VOID', 'se'); }
-    log('Domain Expansion: Unlimited Void. Every enemy is paralysed by infinite information.', true);
-  } else if (s.type === 'toggle') {
-    player.infinity = !player.infinity;
-    if (shieldMesh) { scene.remove(shieldMesh); shieldMesh = null; }
-    if (player.infinity) {
-      shieldMesh = new THREE.Mesh(new THREE.SphereGeometry(1.8, 26, 18), new THREE.MeshBasicMaterial({ color: 0xb06cff, transparent: true, opacity: .16, wireframe: true }));
-      shieldMesh.position.copy(player.pos).add(new THREE.Vector3(0, 1.3, 0)); scene.add(shieldMesh);
-      player.shield = 0; player.shieldReflect = 0; player.shieldUntil = 0;
-      center('INFINITY', 1000); burst(origin, 0xb06cff, 22);
-      log('Infinity is up. Nothing reaches you until you press 4 again.', true);
-    } else {
-      center('INFINITY DOWN', 900);
-      log('Infinity dropped.', true);
+    // Every domain throws up a barrier dome, except the ones marked open.
+    const R = s.radius ?? 34;
+    center('DOMAIN EXPANSION', 1500);
+    setTimeout(() => center(s.title ?? s.name.toUpperCase(), 1700), 900);
+    screenFlash(1); hitStop = .25; shake = 1.1;
+    const grp = new THREE.Group(); grp.position.copy(player.pos);
+    const col = s.color ?? 0x120a2a;
+    if (!s.open) {
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(R, 30, 20), new THREE.MeshBasicMaterial({ color: col, side: THREE.DoubleSide, transparent: true, opacity: .55, depthWrite: false }));
+      grp.add(dome);
+      const shell = new THREE.Mesh(new THREE.SphereGeometry(R * .995, 22, 14), new THREE.MeshBasicMaterial({ color: s.edge ?? 0xffffff, wireframe: true, transparent: true, opacity: .12 }));
+      grp.add(shell);
     }
-    renderSlots();
-  } else if (s.type === 'shield') {
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(R, 56), new THREE.MeshBasicMaterial({ color: s.floor ?? col, side: THREE.DoubleSide, transparent: true, opacity: s.open ? .3 : .55, depthWrite: false }));
+    floor.rotation.x = -Math.PI / 2; floor.position.y = .08; grp.add(floor);
+    const rim = new THREE.Mesh(new THREE.RingGeometry(R - .8, R, 64), new THREE.MeshBasicMaterial({ color: s.edge ?? 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: .8 }));
+    rim.rotation.x = -Math.PI / 2; rim.position.y = .12; grp.add(rim);
+    if (s.mode === 'slash') {   // the shrine's pillars and skulls
+      const ring = Math.min(R - 3, 26);
+      for (let i = 0; i < 10; i++) {
+        const a = i / 10 * Math.PI * 2;
+        const pillar = outlined(new THREE.Mesh(new THREE.BoxGeometry(1.3, 11, 1.3), toon(0x2a0a0a)), .05);
+        pillar.position.set(Math.sin(a) * ring, 5.5, Math.cos(a) * ring); grp.add(pillar);
+        const skull = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 8), new THREE.MeshBasicMaterial({ color: 0xe8dcc8 }));
+        skull.position.set(Math.sin(a) * ring, 11.6, Math.cos(a) * ring); grp.add(skull);
+      }
+    }
+    scene.add(grp);
+    const sky = { bg: scene.background.getHex(), fog: scene.fog.color.getHex(), sun: sun.intensity, sunCol: sun.color.getHex() };
+    if (s.sky !== undefined) { scene.background.set(s.sky); scene.fog.color.set(s.sky); }
+    if (s.sunColor !== undefined) sun.color.set(s.sunColor);
+    sun.intensity = s.sunLevel ?? .8;
+    effects.push({ kind: 'domain', mode: s.mode ?? 'stun', m: grp, t: 0, life: s.duration, s, next: 0, boost: B, radius: R, sky, origin: player.pos.clone() });
+    if (s.stun) for (const e of enemies) {
+      if (e.dead || e.pos.distanceTo(player.pos) > R) continue;
+      e.status.stun = s.duration; e.state = 'chase'; e.mesh.scale.setScalar(1);
+      floatText(e.pos, s.stunWord ?? 'CAUGHT', 'se');
+    }
+    damageBuildings(player.pos, R, 260);
+    log(`${s.name}: ${s.open ? 'no barrier, but everything inside is finished' : 'the barrier closes and nothing inside gets out'}.`, true);
+  } else if (s.type === 'shield') {  } else if (s.type === 'shield') {
     player.shield = Math.round(s.charges * B); player.shieldUntil = now + s.duration;
     player.shieldReflect = (s.reflect ?? 0) * B;
     if (shieldMesh) scene.remove(shieldMesh);
@@ -1229,12 +1507,22 @@ function castSkill(id, opts = {}) {
     for (let i = 0; i < s.count; i++) {
       let m;
       if (s.mesh === 'dog') m = makeDogMesh(i === 0 ? 0xf2f2f2 : 0x111111);
+      else if (s.mesh === 'spirit' || s.mesh === 'fish') {
+        m = new THREE.Group();
+        const col = s.mesh === 'fish' ? 0x5aa9ff : 0x8a4fd8;
+        const b0 = outlined(new THREE.Mesh(new THREE.SphereGeometry(.8, 14, 10), toon(col)), .07);
+        b0.position.y = .9; b0.scale.set(1, s.mesh === 'fish' ? .7 : .9, s.mesh === 'fish' ? 1.5 : 1); m.add(b0);
+        for (const sx of [-1, 1]) { const ey = new THREE.Mesh(new THREE.SphereGeometry(.14, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffe45c })); ey.position.set(sx * .3, 1.05, .62); m.add(ey); }
+        if (s.mesh === 'fish') { const tail = new THREE.Mesh(new THREE.ConeGeometry(.4, .8, 5), toon(col)); tail.rotation.x = Math.PI / 2; tail.position.set(0, .9, -1.2); m.add(tail); }
+      }
+      else if (s.mesh === 'suit') m = buildCharacter({ ...CHARACTERS.ironman, top: [0xd4302a, 0x8a8a96, 0xe06010, 0x5ad4ff][i % 4] }).root;
       else if (s.mesh === 'spider') m = buildCharacter({ ...CHARACTERS.spiderman, top: [0xd8323c, 0x111122, 0x1f2f8f][i % 3], bottom: [0x1f2f8f, 0x2a2a2a, 0xd8323c][i % 3] }).root;
       else m = buildCharacter({ ...(CHARACTERS[player.style] ?? CHARACTERS.default), top: 0x8a8a96, bottom: 0x6a6a76 }).root;
       const a = (i / s.count) * Math.PI * 2; m.position.copy(player.pos).add(new THREE.Vector3(Math.sin(a) * 1.6, 0, Math.cos(a) * 1.6)); scene.add(m);
       fighterClones.push({ m, until: now + s.duration, next: now + .4 + i * .25, power: s.power * B, speed: s.speed ?? 8, nature: s.mesh === 'dog' ? s.nature : 'physical' });
     }
-    if (s.mesh === 'spider') { player.decoy = false; burst(origin, 0xd8323c, 20); log('Spider-Verse: three of them dropped in.', true); center('SPIDER-VERSE', 1200); }
+    if (s.mesh === 'spirit' || s.mesh === 'fish') { player.decoy = false; burst(origin, 0x8a4fd8, 16); center(s.name.toUpperCase(), 900); }
+    else if (s.mesh === 'spider') { player.decoy = false; burst(origin, 0xd8323c, 20); log('Spider-Verse: three of them dropped in.', true); center('SPIDER-VERSE', 1200); }
     else if (s.mesh === 'dog') { player.decoy = false; burst(origin, 0x222222, 12); log('Divine Dogs: Totality!', true); center('DIVINE DOGS', 700); }
     else { burst(origin, 0xffffff, 16); log('Multi Shadow Clone Jutsu!', true); center('SHADOW CLONES', 700); }
   } else if (s.type === 'heal') {
@@ -1328,11 +1616,21 @@ function castSkill(id, opts = {}) {
     burst(player.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 0x9b6cff, 24);
     if (gained > 0) floatText(player.pos, '+' + gained, 'heal');
     log(`Reverse Time: you are where you were ${s.seconds} seconds ago${gained > 0 ? `, ${gained} HP back` : ''}.`, true);
+  } else if (s.type === 'possess') {
+    let target = null, best = s.range;
+    for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos); const dd = to.length(); if (dd < best && to.clone().normalize().dot(dir) > .1) { best = dd; target = e; } }
+    if (!target) { log('Nothing close enough to wear.'); return true; }
+    target.dead = true; target.bar.remove();
+    const worn = target.mesh;
+    burst(target.pos.clone().add(new THREE.Vector3(0, 1, 0)), 0xb06cff, 22);
+    fighterClones.push({ m: worn, until: now + s.duration, next: now + .5, power: s.power * B, speed: 8, nature: target.t.nature });
+    player.hp = Math.min(player.maxHp, player.hp + s.heal * B);
+    floatText(player.pos, '+' + Math.round(s.heal * B), 'heal');
+    center('BODY TAKEN', 1300);
+    log(`Kenjaku steps into the ${target.t.name}. It fights for you now.`, true);
   } else if (s.type === 'switch') {
-    const at = WEAPON_ORDER.indexOf(player.weapon);
-    const next = WEAPON_ORDER[(at + 1) % WEAPON_ORDER.length];
-    player.weapon = next;
-    const w = WEAPONS[next];
+    const w = cycleWeapon();
+    if (!w) return true;
     renderSlots();
     center(w.name.toUpperCase(), 1200); burst(origin, w.color, 18); screenFlash(.25);
     log(`Drew the ${w.name} (${w.sub}). ${w.note}`, true);
@@ -1428,9 +1726,11 @@ function useUltimate() {
   if (player.charging) return;
   const st = player.style ? STYLES[player.style] : null; const u = st?.ultimate;
   if (!u) { log('No G ultimate for this move set.'); return; }
+  if (!noCooldowns() && player.ultCd > now) { log(`${u.name} is recharging (${Math.ceil(player.ultCd - now)}s).`); return; }
   const ucost = Math.ceil(u.cost * outputCost() * buffCost());
   if (player.se < ucost) { log(`Not enough Spirit Energy for ${u.name}.`); return; }
   player.se -= ucost;
+  if (!noCooldowns()) player.ultCd = now + u.cd;
   if (u.kind === 'transform') {
     const from = player.style;
     player.transform = { from, until: now + u.duration };
@@ -1578,22 +1878,25 @@ function updateProjectiles(dt) {
       }
     } else if (f.kind === 'beam') {
       f.m.material.opacity = Math.max(0, .85 * (1 - f.t / f.life)); f.m.material.transparent = true; if (f.t >= f.life) f.done = true;
-    } else if (f.kind === 'domain' && f.mode === 'slash') {
-      if (f.t >= f.life) { f.done = true; scene.background.set(0x1b1030); scene.fog.color.set(0x2a1848); sun.intensity = 2.6; sun.color.set(0xfff1d6); }
-      else if (f.t >= f.next) {
-        f.next = f.t + f.s.tick;
-        for (const e of enemies) {
-          if (e.dead || e.pos.distanceTo(f.m.position) > f.s.radius) continue;
-          enemyTakeHit(e, f.s.power * (f.boost ?? 1), f.s.nature, null, { knock: 2 });
-          const c = e.pos.clone().add(new THREE.Vector3(0, 1 + Math.random(), 0)); const d = new THREE.Vector3(Math.random() - .5, Math.random() - .5, Math.random() - .5).normalize().multiplyScalar(2.2);
-          const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([c.clone().sub(d), c.clone().add(d)]), new THREE.LineBasicMaterial({ color: 0xff3b3b })); scene.add(line); bursts.push({ m: line, t: 0, line: true });
-        }
-        shake = Math.max(shake, .15);
-      }
     } else if (f.kind === 'domain') {
-      f.m.position.copy(player.pos); f.m.rotation.y += dt * .2;
-      if (f.t >= f.life) { f.done = true; scene.background.set(0x1b1030); scene.fog.color.set(0x2a1848); sun.intensity = 2.6; }
-      else if (f.t % .5 < dt) for (const e of enemies) { if (e.dead) continue; enemyTakeHit(e, f.s.power * .25 * (f.boost ?? 1), 'cursed', null, {}); }
+      if (f.t >= f.life) {
+        f.done = true;
+        scene.background.set(f.sky.bg); scene.fog.color.set(f.sky.fog);
+        sun.intensity = f.sky.sun; sun.color.set(f.sky.sunCol);
+      } else if (f.t >= f.next) {
+        f.next = f.t + (f.s.tick ?? .5);
+        for (const e of enemies) {
+          if (e.dead || e.pos.distanceTo(f.origin) > f.radius) continue;
+          enemyTakeHit(e, (f.s.power ?? 20) * (f.boost ?? 1), f.s.nature, null, f.s.mode === 'slash' ? { knock: 2 } : {});
+          if (f.s.mode === 'slash') {
+            const c = e.pos.clone().add(new THREE.Vector3(0, 1 + Math.random(), 0));
+            const dd = new THREE.Vector3(Math.random() - .5, Math.random() - .5, Math.random() - .5).normalize().multiplyScalar(2);
+            const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([c.clone().sub(dd), c.clone().add(dd)]), new THREE.LineBasicMaterial({ color: 0xff3b3b }));
+            scene.add(line); bursts.push({ m: line, t: 0, line: true });
+          }
+        }
+        if (f.s.mode === 'slash') { shake = Math.max(shake, .2); damageBuildings(f.origin, f.radius, 60); }
+      }
     }
     if (f.done) scene.remove(f.m);
   }
@@ -1711,7 +2014,8 @@ function applyStyle(id, announce = true) {
   const st = STYLES[id]; player.style = id;
   for (const sk of st.pool) if (!player.learned.includes(sk)) player.learned.push(sk);
   player.slots = st.slots.slice();
-  player.weapon = id === 'toji' ? (player.weapon && WEAPONS[player.weapon] ? player.weapon : WEAPON_ORDER[0]) : null;
+  const ars = arsenalOf(id);
+  player.weapon = ars ? (ars.items[player.weapon] ? player.weapon : ars.order[0]) : null;
   if (id !== 'gojo' && player.infinity) { player.infinity = false; if (shieldMesh) { scene.remove(shieldMesh); shieldMesh = null; } }
   player.maxSe = st.energy ?? 1000;
   player.se = player.maxSe;
@@ -1745,12 +2049,20 @@ function updateHud() {
   const ult = $('#slots').querySelector('.slot.ult');
   if (ult) {
     const st = player.style ? STYLES[player.style] : null;
-    if (st?.ultimate) { ult.style.opacity = player.se < st.ultimate.cost ? .55 : 1; if (mahoraga) ult.querySelector('.nature').textContent = `Mahoraga · ${Math.ceil(mahoraga.until - now)}s`; }
+    if (st?.ultimate) {
+      const rem = Math.max(0, player.ultCd - now);
+      const cd = ult.querySelector('.cd'); if (cd) cd.style.height = `${st.ultimate.cd ? 100 * rem / st.ultimate.cd : 0}%`;
+      ult.style.opacity = player.se < st.ultimate.cost || rem > 0 ? .55 : 1;
+      if (mahoraga) ult.querySelector('.nature').textContent = `Mahoraga · ${Math.ceil(mahoraga.until - now)}s`;
+    }
     else if (player.transform) { const t = ult.querySelector('#transform-left'); if (t) t.textContent = `${Math.ceil(player.transform.until - now)}s left`; }
   }
   player.slots.forEach((id, i) => {
     const el = $('#slots').children[i]; if (!el || !id) return;
-    el.style.opacity = player.se < SKILLS[id].cost ? .55 : 1;
+    const sk = SKILLS[id];
+    const rem = Math.max(0, (player.cooldowns[id] ?? 0) - now);
+    const cd = el.querySelector('.cd'); if (cd) cd.style.height = `${sk.cd ? 100 * rem / sk.cd : 0}%`;
+    el.style.opacity = player.se < sk.cost || rem > 0 ? .55 : 1;
   });
   for (const f of floats) { const p = project(f.pos); f.el.style.left = p.x + 'px'; f.el.style.top = p.y + 'px'; f.el.style.opacity = Math.max(0, 1 - f.t / 1.1); f.el.hidden = p.z > 1; }
   for (const e of enemies) { if (e.dead) continue; const p = project(e.pos.clone().add(new THREE.Vector3(0, 2.4 * e.t.size, 0))); e.bar.style.left = p.x + 'px'; e.bar.style.top = p.y + 'px'; e.bar.hidden = p.z > 1 || e.pos.distanceTo(player.pos) > 60; e.bar.querySelector('i b').style.width = `${100 * Math.max(0, e.hp) / e.maxHp}%`; }
@@ -1789,6 +2101,11 @@ addEventListener('keydown', (e) => {
   if (/^Digit[1-5]$/.test(e.code) && !e.repeat) activateSlot(Number(e.code[5]) - 1);
   if (e.code === 'KeyG' && !e.repeat) useUltimate();
   if (e.code === 'KeyB' && !e.repeat) startCharge();
+  if (e.code === 'KeyR' && !e.repeat) {
+    const a = arsenalOf(player.style);
+    if (a && a.key === 'r') { const w = cycleWeapon(); renderSlots(); center(w.name.toUpperCase(), 1000); log(`Switched to ${w.name}. ${w.note}`, true); }
+    else log('Nothing to swap on R for this character.');
+  }
 });
 addEventListener('keyup', (e) => { keys.delete(e.code); if (e.code === 'KeyE') releaseSwing(); if (e.code === 'KeyB') releaseCharge(); });
 addEventListener('blur', () => { keys.clear(); releaseCharge(); });
@@ -1844,6 +2161,7 @@ function frame(t) {
   updateCharge(playerDt);
   updateDebris(worldDt);
   updateCollapses(worldDt);
+  updateStreets(worldDt);
   updateEnemies(worldDt);
   updateProjectiles(worldDt);
   updateMahoraga(worldDt);
@@ -1858,11 +2176,11 @@ function frame(t) {
   renderer.render(scene, camera);
 }
 requestAnimationFrame(frame);
-window.__rift = { player, enemies, buildings, debris, damageBuildings, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, startCharge, releaseCharge, hurtPlayer, castSkill, OUTPUT_TIERS, WEAPONS, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
+window.__rift = { player, enemies, buildings, debris, cars, civilians, damageBuildings, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, startCharge, releaseCharge, hurtPlayer, castSkill, OUTPUT_TIERS, ARSENALS, cycleWeapon, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
 
 function start(styleId) {
   $('#start').hidden = true; running = true; lastT = performance.now();
-  applyStyle(styleId, false); renderSlots(); spawnWave();
+  applyStyle(styleId, false); renderSlots(); populateStreets(); spawnWave();
   log(`Move set: ${STYLES[styleId].name}. Press 1-4 to use techniques.`, true);
   log('Spider-Man: "Kid, catch!" You equipped the Web-Shooter. Hold Right Mouse or E and aim high to swing.', true);
   canvas.requestPointerLock?.();
@@ -1877,7 +2195,7 @@ function moveSetCard(id, st) {
     return `<li><i style="background:${hex(NATURE[sk.nature].color)}"></i><span><b>${sk.name}</b> <span style="opacity:.6">${NATURE[sk.nature].label} · ${sk.cost} SE</span><small>${sk.desc}</small></span>${slot >= 0 ? `<span class="slotno">slot ${slot + 1}</span>` : '<span class="pool">pool</span>'}</li>`; }).join('');
   const extra = [];
   extra.push(`<b>Spirit Energy</b> — ${isFinite(st.energy ?? 1000) ? (st.energy ?? 1000) : 'infinite, nothing he does costs him anything'}.`);
-  if (st.ultimate) extra.push(`<b>G · ${st.ultimate.name}</b> — ${st.ultimate.cost} SE, lasts ${st.ultimate.duration}s, no cooldown.`);
+  if (st.ultimate) extra.push(`<b>G · ${st.ultimate.name}</b> — ${st.ultimate.cost} SE, lasts ${st.ultimate.duration}s${id === 'gojo' ? ', no cooldown' : `, ${st.ultimate.cd}s cooldown`}.`);
   for (const p of st.passives ?? []) extra.push(p);
   card.innerHTML = `<div class="ms-head"><div class="ms-portrait" style="background:${hex(t)}${id === 'sukuna' ? ';background-image:repeating-linear-gradient(180deg,transparent 0 9px,#07030a 9px 11px)' : ''}"><i style="background:${hex(h)}"></i><b style="background:${hex(v)}"></b></div><div><div class="display ms-name">${st.name}</div><div class="ms-blurb">${st.blurb}</div></div></div>
     <ul class="ms-tech">${tech}</ul>
@@ -1915,6 +2233,7 @@ $('#retry').onclick = () => {
   enemies.length = 0; wave = 0; player.hp = player.maxHp; player.se = player.maxSe; player.dead = false; player.pos.set(0, 0, 8); player.vel.set(0, 0, 0);
   player.sukunaUsed = false; player.flashRamp = 0; player.transform = null; player.ultCd = 0; player.output = null; player.charging = null; player.freezeUntil = 0; player.shieldReflect = 0; player.infinity = false; history.length = 0; if (chargeAura) { scene.remove(chargeAura); chargeAura = null; } if (avatarMesh) { scene.remove(avatarMesh); avatarMesh = null; }
   for (const d of debris) scene.remove(d.m); debris.length = 0;
+  for (const c of cars) { c.hp = 120; c.dead = false; c.g.rotation.z = 0; c.g.position.y = 0; }
   for (const b of buildings) { b.hp = b.maxHp; b.dead = false; b.collapse = undefined; b.mesh.scale.y = 1; b.mesh.rotation.z = 0; if (b.strip) b.strip.visible = true; reshapeBuilding(b); } $('#charge').hidden = true; $('#freeze').hidden = true; if (mahoraga) { scene.remove(mahoraga.m); mahoraga = null; } setLook(player.style);
   $('#dead').hidden = true; spawnWave(); canvas.requestPointerLock?.();
 };
