@@ -177,11 +177,19 @@ const SKILLS = {
   fuga:            { name: 'Fire Arrow (Fuga)', origin: 'Sukuna', nature: 'fire', cost: 22, cd: 8, type: 'projectile', speed: 44, radius: .9, power: 95, pierce: true, onHit: { burn: 4 }, desc: 'Open. A flame arrow that pierces every enemy in its path.' },
   world_slash:     { name: 'World Cutting Slash', origin: 'Sukuna', nature: 'wind', cost: 32, cd: 14, type: 'beam', range: 60, radius: 4, power: 170, color: 0xff3b3b, desc: 'Space itself is cut. Everything in the line is halved.' },
   malevolent_shrine: { name: 'Domain: Malevolent Shrine', origin: 'Sukuna', nature: 'wind', cost: 40, cd: 30, type: 'domain', mode: 'slash', duration: 6, tick: .35, radius: 30, power: 20, desc: 'No barrier. Everything within 30 m is dismantled, over and over.' },
+
+  // --- Spider-Man: Friendly Neighborhood ---
+  web_shooters:    { name: 'Web-Shooters', origin: 'Spider-Man', nature: 'physical', cost: 5, cd: 1.1, type: 'projectile', speed: 52, radius: .5, power: 14, onHit: { root: 1.2, webbed: 6, defDown: .25 }, desc: 'Thwip. Webs the target: rooted, slowed, and it takes more damage.' },
+  swing_kick:      { name: 'Web Swing Kick', origin: 'Spider-Man', nature: 'physical', cost: 9, cd: 3, type: 'dash', range: 11, power: 55, bonusStatus: 'webbed', bonusMul: 2, onHit: { knock: 22 }, desc: 'Swing in feet-first. Double damage on webbed enemies.' },
+  web_pull:        { name: 'Web-Pull', origin: 'Spider-Man', nature: 'physical', cost: 8, cd: 4, type: 'yank', range: 28, power: 30, desc: 'Yank an enemy to you and stagger it. Also moves boulders, apparently.' },
+  spider_sense_t:  { name: 'Spider-Sense', origin: 'Spider-Man', nature: 'physical', cost: 12, cd: 16, type: 'evade', duration: 4, desc: 'Tingling. For 4 seconds every attack misses you.' },
+  web_trap:        { name: 'Web Trap', origin: 'Spider-Man', nature: 'physical', cost: 16, cd: 9, type: 'trap', range: 9, radius: 7, power: 28, onHit: { root: 2.5, webbed: 8, defDown: .25 }, desc: 'A burst of webbing. Everyone in it is stuck.' },
 };
 const STYLES = {
   gojo:   { name: 'Gojo: Limitless', blurb: 'Six Eyes, Infinity, Hollow Purple. High cost, absurd power.', pool: ['blue', 'red', 'hollow_purple', 'unlimited_void', 'infinity'], slots: ['blue', 'red', 'hollow_purple', 'infinity'] },
   naruto: { name: 'Naruto: Uzumaki', blurb: 'Clones, Rasengan, Sage Mode. Relentless and mobile.', pool: ['rasengan_n', 'multi_clone', 'rasenshuriken', 'sage_mode', 'tailed_beast_bomb'], slots: ['rasengan_n', 'multi_clone', 'rasenshuriken', 'sage_mode'] },
   sukuna: { name: 'Sukuna: King of Curses', blurb: 'Cleave, Dismantle, Fire Arrow. Cuts everything, leaves nothing.', pool: ['dismantle_s', 'cleave', 'fuga', 'world_slash', 'malevolent_shrine'], slots: ['dismantle_s', 'cleave', 'fuga', 'world_slash'] },
+  spiderman: { name: 'Spider-Man: Neighborhood', blurb: 'Webs, kicks, Spider-Sense. Control the fight, then punish.', pool: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'web_trap'], slots: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t'] },
 };
 const ENEMIES = {
   cursed_toad:  { name: 'Cursed Toad', nature: 'water', hp: 130, atk: 14, speed: 4.2, size: 1.1, drops: 'acid_spit', shape: 'blob' },
@@ -291,7 +299,7 @@ const player = {
   learned: ['web_stun', 'fireball'], slots: ['web_stun', 'fireball', null, null], cooldowns: {},
   swinging: false, anchor: new THREE.Vector3(), rope: 0, releaseAt: -10,
   invulnUntil: 0, graceUntil: 0, nextDodge: 0, decoy: false, strikeCd: 0,
-  shield: 0, shieldUntil: 0, buff: null, style: null,
+  shield: 0, shieldUntil: 0, buff: null, style: null, evadeUntil: 0,
   sense: { active: false, until: 0, attacker: null },
   kills: 0, dead: false,
 };
@@ -488,6 +496,7 @@ function enemyTakeHit(e, power, nature, from, onHit = {}) {
   if (from) { const push = e.pos.clone().sub(from).setY(0).normalize().multiplyScalar(onHit.knock ?? 3); e.pos.add(push.multiplyScalar(.15)); }
   if (onHit.root) { e.status.root = onHit.root; log(`${e.t.name} is webbed in place!`); }
   if (onHit.defDown) e.defMul = Math.min(2, e.defMul + onHit.defDown);
+  if (onHit.webbed) { e.status.webbed = onHit.webbed; if (!e.webMesh) { e.webMesh = new THREE.Mesh(new THREE.SphereGeometry(1.25 * e.t.size, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, wireframe: true, transparent: true, opacity: .55 })); e.webMesh.position.y = 1 * e.t.size; e.mesh.add(e.webMesh); } }
   if (onHit.burn) e.status.burn = onHit.burn;
   if (onHit.poison) e.status.poison = onHit.poison;
   if (onHit.paralyze) e.status.paralyze = onHit.paralyze;
@@ -528,6 +537,7 @@ function updateEnemies(dt) {
     if (e.status.stun) { e.mesh.position.x = e.pos.x; e.mesh.rotation.z = Math.sin(now * 40) * .08; }
     e.mesh.userData.ring.material.opacity = 0;
     if (e.status.root) e.mesh.rotation.z = Math.sin(now * 30) * .05; else e.mesh.rotation.z = 0;
+    if (e.webMesh && !e.status.webbed) { e.mesh.remove(e.webMesh); e.webMesh = null; }
     if (e.state === 'idle') {
       if (dist < 34) { e.state = 'chase'; continue; }
       if (e.pos.distanceTo(e.wander) < 1 || Math.random() < dt * .3) e.wander.set(e.pos.x + (Math.random() - .5) * 20, 0, e.pos.z + (Math.random() - .5) * 20);
@@ -559,7 +569,7 @@ function updateEnemies(dt) {
     }
   }
 }
-function moveEnemy(e, dir, speed, dt) { e.pos.addScaledVector(dir, speed * dt); }
+function moveEnemy(e, dir, speed, dt) { e.pos.addScaledVector(dir, speed * (e.status.webbed ? .4 : 1) * dt); }
 
 // ---- Spider-Sense ----
 function warnPlayer(attacker, timeToImpact) {
@@ -571,6 +581,7 @@ function closeSense() { if (!player.sense.active) return; player.sense.active = 
 function hurtPlayer(atk, nature, from) {
   if (player.dead) return;
   if (now < player.invulnUntil || now < player.graceUntil) { floatText(player.pos, 'DODGED', 'heal'); return; }
+  if (now < player.evadeUntil) { floatText(player.pos, 'SPIDER-SENSE', 'heal'); hitStop = Math.max(hitStop, .05); player.vel.add(player.pos.clone().sub(from.pos).setY(0).normalize().multiplyScalar(6)); player.se = Math.min(player.maxSe, player.se + 3); return; }
   if (player.shield > 0 && now < player.shieldUntil) { player.shield--; floatText(player.pos, 'INFINITY', 'heal'); burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), 0xb06cff, 10); if (player.shield === 0) { if (shieldMesh) { scene.remove(shieldMesh); shieldMesh = null; } } return; }
   if (player.decoy) { player.decoy = false; if (cloneMesh) { scene.remove(cloneMesh); cloneMesh = null; } floatText(player.pos, 'CLONE!', 'heal'); log('Your Shadow Clone took the hit and vanished!'); return; }
   const eff = effectiveness(nature, player.nature);
@@ -645,7 +656,7 @@ function activateSlot(i) {
     const pts = []; for (let i = 0; i <= 14; i++) pts.push(start.clone().lerp(end, i / 14).add(new THREE.Vector3((Math.random() - .5) * .6, 1.2 + (Math.random() - .5) * .6, (Math.random() - .5) * .6)));
     const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color: NATURE[s.nature].color })); scene.add(line); bursts.push({ m: line, t: 0, line: true });
     screenFlash(.3); shake = .4;
-    for (const e of enemies) { if (e.dead) continue; const seg = new THREE.Line3(start, end); const cp = new THREE.Vector3(); seg.closestPointToPoint(e.pos, true, cp); if (cp.distanceTo(e.pos) < 2 + e.t.size) enemyTakeHit(e, s.power, s.nature, start, s.onHit); }
+    for (const e of enemies) { if (e.dead) continue; const seg = new THREE.Line3(start, end); const cp = new THREE.Vector3(); seg.closestPointToPoint(e.pos, true, cp); if (cp.distanceTo(e.pos) < 2 + e.t.size) { const mul = s.bonusStatus && e.status[s.bonusStatus] ? s.bonusMul : 1; if (mul > 1) center('WEBBED! x2', 500); enemyTakeHit(e, s.power * mul, s.nature, start, s.onHit); } }
   } else if (s.type === 'self' && s.decoy) {
     player.decoy = true;
     if (cloneMesh) scene.remove(cloneMesh);
@@ -703,6 +714,23 @@ function activateSlot(i) {
       fighterClones.push({ m, until: now + s.duration, next: now + .4 + i * .25, power: s.power });
     }
     burst(origin, 0xffffff, 16); log('Multi Shadow Clone Jutsu!', true); center('SHADOW CLONES', 700);
+  } else if (s.type === 'yank') {
+    let target = null, best = s.range;
+    for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos); const d = to.length(); if (d < best && to.normalize().dot(dir) > .35) { best = d; target = e; } }
+    if (!target) { log('Web-Pull: nothing in reach.'); player.se += s.cost; player.cooldowns[id] = 0; return; }
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([origin, target.pos.clone().add(new THREE.Vector3(0, 1, 0))]), new THREE.LineBasicMaterial({ color: 0xffffff })); scene.add(line);
+    effects.push({ kind: 'yank', e: target, line, t: 0, s });
+    target.status.root = Math.max(target.status.root ?? 0, .9);
+    center('WEB-PULL', 500);
+  } else if (s.type === 'evade') {
+    player.evadeUntil = now + s.duration; $('#sense').classList.add('on'); setTimeout(() => { if (!player.sense.active) $('#sense').classList.remove('on'); }, s.duration * 1000);
+    center('SPIDER-SENSE', 800); log('Spider-Sense: every attack misses you for 4 seconds.', true);
+  } else if (s.type === 'trap') {
+    const centerP = origin.clone().addScaledVector(dir.clone().setY(0).normalize(), s.range).setY(.1);
+    const web = new THREE.Mesh(new THREE.RingGeometry(.5, s.radius, 24, 3), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: .6, wireframe: true }));
+    web.rotation.x = -Math.PI / 2; web.position.copy(centerP); scene.add(web); effects.push({ kind: 'beam', m: web, t: 0, life: 2.5 });
+    for (const e of enemies) { if (e.dead) continue; if (e.pos.distanceTo(centerP) < s.radius + e.t.size) enemyTakeHit(e, s.power, s.nature, centerP, { ...s.onHit, knock: 0 }); }
+    burst(centerP.clone().add(new THREE.Vector3(0, 1, 0)), 0xffffff, 16); center('WEB TRAP', 500);
   } else if (s.type === 'buff') {
     player.buff = { until: now + s.duration, dmgMul: s.dmgMul, speedMul: s.speedMul };
     torso.material.color.set(0xffa028); head.material.color.set(0xffe45c);
@@ -766,6 +794,13 @@ function updateProjectiles(dt) {
       if (f.t >= f.s.duration) {
         f.done = true; burst(f.p, f.s.color, 22); shake = .6; hitStop = .08;
         for (const e of enemies) { if (e.dead) continue; if (e.pos.distanceTo(f.p) < f.s.radius * .6 + e.t.size) enemyTakeHit(e, f.s.power, f.s.nature, f.p, { knock: 6 }); }
+      }
+    } else if (f.kind === 'yank') {
+      f.t += 0; const e = f.e; const dest = player.pos.clone().add(new THREE.Vector3(Math.sin(player.yaw), 0, Math.cos(player.yaw)).multiplyScalar(2.2));
+      if (e.dead) { f.done = true; scene.remove(f.line); }
+      else {
+        e.pos.lerp(dest, Math.min(1, dt * 9)); f.line.geometry.setFromPoints([player.pos.clone().add(new THREE.Vector3(0, 1.4, 0)), e.pos.clone().add(new THREE.Vector3(0, 1, 0))]);
+        if (e.pos.distanceTo(dest) < 1.2 || f.t > .8) { f.done = true; scene.remove(f.line); enemyTakeHit(e, f.s.power, f.s.nature, player.pos, { root: .8, knock: 0 }); shake = .3; }
       }
     } else if (f.kind === 'beam') {
       f.m.material.opacity = Math.max(0, .85 * (1 - f.t / f.life)); f.m.material.transparent = true; if (f.t >= f.life) f.done = true;
