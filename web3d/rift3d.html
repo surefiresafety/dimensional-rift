@@ -283,13 +283,13 @@
       <p class="touch-only" style="font-size:13px"><b>On a phone:</b> left thumb is the stick, drag anywhere on the right to look. HIT, JUMP, DODGE and WEB sit under your right thumb; the ability cards along the top are buttons — tap them. G is the ultimate, B charges output, and the gate button appears when you stand in a ring.</p>
       <table class="kbd-only">
         <tr><td>Move / Look</td><td>WASD · mouse (click to capture, or drag)</td></tr>
-        <tr><td>Web-Swing</td><td>Hold Right Mouse or E, release to let go. Aim high at a building.</td></tr>
+        <tr><td>Web-Swing</td><td>Hold Right Mouse or E, release to let go. Aim high at a building. Spider-Man, Venom, Carnage and Anti-Venom each swing on their own line.</td></tr>
         <tr><td>Strike</td><td>Left Mouse</td></tr>
         <tr><td>Techniques</td><td>1 2 3 4 5. Everyone waits on cooldowns except Gojo, who never does.</td></tr>
         <tr><td>Dodge</td><td>C. When the screen goes purple, Spider-Sense is open: dodge for a Perfect Dodge.</td></tr>
         <tr><td>Loadout</td><td>Tab</td></tr>
         <tr><td>Ultimate</td><td>G (Yuji: Sukuna for a minute · Megumi: summon Mahoraga)</td></tr>
-        <tr><td>Signature (E)</td><td>Spider-Man swings · Gojo, Iron Man, Jean and Eleven fly · Naruto charges a Rasengan · Sasuke charges Chidori · Megumi opens his domain · Yuji cuts with Dismantle</td></tr>
+        <tr><td>Signature (E)</td><td>Spider-Man and the three symbiotes swing · Gojo, Iron Man, Jean and Eleven fly · Naruto charges a Rasengan · Sasuke charges Chidori · Megumi opens his domain · Yuji cuts with Dismantle</td></tr>
         <tr><td>Select character</td><td>M</td></tr>
         <tr><td>Shift lock</td><td>Shift. The camera locks over your shoulder and you always face where you look.</td></tr>
         <tr><td>Gates</td><td>Q at a glowing ring. Every world has a ring of them, one per destination.</td></tr>
@@ -310,7 +310,7 @@
       <div class="setup-row quality-row"></div>
       <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
         <button id="open-movesets">Select your character</button>
-        <span style="opacity:.7;font-size:12px">Twenty-six characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
+        <span style="opacity:.7;font-size:12px">Twenty-eight characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
       </div>
     </div>
   </div>
@@ -653,6 +653,23 @@ const SKILLS = {
   symbiote_feed:   { name: 'Feed', origin: 'Venom', nature: 'physical', cost: 16, cd: 9, type: 'heal', percent: .3, desc: 'The symbiote takes what it needs from whatever is nearby and gives it back to him.' },
   we_are_venom:    { name: 'WE ARE VENOM', origin: 'Venom', nature: 'physical', cost: 34, cd: 24, type: 'trap', range: 0, radius: 20, power: 300, color: 0xf0f0f0, onHit: { knock: 40, root: 2.5 }, desc: 'The suit comes off him in every direction at once.' },
 
+  // --- Carnage: the symbiote with nothing holding it back -------------------
+  carnage_blades:  { name: 'Carnage Blades', origin: 'Carnage', nature: 'physical', cost: 7, cd: .8, type: 'melee', range: 6.5, arc: .5, power: 104, knock: 18, color: 0xd4142a, onHit: { leech: .3, defDown: .25 }, desc: 'Both arms come to a point and he takes everything in front of him. Feeds him back a third of it.' },
+  tendril_spear:   { name: 'Tendril Spear', origin: 'Carnage', nature: 'physical', cost: 10, cd: 2, type: 'projectile', speed: 62, radius: .7, power: 96, pierce: true, color: 0xd4142a, onHit: { leech: .25 }, desc: 'One tendril hardened into a spike, fired straight through a line of them.' },
+  red_web:         { name: 'Red Webbing', origin: 'Carnage', nature: 'physical', cost: 8, cd: 2, type: 'projectile', speed: 52, radius: 1.1, power: 60, aoe: 4, color: 0xd4142a, onHit: { root: 3, defDown: .35, leech: .2 }, desc: 'Webbing out of the same stuff he is made of. It sticks, it holds, and it keeps taking.' },
+  carnage_swarm:   { name: 'Spawn', origin: 'Carnage', nature: 'physical', cost: 22, cd: 16, type: 'clones', count: 3, duration: 16, power: 40, speed: 12, desc: 'He tears three pieces off himself and they go hunting on their own.' },
+  impale:          { name: 'Impale', origin: 'Carnage', nature: 'physical', cost: 12, cd: 3.4, type: 'dash', range: 22, power: 138, onHit: { knock: 24, leech: .3, defDown: .3 }, desc: 'He crosses the gap on a spike and comes out the other side.' },
+  blood_frenzy:    { name: 'Frenzy', origin: 'Carnage', nature: 'physical', cost: 18, cd: 18, type: 'buff', duration: 14, dmgMul: 1.85, speedMul: 1.4, costMul: .6, color: 0xd4142a, desc: 'The more it goes the less it stops. Everything hits harder and costs less.' },
+  maximum_carnage: { name: 'MAXIMUM CARNAGE', origin: 'Carnage', nature: 'physical', cost: 38, cd: 28, type: 'trap', range: 0, radius: 22, power: 330, color: 0xd4142a, onHit: { knock: 44, leech: .2, defDown: .4 }, desc: 'Every blade, every tendril, every direction, all at once.' },
+
+  // --- Anti-Venom: the cure, and it burns going in --------------------------
+  cleansing_touch: { name: 'Cleansing Touch', origin: 'Anti-Venom', nature: 'physical', cost: 7, cd: 1, type: 'melee', range: 6, arc: .4, power: 88, knock: 16, color: 0xeef2f6, onHit: { leech: .45 }, desc: 'It burns whatever it touches and gives him back nearly half of it.' },
+  white_lash:      { name: 'White Lash', origin: 'Anti-Venom', nature: 'physical', cost: 9, cd: 2.2, type: 'projectile', speed: 48, radius: 1.2, power: 82, aoe: 5, color: 0xeef2f6, onHit: { leech: .3, root: 2 }, desc: 'A cord of antibodies that sticks, holds and keeps burning.' },
+  antibody_burst:  { name: 'Antibody Burst', origin: 'Anti-Venom', nature: 'physical', cost: 16, cd: 5, type: 'trap', range: 0, radius: 12, power: 118, color: 0xeef2f6, onHit: { knock: 22, leech: .35 }, desc: 'A white wave off him in every direction. Everything it washes over comes back to him as health.' },
+  purify:          { name: 'Purify', origin: 'Anti-Venom', nature: 'physical', cost: 14, cd: 8, type: 'heal', percent: .38, desc: 'It rebuilds him from the inside. There is not much it cannot fix.' },
+  antibody_shell:  { name: 'Antibody Shell', origin: 'Anti-Venom', nature: 'physical', cost: 14, cd: 12, type: 'shield', charges: 4, duration: 14, reflect: 70, color: 0xeef2f6, desc: 'A white shell around him. It eats the next four hits and burns whoever threw them.' },
+  total_cure:      { name: 'TOTAL CURE', origin: 'Anti-Venom', nature: 'physical', cost: 38, cd: 26, type: 'trap', range: 0, radius: 24, power: 290, color: 0xffffff, onHit: { knock: 34, leech: .5, root: 2 }, desc: 'He empties the whole suit outward. Everything caught in it burns, and half of that comes straight back to him.' },
+
   spider_verse:    { name: 'Spider-Verse Assist', origin: 'Spider-Man', nature: 'physical', cost: 32, cd: 30, type: 'clones', mesh: 'spider', count: 3, duration: 20, power: 30, speed: 12, desc: 'Three spiders from other dimensions drop in and fight beside you.' },
 
   // --- Megumi Fushiguro: Ten Shadows ---
@@ -681,8 +698,18 @@ const STYLES = {
     ultimate: { kind: 'transform', into: 'venom', name: 'Symbiote: Venom', cost: 34, cd: 44, duration: 40,
       title: 'WE ARE VENOM', color: 0xf0f0f0,
       log: 'The suit crawls up over him and takes the mouth off the mask. Forty seconds as Venom, then Peter gets the body back.' } },
+  carnage: { name: 'Carnage', blurb: 'Cletus Kasady wearing the red one. Venom has a code it mostly keeps. This has none.',
+    passives: ['Blades, webbing and Impale all feed him: a fifth to a third of the damage comes back as health.', 'Bare hands hit for 30 with blades on the ends of them.', 'He spins his own webbing: hold E to swing on a red line. Tendril Spear is in his pool.'],
+    m1: 30, m1Range: 1.2,
+    pool: ['carnage_blades', 'impale', 'red_web', 'carnage_swarm', 'blood_frenzy', 'tendril_spear'], slots: ['carnage_blades', 'impale', 'red_web', 'carnage_swarm', 'blood_frenzy'],
+    ultimate: { skill: 'maximum_carnage', name: 'MAXIMUM CARNAGE', cost: 38, cd: 28, duration: 1 } },
+  antivenom: { name: 'Anti-Venom', blurb: 'The white one. It cures what it touches, and being cured by it is not pleasant.',
+    passives: ['Almost everything he does heals him: Cleansing Touch alone gives back 45% of its damage.', 'Antibody Shell eats four hits and burns whoever threw them.', 'White Lash is his webbing, and he swings on a white line with E.'],
+    m1: 28, m1Range: 1.1,
+    pool: ['cleansing_touch', 'white_lash', 'antibody_burst', 'antibody_shell', 'purify'], slots: ['cleansing_touch', 'white_lash', 'antibody_burst', 'antibody_shell', 'purify'],
+    ultimate: { skill: 'total_cure', name: 'TOTAL CURE', cost: 38, cd: 26, duration: 1 } },
   venom: { name: 'Venom: The Symbiote', blurb: 'The black suit, and it is not a costume. Everything Peter does, it does harder and enjoys more.',
-    passives: ['Nothing here is Spider-Man\'s: no webs, no Spider-Sense, no swinging. Tendrils instead.', 'Bare hands hit for 34 with the reach of the tendrils behind them.', 'Spider-Man turns into this with G, and turns back when it runs out.'],
+    passives: ['No Spider-Sense and none of Peter\'s techniques, but the symbiote spins its own webbing: hold E to swing on a black line.', 'Bare hands hit for 34 with the reach of the tendrils behind them.', 'Spider-Man turns into this with G, and turns back when it runs out.'],
     m1: 34, m1Range: 1.4,
     pool: ['symbiote_lash', 'venom_pounce', 'black_web', 'tendril_slam', 'symbiote_feed'], slots: ['symbiote_lash', 'venom_pounce', 'black_web', 'tendril_slam', 'symbiote_feed'],
     ultimate: { skill: 'we_are_venom', name: 'WE ARE VENOM', cost: 34, cd: 24, duration: 1 } },
@@ -2029,6 +2056,14 @@ const CHARACTERS = {
   venom:     { height: 1.18, sig: 0xf0f0f0, skin: 0x0a0a10, hair: 0x0a0a10, hairStyle: 'none', top: 0x0a0a10, bottom: 0x0a0a10,
                sleeves: 0x0a0a10, eye: 0xf4f4f8, mask: true, venomEyes: true, fangs: true, spider: 0xeceff4,
                shoulders: 0x121218, sandals: 0x0a0a10 },
+  // Carnage: red through and through, black veining, blades for hands.
+  carnage:   { height: 1.14, sig: 0xd4142a, skin: 0x8e0d1c, hair: 0x8e0d1c, hairStyle: 'none', top: 0x8e0d1c, bottom: 0x7a0a17,
+               sleeves: 0x8e0d1c, eye: 0xf4f4f8, mask: true, venomEyes: true, fangs: true, streaks: 0x14060a,
+               tendrils: 0xb01024, claws: 0xe8e0e2, sandals: 0x7a0a17 },
+  // Anti-Venom: the same shape bleached white, with a dark spider and grey veins.
+  antivenom: { height: 1.16, sig: 0xeef2f6, skin: 0xe8eef4, hair: 0xe8eef4, hairStyle: 'none', top: 0xe8eef4, bottom: 0xdae2ea,
+               sleeves: 0xe8eef4, eye: 0xdfe8f4, mask: true, venomEyes: true, fangs: true, streaks: 0x8fa0b0,
+               spider: 0x2a3038, shoulders: 0xdae2ea, sandals: 0xdae2ea },
   tophat:    { buckle: 0xf0f0f0, brow: 0x101010, sig: 0xf0f0f0, skin: 0xf0f0f0, hair: 0x101010, hairStyle: 'none',   top: 0x181818, bottom: 0x101010, sleeves: 0xf0f0f0, eye: 0x101010, tophat: true, collar: 0xf0f0f0 },
 };
 CHARACTERS.jogo = CHARACTERS.jogoC; CHARACTERS.hanami = CHARACTERS.hanamiC; CHARACTERS.dagon = CHARACTERS.dagonC;
@@ -2130,6 +2165,21 @@ function buildCharacter(L) {
     }
   }
   if (L.markings) for (const y of [.5, .3, .12]) { const b = new THREE.Mesh(new THREE.TorusGeometry(.28, .022, 6, 20), ink); b.rotation.x = Math.PI / 2; b.position.y = y; chest.add(b); }
+  if (L.streaks) {                   // symbiote veining, crawling over the torso
+    const sm = new THREE.MeshBasicMaterial({ color: L.streaks });
+    for (let i = 0; i < 9; i++) {
+      const a = (i / 9) * Math.PI * 2 + .4, h = .12 + (i % 4) * .13;
+      const v = new THREE.Mesh(new THREE.BoxGeometry(.03, .18 + (i % 3) * .1, .03), sm);
+      v.position.set(Math.sin(a) * .25, h + .1, Math.cos(a) * .21);
+      v.rotation.set(0, -a, (i % 2 ? 1 : -1) * (.4 + (i % 3) * .25)); chest.add(v);
+    }
+  }
+  if (L.tendrils) for (let i = 0; i < 6; i++) {   // live tendrils off the back
+    const t3 = outlined(new THREE.Mesh(new THREE.ConeGeometry(.045, .5 + (i % 3) * .22, 5), toon(L.tendrils)), .06);
+    const sx = i < 3 ? -1 : 1, k = i % 3;
+    t3.position.set(sx * (.14 + k * .07), .42 + k * .1, -.26);
+    t3.rotation.set(-.9 - k * .25, 0, sx * (.5 + k * .3)); chest.add(t3);
+  }
 
   const neck = new THREE.Group(); neck.position.y = .58; chest.add(neck);
   const head = outlined(new THREE.Mesh(new THREE.SphereGeometry(.235, 22, 16), toon(L.skin)), .11);
@@ -2386,6 +2436,14 @@ function buildCharacter(L) {
       fing.position.set((f - 1) * .038, -.49, 0); elbow.add(fing);
     }
     if (L.markings) { const band = new THREE.Mesh(new THREE.TorusGeometry(.1, .018, 5, 14), ink); band.rotation.x = Math.PI / 2; band.position.y = -.2; upper.add(band); }
+    if (L.streaks) for (let i = 0; i < 2; i++) {
+      const v = new THREE.Mesh(new THREE.BoxGeometry(.024, .22, .024), new THREE.MeshBasicMaterial({ color: L.streaks }));
+      v.position.set(side * .07, -.16 - i * .2, .05); v.rotation.z = side * (.35 + i * .3); upper.add(v);
+    }
+    if (L.claws) for (let f = 0; f < 3; f++) {   // blades where the fingers were
+      const cl = outlined(new THREE.Mesh(new THREE.ConeGeometry(.028, .2, 4), toon(L.claws)), .07);
+      cl.position.set((f - 1) * .042, -.58, .01); cl.rotation.x = Math.PI; elbow.add(cl);
+    }
     arms[(side < 0 ? 'l' : 'r') + row.key] = { shoulder: sh, elbow, hand };
   }
   const legs = {};
@@ -2487,6 +2545,9 @@ const body = new THREE.Group();
 let playerRig = null, animState = null, animPhase = 0;
 function playAnim(kind, dur = .38) { animState = { kind, t: 0, dur, k: 0 }; }
 scene.add(body);
+// Who can swing, and what colour their line comes out. The symbiotes make their
+// own webbing rather than carrying Peter's shooters, so each has its own.
+const WEB_SLINGERS = { spiderman: 0xffffff, venom: 0x2a2a34, carnage: 0xd4142a, antivenom: 0xeef2f6 };
 const webLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0xffffff }));
 webLine.visible = false; webLine.frustumCulled = false; scene.add(webLine);
 let cloneMesh = null, shieldMesh = null, auraMesh = null;
@@ -2560,7 +2621,7 @@ function findAnchor() {
 // E is a signature action, not a universal one. Only Spider-Man carries
 // web-shooters; the fliers take off; Naruto winds up a Rasengan; Sukuna's
 // technique leaks out of Yuji.
-const E_ACTION = { spiderman: 'swing', ironman: 'fly', jean: 'fly', eleven: 'fly', gojo: 'fly', naruto: 'rasengan', sasuke: 'chidori', yuji: 'dismantle', megumi: 'garden' };
+const E_ACTION = { spiderman: 'swing', venom: 'swing', carnage: 'swing', antivenom: 'swing', ironman: 'fly', jean: 'fly', eleven: 'fly', gojo: 'fly', naruto: 'rasengan', sasuke: 'chidori', yuji: 'dismantle', megumi: 'garden' };
 const eActionOf = () => E_ACTION[player.style] ?? null;
 function startEAction() {
   const a = eActionOf();
@@ -2570,7 +2631,6 @@ function startEAction() {
   else if (a === 'chidori') startChidori();
   else if (a === 'dismantle') castSkill('dismantle_s', {});
   else if (a === 'garden') castSkill('chimera_garden', {});
-  else if (player.style === 'venom') log('The symbiote does not do web-lines. Pounce instead.');
   else log('No web-shooters. Only Spider-Man swings.');
 }
 function endEAction() {
@@ -3019,7 +3079,8 @@ function releaseRasengan() {
 
 function startSwing() {
   if (player.swinging || player.dead) return false;
-  if (player.style && player.style !== 'spiderman') return false;   // web-shooters are his alone
+  if (player.style && !WEB_SLINGERS[player.style]) return false;   // not everyone has shooters
+  webLine.material.color.setHex(WEB_SLINGERS[player.style ?? 'spiderman'] ?? 0xffffff);
   if (now - player.releaseAt < .15) return false;
   const a = findAnchor(); if (!a) return false;
   player.anchor.copy(a);
@@ -3419,6 +3480,12 @@ function enemyTakeHit(e, power, nature, from, onHit = {}) {
   if (e.pvp) mine = false;
   if (mine) e.hp -= dmg;
   e.hitFlash = .12;
+  // A symbiote that feeds: a slice of whatever it deals comes back.
+  if (mine && onHit.leech && !player.dead && player.hp < player.maxHp) {
+    const back = Math.max(1, Math.round(dmg * onHit.leech));
+    player.hp = Math.min(player.maxHp, player.hp + back);
+    floatText(player.pos, '+' + back, 'heal');
+  }
   // Some of them get worse when they are losing.
   if (e.t.enrage && !e.enraged && e.hp > 0 && e.hp < e.maxHp * (e.t.enrage.at ?? .35)) {
     e.enraged = true;
@@ -5392,7 +5459,7 @@ function useGate(to) {
 }
 buildMap('times_square');
 requestAnimationFrame(frame);
-window.__rift = { army, camera, scene, buildCharacter, CHARACTERS, GRADES, enemyTakeHit, strike, get rasengan() { return rasengan; }, get chidori() { return chidori; }, spawnArmy, damageArmy, arcBolt, slashArc,
+window.__rift = { army, camera, scene, buildCharacter, CHARACTERS, GRADES, enemyTakeHit, strike, startEAction, endEAction, webLine, WEB_SLINGERS, get rasengan() { return rasengan; }, get chidori() { return chidori; }, spawnArmy, damageArmy, arcBolt, slashArc,
   SKILLS, STYLES, ENEMIES, MAPS, MAP_IDS, NATURE, travelTo, buildMap, portals,
   net, setMode, useGate, setSolo, setTier, TIERS, get tier() { return tierName; },
   get currentMap() { return currentMap; }, get nearPortal() { return nearPortal; }, eprojectiles, spawnEnemy, player, enemies, buildings, debris, cars, civilians, damageBuildings, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, startCharge, releaseCharge, hurtPlayer, castSkill, OUTPUT_TIERS, ARSENALS, cycleWeapon, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
