@@ -310,7 +310,7 @@
       <div class="setup-row quality-row"></div>
       <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
         <button id="open-movesets">Select your character</button>
-        <span style="opacity:.7;font-size:12px">Thirty characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
+        <span style="opacity:.7;font-size:12px">Thirty-one characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
       </div>
     </div>
   </div>
@@ -414,6 +414,12 @@ const ARSENALS = {
     split_soul: { name: 'Split Soul Katana', sub: 'cuts the soul behind the body', color: 0xff6b6b, m1: 30, mul: 1.15, range: 1, ignoreDef: true, soul: { mul: .55, delay: .4 }, knock: 6, note: 'Every hit lands twice: the body, then the soul.' },
     playful_cloud: { name: 'Playful Cloud', sub: 'sharpened three-section staff', color: 0xffd54a, m1: 38, mul: 1.35, range: 1.35, knock: 30, note: 'The heaviest swings he has, with reach and enormous knockback.' },
     slaughter_demon: { name: 'Slaughter Demon', sub: 'fast and low', color: 0xe8eaf2, m1: 22, mul: .78, range: .95, cdMul: .5, costMul: .55, knock: 3, note: 'Lighter hits, half the cooldowns and cost.' },
+  } },
+  maki: { key: '5', order: ['naginata', 'playful_cloud_m', 'split_soul_m', 'kusarigama'], items: {
+    naginata:        { name: 'Cursed Tool: Naginata', sub: 'school issue, and enough', color: 0xdfe8f4, m1: 30, mul: 1, range: 1.3, knock: 10, note: 'Long, balanced, nothing it does badly.' },
+    playful_cloud_m: { name: 'Playful Cloud', sub: 'sharpened three-section staff', color: 0xffd54a, m1: 40, mul: 1.4, range: 1.4, knock: 34, note: 'The heaviest thing on the rack. Reach and enormous knockback.' },
+    split_soul_m:    { name: 'Split Soul Katana', sub: 'cuts the soul behind the body', color: 0xff6b6b, m1: 32, mul: 1.2, range: 1, ignoreDef: true, soul: { mul: .6, delay: .4 }, knock: 6, note: 'Every hit lands twice: the body, then the soul.' },
+    kusarigama:      { name: 'Kusarigama', sub: 'sickle on a chain', color: 0xa8b2be, m1: 24, mul: .85, range: 1.6, cdMul: .5, costMul: .5, knock: 8, note: 'Longest reach on the rack, half the cooldowns and half the cost.' },
   } },
   yuji: { key: 'r', order: ['fists', 'knife', 'slaughter'], items: {
     fists: { name: 'Fists', sub: 'nothing but him', color: 0xff8a8a, m1: 16, mul: 1, range: 1, knock: 5, note: 'Bare hands, and 70% of them come out as Black Flash.' },
@@ -686,6 +692,15 @@ const SKILLS = {
   speech_sleep:    { name: 'Sleep', origin: 'Toge', nature: 'cursed', cost: 12, cd: 9, type: 'trap', range: 6, radius: 12, power: 30, color: 0x9aa8d8, onHit: { paralyze: 5.5, defDown: .4 }, desc: 'Everything nearby goes down where it stands and takes more when it wakes.' },
   speech_die:      { name: 'DIE', origin: 'Toge', nature: 'cursed', cost: 44, cd: 30, type: 'trap', range: 0, radius: 26, power: 520, color: 0xff2d55, onHit: { knock: 40 }, recoil: 90, desc: 'The word he is not supposed to use. It works, and it tears his throat open on the way out.' },
 
+  // --- Maki Zen'in: no cursed energy, and it never slowed her down ---------
+  maki_sweep:      { name: 'Sweep', origin: 'Maki', nature: 'physical', cost: 4, cd: 1.2, type: 'melee', range: 6, arc: -.4, power: 74, knock: 20, weaponScaled: true, desc: 'A full circle with whatever she is holding. Everything standing around her goes down.' },
+  maki_rush:       { name: 'Closing Step', origin: 'Maki', nature: 'physical', cost: 5, cd: 2.4, type: 'dash', range: 18, power: 108, weaponScaled: true, onHit: { knock: 16 }, desc: 'She is across the gap before you have finished deciding to move.' },
+  pole_thrust:     { name: 'Thrust', origin: 'Maki', nature: 'physical', cost: 5, cd: 2, type: 'melee', range: 8, arc: .55, power: 116, knock: 12, weaponScaled: true, finisher: .5, desc: 'Straight down the line at full extension, and heavier the worse off they already are.' },
+  tool_throw:      { name: 'Thrown Tool', origin: 'Maki', nature: 'physical', cost: 6, cd: 2.6, type: 'projectile', speed: 64, radius: .6, power: 88, pierce: true, weaponScaled: true, color: 0xdfe8f4, desc: 'She lets the weapon go through a whole line of them and picks up the next one.' },
+  heavenly_awake:  { name: 'Heavenly Restriction', origin: 'Maki', nature: 'physical', cost: 10, cd: 20, type: 'buff', duration: 20, dmgMul: 1.95, speedMul: 1.55, costMul: 0, color: 0x9fe870, desc: 'Not a drop of cursed energy left in her, and a body that no longer needs any. Everything is free.' },
+  maki_switch:     { name: 'Switch Tool', origin: 'Maki', nature: 'physical', cost: 0, cd: 0, type: 'switch', desc: 'Take the next one off the rack: naginata, Playful Cloud, Split Soul Katana, kusarigama. It changes your basic attack and every move.' },
+  zenin_reckoning: { name: "Zen'in Reckoning", origin: 'Maki', nature: 'physical', cost: 20, cd: 24, type: 'trap', range: 4, radius: 18, power: 380, color: 0x9fe870, onHit: { knock: 40, defDown: .4 }, weaponScaled: true, desc: 'Everything the family owed her, paid out in one pass through the room.' },
+
   spider_verse:    { name: 'Spider-Verse Assist', origin: 'Spider-Man', nature: 'physical', cost: 32, cd: 30, type: 'clones', mesh: 'spider', count: 3, duration: 20, power: 30, speed: 12, desc: 'Three spiders from other dimensions drop in and fight beside you.' },
 
   // --- Megumi Fushiguro: Ten Shadows ---
@@ -719,6 +734,10 @@ const STYLES = {
     m1: 26, m1Range: 2,
     pool: ['actuator_sweep', 'tentacle_grab', 'debris_hurl', 'pin_down', 'actuator_guard'], slots: ['actuator_sweep', 'tentacle_grab', 'debris_hurl', 'pin_down', 'actuator_guard'],
     ultimate: { skill: 'fusion_flare', name: 'Fusion Flare', cost: 38, cd: 27, duration: 1 } },
+  maki: { name: "Maki Zen'in", blurb: 'Born with no cursed energy into a family that only valued it. She took the weapons instead and became the thing they were afraid of.', energy: 300,
+    passives: ['No cursed energy, so nothing she does costs much: every technique is 4-10 SE out of a 300 pool.', 'Key 5 takes the next tool off the rack, and the tool rewrites her basic attack and all five moves.', 'Heavenly Restriction makes everything free for twenty seconds.'],
+    pool: ['maki_sweep', 'maki_rush', 'pole_thrust', 'tool_throw', 'heavenly_awake', 'maki_switch'], slots: ['maki_sweep', 'maki_rush', 'pole_thrust', 'heavenly_awake', 'maki_switch'],
+    ultimate: { skill: 'zenin_reckoning', name: "Zen'in Reckoning", cost: 20, cd: 24, duration: 1 } },
   toge: { name: 'Toge Inumaki: Cursed Speech', blurb: 'He talks in rice-ball fillings so he does not kill anyone by accident. When he means it, one word is enough.',
     passives: ['Every technique is one word, and none of them can miss — they land on everything in range.', 'Don\'t Move roots for five seconds; Sleep paralyses for five and a half and softens them by 40%.', 'DIE does 520 across twenty-six metres and takes 90 of his own health with it.'],
     pool: ['speech_stop', 'speech_blast', 'speech_crush', 'speech_explode', 'speech_sleep'], slots: ['speech_stop', 'speech_blast', 'speech_crush', 'speech_explode', 'speech_sleep'],
@@ -2097,6 +2116,10 @@ const CHARACTERS = {
   toge:      { sig: 0xdfe8f4, skin: 0xf3d6b8, hair: 0xe8e8ee, hairStyle: 'crop', top: 0x1b1f2e, bottom: 0x161a26,
                sleeves: 0x1b1f2e, eye: 0x8fa0b4, maskLower: 0x1b1f2e, uniform: 0x252c40, cuff: 0x252c40,
                buckle: 0xc8a44a, brow: 0xe8e8ee, hairLen: 1.05 },
+  // Maki: dark green hair tied low, plain rectangular frames, school uniform.
+  maki:      { height: 1.05, sig: 0x3f6a4a, skin: 0xf0d2b0, hair: 0x2b4a36, hairStyle: 'ponytail', top: 0x1b1f2e, bottom: 0x161a26,
+               sleeves: 0x1b1f2e, eye: 0x4a7a58, uniform: 0x252c40, cuff: 0x252c40, buckle: 0xc8a44a,
+               specs: 0x2a2f3a, brow: 0x2b4a36, browAngle: .3, hairLen: 1.15 },
   tophat:    { buckle: 0xf0f0f0, brow: 0x101010, sig: 0xf0f0f0, skin: 0xf0f0f0, hair: 0x101010, hairStyle: 'none',   top: 0x181818, bottom: 0x101010, sleeves: 0xf0f0f0, eye: 0x101010, tophat: true, collar: 0xf0f0f0 },
 };
 CHARACTERS.jogo = CHARACTERS.jogoC; CHARACTERS.hanami = CHARACTERS.hanamiC; CHARACTERS.dagon = CHARACTERS.dagonC;
@@ -2481,6 +2504,22 @@ function buildCharacter(L) {
     for (let i = 0; i < 5; i++) spike((i - 2) * .085, .16, .18, .18, .05, 2.6, (i - 2) * .12);
   }
 
+  if (L.specs) {
+    // Plain rectangular frames, the kind you fight in because you have to.
+    const fr = toon(L.specs);
+    for (const sx of [-1, 1]) {
+      const lens = new THREE.Mesh(new THREE.BoxGeometry(.145, .085, .012), new THREE.MeshBasicMaterial({ color: L.lens ?? 0xcfe4f0, transparent: true, opacity: .35 }));
+      lens.position.set(sx * .105, .035, .222); neck.add(lens);
+      for (const [dx, dy, w, h] of [[0, .048, .155, .016], [0, -.048, .155, .016], [sx * .076, 0, .016, .1], [-sx * .076, 0, .016, .1]]) {
+        const bar = new THREE.Mesh(new THREE.BoxGeometry(w, h, .018), fr);
+        bar.position.set(sx * .105 + dx, .035 + dy, .224); neck.add(bar);
+      }
+      const temple = new THREE.Mesh(new THREE.BoxGeometry(.1, .014, .014), fr);
+      temple.position.set(sx * .195, .045, .175); temple.rotation.y = sx * .75; neck.add(temple);
+    }
+    const bridge2 = new THREE.Mesh(new THREE.BoxGeometry(.055, .014, .014), fr);
+    bridge2.position.set(0, .035, .226); neck.add(bridge2);
+  }
   if (L.goggles) {
     // Round tinted lenses on a bar across the bridge of the nose.
     const rimM = toon(L.goggles), lens = new THREE.MeshBasicMaterial({ color: L.lens ?? 0x1a2a1e });
