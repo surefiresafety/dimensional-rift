@@ -310,7 +310,7 @@
       <div class="setup-row quality-row"></div>
       <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
         <button id="open-movesets">Select your character</button>
-        <span style="opacity:.7;font-size:12px">Thirty-one characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
+        <span style="opacity:.7;font-size:12px">Thirty-three characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
       </div>
     </div>
   </div>
@@ -701,6 +701,22 @@ const SKILLS = {
   maki_switch:     { name: 'Switch Tool', origin: 'Maki', nature: 'physical', cost: 0, cd: 0, type: 'switch', desc: 'Take the next one off the rack: naginata, Playful Cloud, Split Soul Katana, kusarigama. It changes your basic attack and every move.' },
   zenin_reckoning: { name: "Zen'in Reckoning", origin: 'Maki', nature: 'physical', cost: 20, cd: 24, type: 'trap', range: 4, radius: 18, power: 380, color: 0x9fe870, onHit: { knock: 40, defDown: .4 }, weaponScaled: true, desc: 'Everything the family owed her, paid out in one pass through the room.' },
 
+  // --- Nobara Kugisaki: Straw Doll. Put a nail in them, then use it --------
+  straw_doll:      { name: 'Straw Doll', origin: 'Nobara', nature: 'cursed', cost: 7, cd: 2, type: 'projectile', speed: 56, radius: .7, power: 54, pierce: true, color: 0xdfe8f4, onHit: { nailed: 12 }, desc: 'A nail through them and into the doll. It stays in for twelve seconds, and everything she does after is worse for them.' },
+  hairpin:         { name: 'Hairpin', origin: 'Nobara', nature: 'cursed', cost: 12, cd: 3.4, type: 'trap', range: 10, radius: 9, power: 96, color: 0xd88a3a, bonusStatus: 'nailed', bonusMul: 2.2, bonusTag: 'HAIRPIN!', onHit: { knock: 18 }, desc: 'Every nail she has already put in goes off at once. Double and more against anything carrying one.' },
+  resonance:       { name: 'Resonance', origin: 'Nobara', nature: 'cursed', cost: 16, cd: 5, type: 'beam', range: 34, radius: 2, power: 128, color: 0xd88a3a, bonusStatus: 'nailed', bonusMul: 2.4, bonusTag: 'RESONANCE!', ignoreDef: true, desc: 'She strikes the doll, not them, and the damage arrives anyway. Defence does not enter into it.' },
+  nail_barrage:    { name: 'Nail Barrage', origin: 'Nobara', nature: 'physical', cost: 9, cd: 2.2, type: 'projectile', speed: 66, radius: .5, power: 62, pierce: true, color: 0xdfe8f4, desc: 'A fistful of nails at once, straight through a line of them.' },
+  hammer_swing:    { name: 'Hammer', origin: 'Nobara', nature: 'physical', cost: 5, cd: 1, type: 'melee', range: 4.6, arc: .3, power: 78, knock: 22, desc: 'The hammer she drives the nails with, used the obvious way.' },
+  resonance_max:   { name: 'Resonance: Maximum', origin: 'Nobara', nature: 'cursed', cost: 36, cd: 26, type: 'trap', range: 0, radius: 24, power: 240, color: 0xd88a3a, bonusStatus: 'nailed', bonusMul: 2.6, bonusTag: 'MAXIMUM!', ignoreDef: true, onHit: { knock: 30 }, desc: 'Every doll, every nail, every link, all struck at the same moment.' },
+
+  // --- The Winter Soldier: a soldier, and an arm that is not his ------------
+  metal_fist:      { name: 'Metal Fist', origin: 'Winter Soldier', nature: 'physical', cost: 5, cd: 1, type: 'melee', range: 4.4, arc: .3, power: 92, knock: 30, ignoreDef: true, color: 0xb8bec8, desc: 'The left arm, at full swing. It does not care what you are wearing.' },
+  sidearm:         { name: 'Sidearm', origin: 'Winter Soldier', nature: 'physical', cost: 6, cd: 1.4, type: 'projectile', speed: 70, radius: .6, power: 58, pierce: true, color: 0xffd54a, desc: 'Three rounds, controlled, straight through the line.' },
+  combat_knife:    { name: 'Combat Knife', origin: 'Winter Soldier', nature: 'physical', cost: 8, cd: 2.6, type: 'dash', range: 17, power: 124, ignoreDef: true, onHit: { knock: 12 }, desc: 'Closes, cuts, and is already past you.' },
+  frag_grenade:    { name: 'Frag Grenade', origin: 'Winter Soldier', nature: 'fire', cost: 13, cd: 5, type: 'trap', range: 16, radius: 9, power: 148, color: 0xff8a3d, onHit: { burn: 4, knock: 26 }, desc: 'Pin out, three seconds, and that end of the street is finished.' },
+  arm_block:       { name: 'Arm Block', origin: 'Winter Soldier', nature: 'physical', cost: 11, cd: 11, type: 'shield', charges: 4, duration: 13, reflect: 60, color: 0xb8bec8, desc: 'He puts the metal arm between him and it. Four times, and whatever hits it comes back.' },
+  winter_protocol: { name: 'Winter Protocol', origin: 'Winter Soldier', nature: 'physical', cost: 34, cd: 25, type: 'beam', range: 52, radius: 3, power: 330, ignoreDef: true, color: 0xffd54a, desc: 'Everything he was trained to be, in one long burst down the street.' },
+
   spider_verse:    { name: 'Spider-Verse Assist', origin: 'Spider-Man', nature: 'physical', cost: 32, cd: 30, type: 'clones', mesh: 'spider', count: 3, duration: 20, power: 30, speed: 12, desc: 'Three spiders from other dimensions drop in and fight beside you.' },
 
   // --- Megumi Fushiguro: Ten Shadows ---
@@ -734,6 +750,14 @@ const STYLES = {
     m1: 26, m1Range: 2,
     pool: ['actuator_sweep', 'tentacle_grab', 'debris_hurl', 'pin_down', 'actuator_guard'], slots: ['actuator_sweep', 'tentacle_grab', 'debris_hurl', 'pin_down', 'actuator_guard'],
     ultimate: { skill: 'fusion_flare', name: 'Fusion Flare', cost: 38, cd: 27, duration: 1 } },
+  nobara: { name: 'Nobara Kugisaki: Straw Doll', blurb: 'Hammer, nails, and a technique that makes distance stop mattering. She did not come to Tokyo to lose.',
+    passives: ['Straw Doll leaves a nail in them for twelve seconds. Hairpin, Resonance and the ultimate all hit far harder against anything carrying one.', 'Resonance and Resonance: Maximum ignore defence entirely.', 'Open with Straw Doll, then pick which one they get.'],
+    pool: ['straw_doll', 'hairpin', 'resonance', 'nail_barrage', 'hammer_swing'], slots: ['straw_doll', 'hairpin', 'resonance', 'nail_barrage', 'hammer_swing'],
+    ultimate: { skill: 'resonance_max', name: 'Resonance: Maximum', cost: 36, cd: 26, duration: 1 } },
+  winter: { name: 'The Winter Soldier', blurb: 'Seventy years of someone else pointing him at people. He is his own now, and he kept the training.',
+    passives: ['The metal arm and the knife both ignore hardened defence.', 'Arm Block eats four hits and sends them back.', 'No cursed energy, no technique. Marksmanship and a prosthetic.'],
+    pool: ['metal_fist', 'sidearm', 'combat_knife', 'frag_grenade', 'arm_block'], slots: ['metal_fist', 'sidearm', 'combat_knife', 'frag_grenade', 'arm_block'],
+    ultimate: { skill: 'winter_protocol', name: 'Winter Protocol', cost: 34, cd: 25, duration: 1 } },
   maki: { name: "Maki Zen'in", blurb: 'Born with no cursed energy into a family that only valued it. She took the weapons instead and became the thing they were afraid of.', energy: 300,
     passives: ['No cursed energy, so nothing she does costs much: every technique is 4-10 SE out of a 300 pool.', 'Key 5 takes the next tool off the rack, and the tool rewrites her basic attack and all five moves.', 'Heavenly Restriction makes everything free for twenty seconds.'],
     pool: ['maki_sweep', 'maki_rush', 'pole_thrust', 'tool_throw', 'heavenly_awake', 'maki_switch'], slots: ['maki_sweep', 'maki_rush', 'pole_thrust', 'heavenly_awake', 'maki_switch'],
@@ -2120,6 +2144,14 @@ const CHARACTERS = {
   maki:      { height: 1.05, sig: 0x3f6a4a, skin: 0xf0d2b0, hair: 0x2b4a36, hairStyle: 'ponytail', top: 0x1b1f2e, bottom: 0x161a26,
                sleeves: 0x1b1f2e, eye: 0x4a7a58, uniform: 0x252c40, cuff: 0x252c40, buckle: 0xc8a44a,
                specs: 0x2a2f3a, brow: 0x2b4a36, browAngle: .3, hairLen: 1.15 },
+  // Nobara: orange bob, uniform, hammer on the hip.
+  nobara:    { sig: 0xd88a3a, skin: 0xf3d6b8, hair: 0xc87a34, hairStyle: 'bowl', top: 0x1b1f2e, bottom: 0x2a2f40,
+               sleeves: 0x1b1f2e, eye: 0x8a5a2a, uniform: 0x252c40, cuff: 0x252c40, buckle: 0xc8a44a,
+               pouch: true, brow: 0xc87a34, browAngle: .26, hairLen: 1.1 },
+  // Winter Soldier: tactical black, long dark hair, and the left arm is not his.
+  winter:    { height: 1.08, sig: 0xb8bec8, skin: 0xe8c8a8, hair: 0x241d18, hairStyle: 'long', top: 0x1a1c22, bottom: 0x16181d,
+               sleeves: 0x1a1c22, eye: 0x5a7a8a, metalArm: 0xb8bec8, maskLower: 0x14161a, vest: 0x22252c,
+               belt: 0x2a2d34, pouch: true, brow: 0x241d18, browAngle: .34, hairLen: 1.2 },
   tophat:    { buckle: 0xf0f0f0, brow: 0x101010, sig: 0xf0f0f0, skin: 0xf0f0f0, hair: 0x101010, hairStyle: 'none',   top: 0x181818, bottom: 0x101010, sleeves: 0xf0f0f0, eye: 0x101010, tophat: true, collar: 0xf0f0f0 },
 };
 CHARACTERS.jogo = CHARACTERS.jogoC; CHARACTERS.hanami = CHARACTERS.hanamiC; CHARACTERS.dagon = CHARACTERS.dagonC;
@@ -2550,9 +2582,25 @@ function buildCharacter(L) {
   const armRows = L.fourArms ? [{ y: .46, key: '' }, { y: .16, key: '2' }] : [{ y: .46, key: '' }];
   for (const row of armRows) for (const side of [-1, 1]) {
     const sh = new THREE.Group(); sh.position.set(side * .31, row.y, 0); chest.add(sh);
-    const upper = limbSeg(.34, .088, L.bare ? L.skin : L.top); sh.add(upper);
+    // One arm can be someone else's work entirely.
+    const metal = L.metalArm && side < 0;
+    const upper = limbSeg(.34, metal ? .1 : .088, metal ? L.metalArm : (L.bare ? L.skin : L.top)); sh.add(upper);
     const elbow = new THREE.Group(); elbow.position.y = -.44; upper.add(elbow);
-    const fore = limbSeg(.32, .078, L.sleeves ?? L.skin); elbow.add(fore);
+    const fore = limbSeg(.32, metal ? .09 : .078, metal ? L.metalArm : (L.sleeves ?? L.skin)); elbow.add(fore);
+    if (metal) {
+      for (let pl = 0; pl < 3; pl++) {          // overlapping plates down the arm
+        const band = new THREE.Mesh(new THREE.TorusGeometry(.103, .02, 6, 16), toon(0x7e858f));
+        band.rotation.x = Math.PI / 2; band.position.y = -.14 - pl * .16; upper.add(band);
+      }
+      for (let pl = 0; pl < 2; pl++) {
+        const band = new THREE.Mesh(new THREE.TorusGeometry(.093, .018, 6, 16), toon(0x7e858f));
+        band.rotation.x = Math.PI / 2; band.position.y = -.15 - pl * .17; elbow.add(band);
+      }
+      const cap = outlined(new THREE.Mesh(new THREE.SphereGeometry(.145, 12, 10), toon(L.metalArm)), .08);
+      cap.scale.set(1, .85, 1); cap.position.y = .03; sh.add(cap);
+      const star = new THREE.Mesh(new THREE.CircleGeometry(.075, 5), new THREE.MeshBasicMaterial({ color: 0xc0182a }));
+      star.position.set(-.13, .03, .02); star.rotation.set(0, -1.3, .3); sh.add(star);
+    }
     if (L.cuff) { const cf = new THREE.Mesh(new THREE.CylinderGeometry(.088, .088, .07, 10), toon(L.cuff)); cf.position.y = -.3; elbow.add(cf); }
     const hand = outlined(new THREE.Mesh(new THREE.SphereGeometry(.082, 10, 8), toon(L.skin)), .12);
     hand.position.y = -.42; hand.scale.set(.88, 1.18, .7); elbow.add(hand);
@@ -3640,6 +3688,14 @@ function enemyTakeHit(e, power, nature, from, onHit = {}) {
   if (onHit.burn) e.status.burn = onHit.burn;
   if (onHit.poison) e.status.poison = onHit.poison;
   if (onHit.paralyze) e.status.paralyze = onHit.paralyze;
+  if (onHit.nailed) {   // Nobara's straw doll: a nail in them is a link to them
+    e.status.nailed = onHit.nailed;
+    if (!e.nailMesh) {
+      e.nailMesh = new THREE.Mesh(new THREE.ConeGeometry(.06 * e.t.size, .34 * e.t.size, 4), new THREE.MeshBasicMaterial({ color: 0xdfe8f4 }));
+      e.nailMesh.position.y = 1.15 * e.t.size; e.nailMesh.rotation.x = Math.PI; e.mesh.add(e.nailMesh);
+    }
+  }
+  if (e.nailMesh && !e.status.nailed) { e.mesh.remove(e.nailMesh); e.nailMesh = null; }
   hitStop = Math.max(hitStop, eff > 1 ? .08 : .045); shake = Math.max(shake, .25);
   const at = e.pos.clone().add(new THREE.Vector3(0, (e.height ?? 2) * .55, 0));
   burst(at, NATURE[nature].color, eff > 1 ? 14 : 8);
@@ -4179,6 +4235,7 @@ function castSkill(id, opts = {}) {
     burst(origin.clone().addScaledVector(dir, 1.5), cutCol, 12); shake = .3;
     for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() <= reach + e.t.size && (s.arc == null || to.normalize().dot(dir.clone().setY(0).normalize()) > s.arc)) {
       let power = (s.power * WM + (s.percentMax ? e.maxHp * s.percentMax : 0)) * B;
+      if (s.bonusStatus && e.status[s.bonusStatus]) { power *= s.bonusMul ?? 1; center(s.bonusTag ?? 'LINKED!', 500); }
       if (s.finisher) power *= 1 + s.finisher * (1 - e.hp / e.maxHp);
       if (s.crit) {
         if (Math.random() < s.crit.chance + player.flashRamp) { power *= s.crit.mul; player.flashRamp = 0; center('BLACK FLASH', 1000); hitStop = .22; screenFlash(.85); shake = 1; burst(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), 0x120008, 24); burst(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), 0xff2d55, 12); }
@@ -4240,7 +4297,12 @@ function castSkill(id, opts = {}) {
     flashLight(origin.clone().addScaledVector(d, 6), s.color ?? NATURE[s.nature].color, 190, .3, 90);
     sparks(origin.clone().addScaledVector(d, 3), 0xffffff, 16, 26);
     const seg = new THREE.Line3(origin, end); const cp = new THREE.Vector3();
-    for (const e of enemies) { if (e.dead) continue; seg.closestPointToPoint(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), true, cp); if (cp.distanceTo(e.pos.clone().add(new THREE.Vector3(0, 1, 0))) < s.radius + e.t.size) enemyTakeHit(e, s.power * B, s.nature, origin, { knock: 30 }); }
+    for (const e of enemies) { if (e.dead) continue; seg.closestPointToPoint(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), true, cp);
+      if (cp.distanceTo(e.pos.clone().add(new THREE.Vector3(0, 1, 0))) < s.radius + e.t.size) {
+        const mul = s.bonusStatus && e.status[s.bonusStatus] ? (s.bonusMul ?? 1) : 1;
+        if (mul > 1) center(s.bonusTag ?? 'LINKED!', 500);
+        enemyTakeHit(e, s.power * mul * B, s.nature, origin, { ...s.onHit, knock: s.knock ?? 30, ignoreDef: s.ignoreDef });
+      } }
     for (let i = 1; i <= 12; i++) damageBuildings(origin.clone().addScaledVector(d, s.range * i / 12), s.radius + 2, s.power * .5);
     player.vel.addScaledVector(d, -6);
   } else if (s.type === 'domain') {
@@ -4369,7 +4431,11 @@ function castSkill(id, opts = {}) {
     const centerP = origin.clone().addScaledVector(dir.clone().setY(0).normalize(), s.range).setY(.1);
     const web = new THREE.Mesh(new THREE.RingGeometry(.5, s.radius, 24, 3), new THREE.MeshBasicMaterial({ color: s.color ?? 0xffffff, side: THREE.DoubleSide, transparent: true, opacity: .6, wireframe: true }));
     web.rotation.x = -Math.PI / 2; web.position.copy(centerP); scene.add(web); effects.push({ kind: 'beam', m: web, t: 0, life: 2.5 });
-    for (const e of enemies) { if (e.dead) continue; if (e.pos.distanceTo(centerP) < s.radius + e.t.size) enemyTakeHit(e, s.power * B, s.nature, centerP, { ...s.onHit, knock: 0 }); }
+    for (const e of enemies) { if (e.dead) continue; if (e.pos.distanceTo(centerP) < s.radius + e.t.size) {
+      const mul = s.bonusStatus && e.status[s.bonusStatus] ? (s.bonusMul ?? 1) : 1;
+      if (mul > 1) center(s.bonusTag ?? 'LINKED!', 500);
+      enemyTakeHit(e, s.power * mul * B, s.nature, centerP, { ...s.onHit, knock: 0 });
+    } }
     burst(centerP.clone().add(new THREE.Vector3(0, 1, 0)), s.color ?? 0xffffff, 16); center(s.name.toUpperCase(), 500); if (s.color) shake = .7;
   } else if (s.type === 'buff') {
     const dur = s.duration * B;
@@ -4634,11 +4700,21 @@ function strike() {
 function updateProjectiles(dt) {
   for (const p of projectiles) {
     if (p.done) continue;
-    p.t += dt; p.m.position.addScaledVector(p.v, dt); p.v.y -= 4 * dt;
+    p.t += dt;
+    const from = (p.prev ??= new THREE.Vector3()).copy(p.m.position);
+    p.m.position.addScaledVector(p.v, dt); p.v.y -= 4 * dt;
+    const path = new THREE.Line3(from, p.m.position), near = new THREE.Vector3();
     if (p.t > .25 && p.t % .06 < dt) { const g = new THREE.Mesh(partGeo, p.m.material); g.position.copy(p.m.position); scene.add(g); bursts.push({ m: g, v: new THREE.Vector3(), t: .3 }); }
     if (p.m.userData.spin) p.m.rotation.y += dt * 30;
     if (p.m.userData.halo) { const puls = 1 + .12 * Math.sin(now * 24); p.m.userData.halo.scale.setScalar(puls); p.m.userData.halo.material.opacity = .28 + .12 * Math.sin(now * 18); }
-    for (const e of enemies) { if (e.dead) continue; if (p.hit?.has(e)) continue; if (p.m.position.distanceTo(e.pos.clone().add(new THREE.Vector3(0, 1, 0))) < p.s.radius + 1.1 * e.t.size) { enemyTakeHit(e, p.s.power * (p.boost ?? 1), p.s.nature, player.pos, p.s.onHit); if (p.s.pierce) { (p.hit ??= new Set()).add(e); burst(p.m.position, NATURE[p.s.nature].color, 6); } else { p.done = true; break; } } }
+    for (const e of enemies) { if (e.dead) continue; if (p.hit?.has(e)) continue;
+      const at = e.pos.clone().add(new THREE.Vector3(0, 1, 0));
+      path.closestPointToPoint(at, true, near);
+      if (near.distanceTo(at) < p.s.radius + 1.1 * e.t.size) {
+        enemyTakeHit(e, p.s.power * (p.boost ?? 1), p.s.nature, player.pos, p.s.onHit);
+        if (p.s.pierce) { (p.hit ??= new Set()).add(e); burst(near, NATURE[p.s.nature].color, 6); }
+        else { p.m.position.copy(near); p.done = true; break; }
+      } }
     if (p.t > 2.5 || p.m.position.y < 0) { p.done = true; burst(p.m.position, NATURE[p.s.nature].color, 6); }
     if (p.done && p.s.aoe) {
       // Rasenshuriken / Tailed Beast Bomb: the storm after the impact.
