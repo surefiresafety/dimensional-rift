@@ -109,6 +109,8 @@
     .card { padding: 18px 20px; }
     .card h1 { font-size: 34px; }
     #movesets .card, #worldmap .card { max-height: calc(100vh - 20px); }
+    #ms-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+    .ms-view { width: 100px; height: 156px; }
   }
   #log { position: absolute; left: 18px; bottom: 26px; width: 360px; font-size: 13px; line-height: 1.5; text-shadow: 0 1px 2px #000; }
   #log div { opacity: .95; }
@@ -138,6 +140,8 @@
   .float.heal { color: var(--hp); }
   .ehp { position: absolute; width: 70px; transform: translate(-50%, -100%); pointer-events: none; }
   .ehp b { display: block; font-size: 10px; text-align: center; white-space: nowrap; text-shadow: 0 1px 2px #000; }
+  .ehp em { display: block; font-size: 8px; font-style: normal; text-align: center; letter-spacing: .1em; text-transform: uppercase; text-shadow: 0 1px 2px #000; }
+  .ehp.enraged b { color: #ff5c5c; }
   .ehp i { display: block; height: 5px; background: #ff5c5c; border: 1px solid #000; }
   .ehp i b { display: block; height: 100%; background: var(--hp); }
   .ehp.mate b { color: #8fe3ff; }
@@ -190,11 +194,16 @@
   #output { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); font-size: 17px; padding: 4px 14px; border: 2px solid var(--gold); border-radius: 20px; background: rgba(0,0,0,.55); }
   /* Move set screen */
   #movesets .card { max-width: 1040px; width: calc(100vw - 40px); max-height: calc(100vh - 40px); overflow: auto; }
-  #ms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin-top: 10px; }
-  .ms-card { border: 2px solid var(--line); border-radius: 8px; padding: 12px; background: rgba(0,0,0,.35); display: flex; flex-direction: column; gap: 8px; cursor: pointer; transition: border-color .12s, transform .12s; }
+  #ms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(376px, 1fr)); gap: 12px; margin-top: 10px; }
+  .ms-card { border: 2px solid var(--line); border-radius: 8px; padding: 12px; background: rgba(0,0,0,.35); display: flex; flex-direction: row; gap: 12px; align-items: stretch; cursor: pointer; transition: border-color .12s, transform .12s; }
+  .ms-body { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 0; }
+  /* The turntable. One shared renderer paints every one of these. */
+  .ms-view { width: 150px; height: 234px; flex: none; align-self: flex-start; border-radius: 8px; border: 1px solid var(--line);
+    background: radial-gradient(ellipse at 50% 66%, rgba(176,108,255,.34), rgba(8,6,16,.72) 72%); }
+  .ms-card.selected .ms-view { border-color: var(--gold); }
   .ms-card:hover { border-color: var(--accent); transform: translateY(-2px); }
   .ms-card.selected { border-color: var(--gold); box-shadow: 0 0 18px rgba(255,213,74,.35); }
-  .ms-card.current::after { content: 'EQUIPPED'; font-size: 10px; letter-spacing: .12em; color: var(--gold); }
+  .ms-card.current .ms-body::after { content: 'EQUIPPED'; font-size: 10px; letter-spacing: .12em; color: var(--gold); }
   .ms-head { display: flex; gap: 10px; align-items: center; }
   .ms-portrait { width: 52px; height: 64px; border-radius: 26px 26px 10px 10px; border: 2px solid #000; position: relative; flex: none; }
   .ms-portrait i { position: absolute; left: 50%; top: 10px; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%; border: 2px solid #000; }
@@ -233,7 +242,7 @@
     </div>
     <div id="wave"><small id="map-name">Times Square</small><div class="display" id="wave-title">Wave 1</div><small id="wave-sub"></small><small id="who"></small></div>
     <div id="slots"></div>
-    <div id="basic">LMB Strike · RMB / E hold: Web-Swing · C Dodge<br>Space Jump · 1–5 Techniques · G Ultimate · Shift lock<br>Hold B Output charge · Tab Loadout · M Move sets<br>Q Step through a gate · N World map</div>
+    <div id="basic">LMB Strike · RMB / E hold: Web-Swing · C Dodge<br>Space Jump · 1–5 Techniques · G Ultimate · Shift lock<br>Hold B Output charge · Tab Loadout · M Characters<br>Q Step through a gate · N World map</div>
     <div id="log"></div>
     <div id="center"></div>
     <div id="charge" hidden><div class="tier display"></div><div class="track"><i class="fill"></i><span class="mark" style="left:50%"></span><span class="mark" style="left:100%"></span></div><div class="hint">Hold B. Release to store it for your next ability.</div></div>
@@ -281,7 +290,7 @@
         <tr><td>Loadout</td><td>Tab</td></tr>
         <tr><td>Ultimate</td><td>G (Yuji: Sukuna for a minute · Megumi: summon Mahoraga)</td></tr>
         <tr><td>Signature (E)</td><td>Spider-Man swings · Iron Man, Jean and Eleven fly · Naruto charges a Rasengan · Sasuke charges Chidori · Megumi opens his domain · Yuji cuts with Dismantle</td></tr>
-        <tr><td>Move sets</td><td>M</td></tr>
+        <tr><td>Select character</td><td>M</td></tr>
         <tr><td>Shift lock</td><td>Shift. The camera locks over your shoulder and you always face where you look.</td></tr>
         <tr><td>Gates</td><td>Q at a glowing ring. Every world has a ring of them, one per destination.</td></tr>
         <tr><td>World map</td><td>N</td></tr>
@@ -300,7 +309,7 @@
       <div id="lobby" style="margin-top:6px"></div>
       <div class="setup-row quality-row"></div>
       <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
-        <button id="open-movesets">Choose your move set</button>
+        <button id="open-movesets">Select your character</button>
         <span style="opacity:.7;font-size:12px">Twenty-five characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
       </div>
     </div>
@@ -318,8 +327,8 @@
   <div id="movesets" class="overlay" hidden>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap">
-        <h2 class="display" style="margin:0;font-size:34px;color:var(--gold)">Move Sets</h2>
-        <span style="font-size:12px;opacity:.75">Pick a character. All five are equipped, one per key. Enemies you defeat still add techniques. Tab rearranges slots.</span>
+        <h2 class="display" style="margin:0;font-size:34px;color:var(--gold)">Select Character</h2>
+        <span style="font-size:12px;opacity:.75">Each one turns in their own box and runs through what they can do. All five techniques are equipped, one per key. Enemies you defeat still add more. Tab rearranges slots.</span>
       </div>
       <div id="ms-grid"></div>
       <div id="ms-bar">
@@ -748,35 +757,93 @@ const STYLES = {
     pool: ['amenotejikara', 'time_freeze', 'frozen_world', 'reverse_time', 'amaterasu'], slots: ['amenotejikara', 'time_freeze', 'frozen_world', 'reverse_time', 'amaterasu'],
     ultimate: { skill: 'susanoo', name: 'Perfect Susanoo', cost: 40, cd: 36, duration: 25 } },
 };
+// Curses are graded the way the sorcerers grade them, and the grade is what the
+// numbers below are built from: a Grade 4 is fodder, a Special Grade is a boss
+// fight. The label goes on the health bar so you can read the room before it
+// reaches you.
+const GRADES = {
+  4:       { label: 'Grade 4',       color: '#9aa4b8' },
+  3:       { label: 'Grade 3',       color: '#8fd8a0' },
+  2:       { label: 'Grade 2',       color: '#7ac8ff' },
+  1:       { label: 'Grade 1',       color: '#ffd54a' },
+  semi1:   { label: 'Semi-Grade 1',  color: '#ffb340' },
+  special: { label: 'Special Grade', color: '#ff5c7a' },
+};
 const ENEMIES = {
-  cursed_toad:  { name: 'Cursed Toad',    nature: 'water',     hp: 130, atk: 14, speed: 4.2, size: 1.1,  drops: 'acid_spit',    shape: 'toad',
+  cursed_toad:  { name: 'Cursed Toad',    grade: 3, nature: 'water',     hp: 130, atk: 14, speed: 4.2, size: 1.1,  drops: 'acid_spit',    shape: 'toad',
                   ranged: { power: 15, speed: 26, cd: 3.6, min: 9, color: 0x8fe36a, arc: true } },
-  grade4:       { name: 'Grade 4 Spirit', nature: 'earth',     hp: 90,  atk: 9,  speed: 5.5, size: .85,  drops: 'poison_spit',  shape: 'blob', float: true },
-  rogue_ninja:  { name: 'Rogue Ninja',    nature: 'lightning', hp: 170, atk: 18, speed: 7,   size: 1,    drops: 'chidori',      shape: 'human',
+  grade4:       { name: 'Grade 4 Spirit', grade: 4, nature: 'earth',     hp: 90,  atk: 9,  speed: 5.5, size: .85,  drops: 'poison_spit',  shape: 'blob', float: true },
+  rogue_ninja:  { name: 'Rogue Ninja',    grade: 3, nature: 'lightning', hp: 170, atk: 18, speed: 7,   size: 1,    drops: 'chidori',      shape: 'human',
                   ranged: { power: 13, speed: 46, cd: 4.2, min: 11, color: 0xffe45c } },
-  clone_ninja:  { name: 'Shadow Ninja',   nature: 'physical',  hp: 140, atk: 15, speed: 7.5, size: 1,    drops: 'shadow_clone', shape: 'human' },
-  wind_spirit:  { name: 'Wind Curse',     nature: 'wind',      hp: 150, atk: 16, speed: 6.5, size: 1,    drops: 'dismantle',    shape: 'wraith', float: true },
-  ember_imp:    { name: 'Ember Imp',      nature: 'fire',      hp: 110, atk: 13, speed: 8,   size: .8,   drops: 'fireball',     shape: 'imp',
+  clone_ninja:  { name: 'Shadow Ninja',   grade: 3, nature: 'physical',  hp: 140, atk: 15, speed: 7.5, size: 1,    drops: 'shadow_clone', shape: 'human' },
+  wind_spirit:  { name: 'Wind Curse',     grade: 3, nature: 'wind',      hp: 150, atk: 16, speed: 6.5, size: 1,    drops: 'dismantle',    shape: 'wraith', float: true },
+  ember_imp:    { name: 'Ember Imp',      grade: 4, nature: 'fire',      hp: 110, atk: 13, speed: 8,   size: .8,   drops: 'fireball',     shape: 'imp',
                   ranged: { power: 14, speed: 30, cd: 3, min: 8, color: 0xff6b3d } },
-  stone_brute:  { name: 'Stone Brute',    nature: 'earth',     hp: 300, atk: 26, speed: 3.4, size: 1.35, drops: 'boulder_toss', shape: 'golem',
+  stone_brute:  { name: 'Stone Brute',    grade: 2, nature: 'earth',     hp: 300, atk: 26, speed: 3.4, size: 1.35, drops: 'boulder_toss', shape: 'golem',
                   ranged: { power: 22, speed: 22, cd: 4.6, min: 10, color: 0xc9a068, arc: true } },
-  storm_wraith: { name: 'Storm Wraith',   nature: 'lightning', hp: 160, atk: 17, speed: 8.5, size: 1.05, drops: 'arc_bolt',     shape: 'wraith', float: true,
+  storm_wraith: { name: 'Storm Wraith',   grade: 2, nature: 'lightning', hp: 160, atk: 17, speed: 8.5, size: 1.05, drops: 'arc_bolt',     shape: 'wraith', float: true,
                   ranged: { power: 17, speed: 50, cd: 3.2, min: 10, color: 0xffe45c } },
-  hanami:       { name: 'Hanami',         nature: 'earth',     hp: 620, atk: 24, speed: 5,   size: 1.6,  drops: 'hanami_roots', shape: 'human', boss: true,
+  hanami:       { name: 'Hanami',         grade: 'special', nature: 'earth',     hp: 620, atk: 24, speed: 5,   size: 1.6,  drops: 'hanami_roots', shape: 'human', boss: true,
                   ranged: { power: 20, speed: 24, cd: 3.4, min: 9, color: 0x8fbf6a, arc: true } },
-  jogo:         { name: 'Jogo',           nature: 'fire',      hp: 700, atk: 28, speed: 5.5, size: 1.5,  drops: 'disaster_flames', shape: 'human', boss: true,
+  jogo:         { name: 'Jogo',           grade: 'special', nature: 'fire',      hp: 700, atk: 28, speed: 5.5, size: 1.5,  drops: 'disaster_flames', shape: 'human', boss: true,
                   ranged: { power: 26, speed: 30, cd: 3, min: 8, color: 0xff6b3d } },
-  mahito_b:     { name: 'Mahito',         nature: 'cursed',    hp: 820, atk: 32, speed: 6.6, size: 1.45, drops: 'idle_transfig', shape: 'human', boss: true,
+  mahito_b:     { name: 'Mahito',         grade: 'special', nature: 'cursed',    hp: 820, atk: 32, speed: 6.6, size: 1.45, drops: 'idle_transfig', shape: 'human', boss: true,
                   ranged: { power: 24, speed: 34, cd: 2.8, min: 9, color: 0x6cd8c0 } },
+  // ---- Grade 4-3: fodder, but fodder with different habits -----------------
+  larva:        { name: 'Cursed Larva',   grade: 4, nature: 'earth', hp: 60,  atk: 7,  speed: 9,   size: .6,  drops: 'poison_spit', shape: 'blob', float: true, color: 0x9a7fc0 },
+  needle_curse: { name: 'Needle Curse',   grade: 3, nature: 'wind',  hp: 105, atk: 11, speed: 6.4, size: .85, drops: 'dismantle',   shape: 'imp', color: 0xb0c8d8,
+                  ranged: { power: 9, speed: 56, cd: 3.4, min: 9, burst: 3, spread: .11, size: .55, color: 0xdfe8f4 } },
+  bat_curse:    { name: 'Cursed Bat',     grade: 3, nature: 'cursed', hp: 95, atk: 12, speed: 10,  size: .75, drops: 'spirit_barrage', shape: 'wraith', float: true, color: 0x6a4a8a,
+                  ranged: { power: 12, speed: 30, cd: 3.2, min: 8, home: 1.5, size: .7, color: 0xb06cff } },
+
+  // ---- Grade 2: they have a plan ------------------------------------------
+  rush_curse:   { name: 'Rushing Curse',  grade: 2, nature: 'physical', hp: 200, atk: 18, speed: 7.6, size: 1.05, drops: 'divergent_fist', shape: 'imp', color: 0xc06a4a,
+                  charge: { power: 34, speed: 26, cd: 6, time: .7, tell: .5, range: 24 } },
+  blade_ninja:  { name: 'Blade Ninja',    grade: 2, nature: 'wind', hp: 215, atk: 20, speed: 8.4, size: 1, drops: 'dismantle', shape: 'human',
+                  charge: { power: 38, speed: 30, cd: 7, time: .6, tell: .45, range: 22 },
+                  ranged: { power: 12, speed: 60, cd: 4.5, min: 12, burst: 2, spread: .09, size: .5, color: 0xdfe8f4 } },
+  smoke_curse:  { name: 'Smoke Curse',    grade: 2, nature: 'water', hp: 260, atk: 17, speed: 5.6, size: 1.1, drops: 'acid_spit', shape: 'wraith', float: true, color: 0x5a6a7a, regen: 7,
+                  ranged: { power: 16, speed: 30, cd: 3.4, min: 9, home: .9, color: 0x8fa8b8 } },
+
+  // ---- Grade 1: armour, volleys, and things that call for help -------------
+  finger_bearer:{ name: 'Finger Bearer',  grade: 1, nature: 'cursed', hp: 480, atk: 27, speed: 5.2, size: 1.4, drops: 'idle_transfig', shape: 'golem', color: 0x8a5a6a, armor: .22,
+                  ranged: { power: 22, speed: 26, cd: 4, min: 10, arc: true, burst: 2, spread: .16, color: 0xff6b8a } },
+  iron_curse:   { name: 'Iron-Shell Curse', grade: 1, nature: 'earth', hp: 620, atk: 30, speed: 2.9, size: 1.5, drops: 'boulder_toss', shape: 'golem', color: 0x6a7280, armor: .38,
+                  charge: { power: 46, speed: 19, cd: 9, time: .9, tell: .8, range: 26 } },
+  flame_dancer: { name: 'Flame Dancer',   grade: 1, nature: 'fire', hp: 400, atk: 24, speed: 7.8, size: 1.05, drops: 'fireball', shape: 'human', aura: { radius: 5, power: 7 },
+                  ranged: { power: 15, speed: 40, cd: 3, min: 9, burst: 3, spread: .18, color: 0xff8a3d } },
+  cursed_womb:  { name: 'Cursed Womb',    grade: 1, nature: 'cursed', hp: 520, atk: 20, speed: 2.4, size: 1.35, drops: 'curse_womb', shape: 'blob', color: 0x8a2a4a, armor: .15,
+                  summon: { of: 'larva', every: 8, count: 3, max: 9 },
+                  ranged: { power: 18, speed: 24, cd: 4.4, min: 10, arc: true, color: 0xff6b8a } },
+
+  // ---- Semi-Grade 1: one step off a special grade --------------------------
+  blood_curse:  { name: 'Blood Curse',    grade: 'semi1', nature: 'cursed', hp: 700, atk: 32, speed: 7, size: 1.25, drops: 'piercing_blood_c', shape: 'human', enrage: { at: .4 },
+                  ranged: { power: 22, speed: 66, cd: 3.2, min: 10, burst: 2, spread: .07, size: .6, color: 0x9b1a2a } },
+  spine_curse:  { name: 'Spine Curse',    grade: 'semi1', nature: 'physical', hp: 780, atk: 34, speed: 6.4, size: 1.35, drops: 'blood_meteorite', shape: 'imp', color: 0xd8ccb8, armor: .18,
+                  enrage: { at: .45, speed: 1.5, dmg: 1.5 },
+                  charge: { power: 52, speed: 30, cd: 6.5, time: .75, tell: .5, range: 28 } },
+
+  // ---- Special grade -------------------------------------------------------
+  dagon_b:      { name: 'Dagon',          grade: 'special', nature: 'water', hp: 900, atk: 30, speed: 5.4, size: 1.5, drops: 'water_shikigami', shape: 'human', boss: true, armor: .12,
+                  summon: { of: 'mist_leech', every: 11, count: 2, max: 6 },
+                  ranged: { power: 24, speed: 32, cd: 3, min: 9, burst: 2, spread: .14, home: .7, color: 0x6cd8ff } },
+  kenjaku_b:    { name: 'Kenjaku',        grade: 'special', nature: 'cursed', hp: 1050, atk: 33, speed: 6, size: 1.45, drops: 'body_swap', shape: 'human', boss: true, armor: .2, regen: 9,
+                  summon: { of: 'cursed_womb', every: 16, count: 1, max: 3 },
+                  ranged: { power: 26, speed: 36, cd: 2.9, min: 9, home: 1.1, color: 0x8aa84a } },
+  toji_b:       { name: 'Toji Fushiguro', grade: 'special', nature: 'physical', hp: 980, atk: 42, speed: 10.5, size: 1.1, drops: 'sorcerer_killer', shape: 'human', boss: true,
+                  enrage: { at: .35, speed: 1.3, dmg: 1.4 },
+                  charge: { power: 66, speed: 38, cd: 4.5, time: .55, tell: .35, range: 34 },
+                  ranged: { power: 20, speed: 74, cd: 4, min: 13, size: .45, color: 0x9fe870 } },
+
   // Regional variants: same shapes, re-skinned and re-tuned for their map.
-  sand_spirit:  { name: 'Sand Spirit',    nature: 'earth',     hp: 155, atk: 16, speed: 6.2, size: 1.05, drops: 'boulder_toss', shape: 'wraith', float: true, color: 0xd8b878,
+  sand_spirit:  { name: 'Sand Spirit',    grade: 3, nature: 'earth',     hp: 155, atk: 16, speed: 6.2, size: 1.05, drops: 'boulder_toss', shape: 'wraith', float: true, color: 0xd8b878,
                   ranged: { power: 16, speed: 34, cd: 3.4, min: 9, color: 0xe0c48a } },
-  mist_leech:   { name: 'Mist Leech',     nature: 'water',     hp: 180, atk: 17, speed: 5.4, size: 1.15, drops: 'acid_spit',    shape: 'blob',   float: true, color: 0x6fb0c8,
+  mist_leech:   { name: 'Mist Leech',     grade: 3, nature: 'water',     hp: 180, atk: 17, speed: 5.4, size: 1.15, drops: 'acid_spit',    shape: 'blob',   float: true, color: 0x6fb0c8,
                   ranged: { power: 17, speed: 28, cd: 3.2, min: 9, color: 0x8fd8e8, arc: true } },
-  thunder_ninja:{ name: 'Cloud Ninja',    nature: 'lightning', hp: 210, atk: 21, speed: 8.2, size: 1,    drops: 'arc_bolt',     shape: 'human',
+  thunder_ninja:{ name: 'Cloud Ninja',    grade: 2, nature: 'lightning', hp: 210, atk: 21, speed: 8.2, size: 1,    drops: 'arc_bolt',     shape: 'human',
                   ranged: { power: 16, speed: 52, cd: 3.6, min: 11, color: 0xffe45c } },
-  kyoto_student:{ name: 'Kyoto Student',  nature: 'physical',  hp: 200, atk: 19, speed: 7.4, size: 1,    drops: 'shadow_clone', shape: 'human' },
-  tomb_guardian:{ name: 'Tomb Guardian',  nature: 'earth',     hp: 430, atk: 28, speed: 3.2, size: 1.55, drops: 'boulder_toss', shape: 'golem',  color: 0x8f7f6a,
+  kyoto_student:{ name: 'Kyoto Student',  grade: 2, nature: 'physical',  hp: 200, atk: 19, speed: 7.4, size: 1,    drops: 'shadow_clone', shape: 'human' },
+  tomb_guardian:{ name: 'Tomb Guardian',  grade: 1, nature: 'earth',     hp: 430, atk: 28, speed: 3.2, size: 1.55, drops: 'boulder_toss', shape: 'golem',  color: 0x8f7f6a,
                   ranged: { power: 24, speed: 22, cd: 4.8, min: 10, color: 0xb8a888 } },
 };
 // =============================================================================
@@ -1546,64 +1613,64 @@ const MAPS = {
     blurb: 'The rift opened over the plaza and has not closed since.',
     sky: 0x1b1030, fogColor: 0x2a1848, fogNear: 60, fogFar: 260, sunColor: 0xfff1d6, sunLevel: 2.6, hemiSky: 0x8a6cff, hemiGround: 0x2b1d44, hemiLevel: 1.1,
     spawn: new THREE.Vector3(0, 0, 8), portalRadius: 30, portalCenter: new THREE.Vector3(0, 0, 6),
-    waves: [['cursed_toad', 'cursed_toad', 'grade4'], ['cursed_toad', 'grade4', 'grade4', 'rogue_ninja'], ['ember_imp', 'ember_imp', 'wind_spirit', 'grade4'], ['hanami', 'grade4', 'grade4'], ['rogue_ninja', 'rogue_ninja', 'wind_spirit', 'clone_ninja'], ['jogo', 'cursed_toad', 'wind_spirit']],
-    filler: ['rogue_ninja', 'wind_spirit', 'cursed_toad'] },
+    waves: [['larva', 'larva', 'grade4'], ['cursed_toad', 'grade4', 'needle_curse'], ['bat_curse', 'bat_curse', 'ember_imp', 'grade4'], ['rush_curse', 'wind_spirit', 'needle_curse'], ['hanami', 'grade4', 'bat_curse'], ['blade_ninja', 'rush_curse', 'storm_wraith'], ['flame_dancer', 'finger_bearer', 'clone_ninja'], ['jogo', 'blade_ninja', 'rush_curse']],
+    filler: ['larva', 'bat_curse', 'rush_curse', 'needle_curse', 'wind_spirit'] },
 
   jujutsu_high: { name: 'Tokyo Jujutsu High', sub: 'the hidden campus', seed: 5150, build: buildJujutsuHigh,
     blurb: 'A traditional campus on the edge of Tokyo. Curses come through the treeline.',
     sky: 0x18262e, fogColor: 0x2a4450, fogNear: 60, fogFar: 280, sunColor: 0xd8e8f4, sunLevel: 2.2, hemiSky: 0x8fb4c8, hemiGround: 0x2c3d2e, hemiLevel: 1.7,
     spawn: new THREE.Vector3(0, 0, 6), portalRadius: 26, portalCenter: new THREE.Vector3(0, 0, 4),
-    waves: [['grade4', 'grade4', 'cursed_toad'], ['wind_spirit', 'grade4', 'cursed_toad', 'grade4'], ['clone_ninja', 'clone_ninja', 'wind_spirit'], ['hanami', 'wind_spirit', 'grade4', 'grade4']],
-    filler: ['grade4', 'wind_spirit', 'cursed_toad'] },
+    waves: [['larva', 'grade4', 'grade4'], ['needle_curse', 'grade4', 'cursed_toad'], ['bat_curse', 'wind_spirit', 'needle_curse'], ['rush_curse', 'clone_ninja', 'bat_curse'], ['smoke_curse', 'blade_ninja', 'grade4'], ['hanami', 'smoke_curse', 'bat_curse'], ['cursed_womb', 'blade_ninja', 'rush_curse']],
+    filler: ['grade4', 'larva', 'needle_curse', 'bat_curse', 'smoke_curse'] },
 
   star_corridor: { name: 'Tombs of the Star Corridor', sub: 'beneath Jujutsu High', seed: 909, build: buildStarCorridor,
     blurb: "Master Tengen's sanctuary, far under the school. No sky, no way out but the gates.",
     sky: 0x0a0812, fogColor: 0x1c1430, fogNear: 40, fogFar: 210, sunColor: 0xb0a0ff, sunLevel: 1.5, hemiSky: 0x8a72d8, hemiGround: 0x241a3c, hemiLevel: 2,
     spawn: new THREE.Vector3(0, 0, 22), portalRadius: 25, portalCenter: new THREE.Vector3(0, 0, 20),
-    waves: [['tomb_guardian', 'grade4', 'grade4'], ['tomb_guardian', 'tomb_guardian', 'wind_spirit'], ['storm_wraith', 'storm_wraith', 'tomb_guardian'], ['mahito_b', 'tomb_guardian', 'grade4']],
-    filler: ['tomb_guardian', 'storm_wraith', 'grade4'] },
+    waves: [['larva', 'larva', 'grade4'], ['tomb_guardian', 'bat_curse', 'grade4'], ['smoke_curse', 'storm_wraith', 'bat_curse'], ['iron_curse', 'tomb_guardian', 'smoke_curse'], ['finger_bearer', 'cursed_womb', 'storm_wraith'], ['spine_curse', 'iron_curse', 'tomb_guardian'], ['kenjaku_b', 'finger_bearer', 'cursed_womb']],
+    filler: ['tomb_guardian', 'smoke_curse', 'bat_curse', 'iron_curse', 'finger_bearer'] },
 
   kyoto_academy: { name: 'Kyoto Imperial Academy', sub: 'the sister school', seed: 7788, build: buildKyoto,
     blurb: 'The conservative faction, and they have never liked Tokyo.',
     sky: 0x2a2130, fogColor: 0x4a3a48, fogNear: 60, fogFar: 280, sunColor: 0xffd9b0, sunLevel: 2.2, hemiSky: 0xd8a8c0, hemiGround: 0x4a4038, hemiLevel: 1.2,
     spawn: new THREE.Vector3(0, 0, 8), portalRadius: 27, portalCenter: new THREE.Vector3(0, 0, 6),
-    waves: [['kyoto_student', 'kyoto_student', 'grade4'], ['kyoto_student', 'rogue_ninja', 'clone_ninja'], ['kyoto_student', 'kyoto_student', 'rogue_ninja', 'ember_imp'], ['jogo', 'kyoto_student', 'kyoto_student']],
-    filler: ['kyoto_student', 'clone_ninja', 'rogue_ninja'] },
+    waves: [['needle_curse', 'kyoto_student', 'grade4'], ['kyoto_student', 'blade_ninja', 'bat_curse'], ['rush_curse', 'kyoto_student', 'ember_imp', 'needle_curse'], ['flame_dancer', 'blade_ninja', 'kyoto_student'], ['blood_curse', 'kyoto_student', 'rush_curse'], ['jogo', 'flame_dancer', 'kyoto_student'], ['toji_b', 'blade_ninja', 'blade_ninja']],
+    filler: ['kyoto_student', 'blade_ninja', 'rush_curse', 'needle_curse', 'flame_dancer'] },
 
   culling_colony: { name: 'Culling Game Colony', sub: 'Tokyo No. 1', seed: 3131, build: buildCullingColony,
     blurb: 'A sealed city block. Everyone inside has to score points, including you.',
     sky: 0x1a0e14, fogColor: 0x3a1a24, fogNear: 40, fogFar: 220, sunColor: 0xffb0a0, sunLevel: 1.4, hemiSky: 0xa85c6a, hemiGround: 0x2a1a20, hemiLevel: 1,
     spawn: new THREE.Vector3(0, 0, 10), portalRadius: 24, portalCenter: new THREE.Vector3(0, 0, 8),
-    waves: [['clone_ninja', 'rogue_ninja', 'ember_imp'], ['stone_brute', 'storm_wraith', 'clone_ninja', 'cursed_toad'], ['mahito_b', 'clone_ninja', 'clone_ninja'], ['jogo', 'hanami', 'storm_wraith']],
-    filler: ['clone_ninja', 'rogue_ninja', 'storm_wraith', 'stone_brute'] },
+    waves: [['bat_curse', 'rush_curse', 'needle_curse'], ['blade_ninja', 'smoke_curse', 'rush_curse', 'larva'], ['finger_bearer', 'flame_dancer', 'bat_curse'], ['cursed_womb', 'iron_curse', 'blade_ninja'], ['blood_curse', 'spine_curse', 'smoke_curse'], ['mahito_b', 'cursed_womb', 'flame_dancer'], ['dagon_b', 'blood_curse', 'iron_curse'], ['toji_b', 'kenjaku_b', 'spine_curse']],
+    filler: ['rush_curse', 'blade_ninja', 'blood_curse', 'spine_curse', 'finger_bearer', 'smoke_curse'] },
 
   land_of_wind: { name: 'Land of Wind', sub: 'Hidden Sand — Suna', seed: 2468, build: buildLandOfWind,
     blurb: 'Harsh desert in the southwest, and a village walled in by rock.',
     sky: 0xe8b26a, fogColor: 0xe8c48a, fogNear: 70, fogFar: 320, sunColor: 0xfff0c8, sunLevel: 3.1, hemiSky: 0xffd8a0, hemiGround: 0xa8814e, hemiLevel: 1.4,
     spawn: new THREE.Vector3(0, 0, 8), portalRadius: 30, portalCenter: new THREE.Vector3(0, 0, 6),
-    waves: [['sand_spirit', 'sand_spirit', 'ember_imp'], ['stone_brute', 'sand_spirit', 'ember_imp', 'ember_imp'], ['sand_spirit', 'sand_spirit', 'stone_brute', 'wind_spirit'], ['jogo', 'sand_spirit', 'stone_brute']],
-    filler: ['sand_spirit', 'ember_imp', 'stone_brute'] },
+    waves: [['larva', 'sand_spirit', 'needle_curse'], ['sand_spirit', 'ember_imp', 'rush_curse'], ['needle_curse', 'stone_brute', 'sand_spirit', 'bat_curse'], ['flame_dancer', 'iron_curse', 'sand_spirit'], ['spine_curse', 'stone_brute', 'flame_dancer'], ['jogo', 'iron_curse', 'sand_spirit']],
+    filler: ['sand_spirit', 'needle_curse', 'rush_curse', 'flame_dancer', 'ember_imp'] },
 
   land_of_earth: { name: 'Land of Earth', sub: 'Hidden Stone — Iwa', seed: 1357, build: buildLandOfEarth,
     blurb: 'Rock and terraces in the northwest. Everything here hits like the ground.',
     sky: 0x4a4238, fogColor: 0x6a5f50, fogNear: 60, fogFar: 280, sunColor: 0xffe2b0, sunLevel: 2.2, hemiSky: 0xc8b088, hemiGround: 0x4a4238, hemiLevel: 1.2,
     spawn: new THREE.Vector3(0, 0, 10), portalRadius: 28, portalCenter: new THREE.Vector3(0, 0, 8),
-    waves: [['stone_brute', 'stone_brute', 'grade4'], ['stone_brute', 'tomb_guardian', 'sand_spirit'], ['tomb_guardian', 'tomb_guardian', 'stone_brute', 'grade4'], ['hanami', 'stone_brute', 'tomb_guardian']],
-    filler: ['stone_brute', 'tomb_guardian', 'sand_spirit'] },
+    waves: [['larva', 'stone_brute', 'grade4'], ['stone_brute', 'tomb_guardian', 'rush_curse'], ['iron_curse', 'stone_brute', 'sand_spirit', 'larva'], ['finger_bearer', 'tomb_guardian', 'iron_curse'], ['spine_curse', 'iron_curse', 'stone_brute'], ['hanami', 'finger_bearer', 'tomb_guardian']],
+    filler: ['stone_brute', 'tomb_guardian', 'iron_curse', 'rush_curse', 'finger_bearer'] },
 
   land_of_water: { name: 'Land of Water', sub: 'Hidden Mist — Kiri', seed: 8642, build: buildLandOfWater,
     blurb: 'An island nation to the east. You will not see much of it.',
     sky: 0x6a8590, fogColor: 0x8fa8b0, fogNear: 22, fogFar: 130, sunColor: 0xd8ecf4, sunLevel: 1.5, hemiSky: 0xa8ccd8, hemiGround: 0x3a5058, hemiLevel: 1.5,
     spawn: new THREE.Vector3(0, 0, 8), portalRadius: 22, portalCenter: new THREE.Vector3(0, 0, 6),
-    waves: [['mist_leech', 'mist_leech', 'cursed_toad'], ['mist_leech', 'cursed_toad', 'cursed_toad', 'wind_spirit'], ['mist_leech', 'mist_leech', 'mist_leech', 'clone_ninja'], ['mahito_b', 'mist_leech', 'cursed_toad']],
-    filler: ['mist_leech', 'cursed_toad', 'clone_ninja'] },
+    waves: [['larva', 'mist_leech', 'cursed_toad'], ['mist_leech', 'smoke_curse', 'cursed_toad'], ['smoke_curse', 'mist_leech', 'bat_curse', 'clone_ninja'], ['cursed_womb', 'smoke_curse', 'mist_leech'], ['blood_curse', 'cursed_womb', 'mist_leech'], ['dagon_b', 'smoke_curse', 'mist_leech']],
+    filler: ['mist_leech', 'smoke_curse', 'cursed_toad', 'bat_curse', 'cursed_womb'] },
 
   land_of_lightning: { name: 'Land of Lightning', sub: 'Hidden Cloud — Kumo', seed: 9753, build: buildLandOfLightning,
     blurb: 'Mountain peaks in the northeast, above the cloud line, in a permanent storm.',
     sky: 0x232a3a, fogColor: 0x3a4458, fogNear: 55, fogFar: 260, sunColor: 0xcfd8ff, sunLevel: 1.8, hemiSky: 0x8fa0d8, hemiGround: 0x2a3040, hemiLevel: 1.2, storm: true,
     spawn: new THREE.Vector3(0, 0, 10), portalRadius: 28, portalCenter: new THREE.Vector3(0, 0, 8),
-    waves: [['storm_wraith', 'storm_wraith', 'thunder_ninja'], ['thunder_ninja', 'thunder_ninja', 'storm_wraith', 'rogue_ninja'], ['storm_wraith', 'storm_wraith', 'storm_wraith', 'thunder_ninja'], ['mahito_b', 'thunder_ninja', 'storm_wraith']],
-    filler: ['storm_wraith', 'thunder_ninja', 'rogue_ninja'] },
+    waves: [['bat_curse', 'storm_wraith', 'needle_curse'], ['storm_wraith', 'thunder_ninja', 'bat_curse'], ['thunder_ninja', 'blade_ninja', 'storm_wraith', 'rush_curse'], ['blade_ninja', 'flame_dancer', 'thunder_ninja'], ['blood_curse', 'spine_curse', 'storm_wraith'], ['mahito_b', 'thunder_ninja', 'blade_ninja']],
+    filler: ['storm_wraith', 'thunder_ninja', 'blade_ninja', 'bat_curse', 'blood_curse'] },
 };
 const MAP_IDS = Object.keys(MAPS);
 
@@ -1915,15 +1982,15 @@ const CHARACTERS = {
   naruto:    { pouch: true, buckle: 0x363641, sig: 0xf66c2d, skin: 0xf3c9a0, hair: 0xe7e419, hairStyle: 'naruto',  top: 0xf66c2d, bottom: 0xf66c2d, sleeves: 0xf66c2d, shoulders: 0x363641, eye: 0x4691cc, headband: 0x082c8c, whiskers: true, sandals: 0x082c8c, belt: 0x363641, hairLen: 1.05 },
   // Sasuke: Sport Black and Vintage Dark Blue, Authentic Silver, Uchiha red eye.
   sasuke:    { sword: true, sharingan: true, browAngle: .3, sig: 0x9b6cff, skin: 0xf7dcc0, hair: 0x151313, hairStyle: 'sasuke',  top: 0x293241, bottom: 0xa7a7a9, sleeves: 0x293241, eye: 0xe10000, rinnegan: true, collar: 0x151313, sash: 0x13386c, cape: 0x151313 },
-  gojo:      { height: 1.12, brow: 0xd8d8e8, sig: 0x5ad4ff, skin: 0xf7dcc0, hair: 0xf4f4ff, hairStyle: 'gojo',  top: 0x101018, bottom: 0x101018, sleeves: 0x101018, eye: 0x5ad4ff, blindfold: 0x191922, collar: 0x1e1e2a, belt: 0x1e1e2a, hairLen: 1.1 },
+  gojo:      { height: 1.12, uniform: 0x14141e, cuff: 0x14141e, buckle: 0x8a8a96, brow: 0xd8d8e8, sig: 0x5ad4ff, skin: 0xf7dcc0, hair: 0xf4f4ff, hairStyle: 'gojo',  top: 0x101018, bottom: 0x101018, sleeves: 0x101018, eye: 0x5ad4ff, blindfold: 0x191922, collar: 0x1e1e2a, belt: 0x1e1e2a, hairLen: 1.1 },
   sukuna:    { tie: 0x6a0c14, brow: 0xe0a8a8, browAngle: .34, sig: 0xff2d55, skin: 0xf2d6c6, hair: 0xf7c6c6, hairStyle: 'sukuna',  top: 0x180508, bottom: 0x180508, sleeves: 0xf2d6c6, eye: 0xff2d55, markings: true, fourArms: true, sash: 0x6a0c14 },
-  yuji:      { sig: 0xff8f9c, skin: 0xf3c9a0, hair: 0xff8f9c, hairStyle: 'crop',  top: 0x22222a, bottom: 0x22222a, sleeves: 0x22222a, eye: 0x8a4a2a, hood: 0x2c2c36, collar: 0x2c2c36 },
-  megumi:    { pouch: true, sig: 0x2f6f6a, skin: 0xf7dcc0, hair: 0x101430, hairStyle: 'megumi',  top: 0x13163a, bottom: 0x13163a, sleeves: 0x13163a, eye: 0x2f6f6a, collar: 0x0d1028, hairLen: 1.25 },
+  yuji:      { sig: 0xff8f9c, skin: 0xf3c9a0, hair: 0xff8f9c, hairStyle: 'crop',  top: 0x22222a, bottom: 0x22222a, sleeves: 0x22222a, eye: 0x8a4a2a, hood: 0x2c2c36, uniform: 0xb52f36, clasps: true, buckle: 0xe8e0d0, cuff: 0x2c2c36, brow: 0xd4707c },
+  megumi:    { pouch: true, sig: 0x2f6f6a, skin: 0xf7dcc0, hair: 0x101430, hairStyle: 'megumi',  top: 0x13163a, bottom: 0x13163a, sleeves: 0x13163a, eye: 0x2f6f6a, uniform: 0x191d44, cuff: 0x191d44, buckle: 0xc8a44a, brow: 0x101430, browAngle: .22, hairLen: 1.25 },
   toji:      { browAngle: .3, sig: 0x9fe870, skin: 0xe8c8a0, hair: 0x141418, hairStyle: 'crop',  top: 0x16161c, bottom: 0x141418, eye: 0x35502f, scar: true, bare: true, belt: 0x2a2a30 },
   kakashi:   { sig: 0x5f6b7a, height: 1.04, skin: 0xf3d6b8, hair: 0xc8ccd4, hairStyle: 'kakashi', top: 0x2a3550, bottom: 0x1f2740, sleeves: 0x2a3550, eye: 0x3a4a5a, maskLower: 0x1a1f2e, headband: 0x2a4a8a, eyePatch: true, vest: 0x3f5a3a, pouch: true, brow: 0xc8ccd4 },
   kashimo:   { tie: 0xffd54a, sig: 0xffe45c, skin: 0xf3d6b8, hair: 0xf5e6a0, hairStyle: 'long',   top: 0x2a2340, bottom: 0x2a2340, sleeves: 0x2a2340, eye: 0xffe45c, sash: 0xffd54a },
   spiderman: { sig: 0xd8323c, skin: 0xd8323c, hair: 0xd8323c, hairStyle: 'none',   top: 0xd8323c, bottom: 0x1f2f8f, sleeves: 0xd8323c, eye: 0xffffff, mask: true, webs: true },
-  geto:      { tie: 0x3a2c44, sig: 0x4a3a8a, skin: 0xf3d6b8, hair: 0x14141c, hairStyle: 'bun',   top: 0x2a2030, bottom: 0x1a1622, sleeves: 0x2a2030, eye: 0x6a4a7a, collar: 0x3a2c44 },
+  geto:      { tie: 0x3a2c44, sig: 0x4a3a8a, skin: 0xf3d6b8, hair: 0x14141c, hairStyle: 'bun',   top: 0x2a2030, bottom: 0x1a1622, sleeves: 0x2a2030, eye: 0x6a4a7a, collar: 0x3a2c44, sash: 0xb8912a, buckle: 0xb8912a, brow: 0x14141c },
   kenjaku:   { sig: 0x8aa84a, skin: 0xe8d8c0, hair: 0x1a1a22, hairStyle: 'bun',   top: 0x3a4426, bottom: 0x1a1622, sleeves: 0x3a4426, eye: 0x8aa84a, stitches: true },
   choso:     { sig: 0x9b1a2a, skin: 0xf0d2b8, hair: 0x1a1a22, hairStyle: 'crop',  top: 0x2a1a20, bottom: 0x1a1218, sleeves: 0x9b1a2a, eye: 0x9b1a2a, markStripe: true },
   // Mahito: Loblolly skin, Lyla shawl, Winter Blue trim, patchwork stitches.
@@ -1937,7 +2004,7 @@ const CHARACTERS = {
   // Naoya: Zen'in black kimono, flat black hair, and a permanent sneer.
   naoya:     { sig: 0x9aa4b8, skin: 0xf3d6b8, hair: 0x14161c, hairStyle: 'naoya', top: 0x1a1a24, bottom: 0x14141c, sleeves: 0x1a1a24, eye: 0x8a94a8, sash: 0x6a1a2a, collar: 0xe8e4dc, tie: 0x6a1a2a, brow: 0x14161c, browAngle: .36, hairLen: 1.1 },
   // Yuta: Jujutsu High black uniform, black hair over the eyes, katana on the hip.
-  yuta:      { sig: 0x9fd6ff, skin: 0xf3d6b8, hair: 0x14141a, hairStyle: 'yuta', top: 0x1b1f2e, bottom: 0x161a26, sleeves: 0x1b1f2e, eye: 0x2a2a34, sword: true, collar: 0x22283a, hairLen: 1.12 },
+  yuta:      { sig: 0x9fd6ff, skin: 0xf3d6b8, hair: 0x14141a, hairStyle: 'yuta', top: 0x1b1f2e, bottom: 0x161a26, sleeves: 0x1b1f2e, eye: 0x2a2a34, sword: true, uniform: 0x22283a, cuff: 0x22283a, buckle: 0xc8a44a, brow: 0x14141a, hairLen: 1.12 },
   // Ishigori: enormous, bare-chested, sun-bleached hair swept back.
   ishigori:  { height: 1.2, sig: 0xffd54a, skin: 0xe0b088, hair: 0xf0e08a, hairStyle: 'spiky', top: 0x2a2a30, bottom: 0x2a2a30, sleeves: 0xe0b088, eye: 0xffd54a, bare: true, belt: 0x3a3a44, brow: 0xf0e08a, browAngle: .42 },
   // Uro: pale kimono top over dark hakama, black hair in a long tail.
@@ -1980,6 +2047,27 @@ function buildCharacter(L) {
   if (L.markStripe) { const st = new THREE.Mesh(new THREE.BoxGeometry(.06, .5, .3), new THREE.MeshBasicMaterial({ color: 0x9b1a2a })); st.position.set(0, .34, .16); chest.add(st); }
   if (L.stitches) for (let i = 0; i < 4; i++) { const th = new THREE.Mesh(new THREE.BoxGeometry(.3, .02, .02), new THREE.MeshBasicMaterial({ color: 0x2a2a2a })); th.position.set(0, .18 + i * .12, .25); th.rotation.z = i % 2 ? .2 : -.2; chest.add(th); }
   if (L.collar) { const c = new THREE.Mesh(new THREE.CylinderGeometry(.26, .22, .22, 14, 1, true), toon(L.collar)); c.position.y = .58; chest.add(c); }
+  if (L.uniform) {
+    // The Jujutsu High gakuran: a standing collar that clears the jaw, a row of
+    // brass buttons down the placket, and a hem line at the waist.
+    const trim = L.uniform === true ? L.top : L.uniform;
+    const stand = outlined(new THREE.Mesh(new THREE.CylinderGeometry(.245, .262, .3, 16, 1, true), toon(trim)), .06);
+    stand.position.y = .61; chest.add(stand);
+    const lip = new THREE.Mesh(new THREE.TorusGeometry(.246, .016, 6, 20), toon(trim));
+    lip.rotation.x = Math.PI / 2; lip.position.y = .755; chest.add(lip);
+    for (let i = 0; i < 4; i++) {
+      const btn = new THREE.Mesh(new THREE.SphereGeometry(.028, 8, 6), toon(L.buckle ?? 0xc8a44a));
+      btn.scale.z = .6; btn.position.set(.055, .48 - i * .13, .245); chest.add(btn);
+    }
+    const placket = new THREE.Mesh(new THREE.BoxGeometry(.05, .56, .02), toon(L.top));
+    placket.position.set(.03, .3, .248); chest.add(placket);
+    const hem = new THREE.Mesh(new THREE.BoxGeometry(.56, .035, .5), toon(trim));
+    hem.position.y = .03; chest.add(hem);
+  }
+  if (L.clasps) for (const sx of [-1, 1]) {   // Yuji's two big collar discs
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, .03, 12), toon(L.buckle ?? 0xe8e0d0));
+    disc.rotation.x = Math.PI / 2; disc.position.set(sx * .095, .56, .24); chest.add(disc);
+  }
   // A seam down the front reads as a jacket rather than a painted torso.
   if (!L.mask && !L.bare) {
     const seam = new THREE.Mesh(new THREE.BoxGeometry(.022, .5, .02), new THREE.MeshBasicMaterial({ color: 0x0a0a10 }));
@@ -2021,8 +2109,12 @@ function buildCharacter(L) {
   }
   const nose = new THREE.Mesh(new THREE.ConeGeometry(.03, .07, 6), toon(L.skin));
   nose.rotation.x = Math.PI / 2; nose.position.set(0, -.015, .235); neck.add(nose);
-  const neckCol = new THREE.Mesh(new THREE.CylinderGeometry(.1, .12, .16, 10), toon(L.skin));
-  neckCol.position.y = -.24; neck.add(neckCol);
+  const neckCol = new THREE.Mesh(new THREE.CylinderGeometry(.095, .115, .18, 10), toon(L.skin));
+  neckCol.position.y = -.25; neck.add(neckCol);
+  if (!L.mask && !L.maskLower) {   // a mouth line, so the face is not just eyes
+    const mouth = new THREE.Mesh(new THREE.BoxGeometry(.052, .014, .02), new THREE.MeshBasicMaterial({ color: 0x8a4a48 }));
+    mouth.position.set(0, -.1, .222); neck.add(mouth);
+  }
 
   if (!L.mask && !L.blindfold) {
     // Anime eyes are large and layered: white, iris, pupil, highlight.
@@ -2032,8 +2124,12 @@ function buildCharacter(L) {
     for (const sx of [-1, 1]) {
       const sc = new THREE.Mesh(new THREE.SphereGeometry(.072, 12, 10), white);
       sc.scale.set(1, 1.25, .42); sc.position.set(sx * .1, .025, .205); neck.add(sc);
-      const lid = new THREE.Mesh(new THREE.BoxGeometry(.16, .028, .03), new THREE.MeshBasicMaterial({ color: L.brow ?? L.hair }));
-      lid.position.set(sx * .1, .1, .215); lid.rotation.z = sx * .12; neck.add(lid);
+      const lid = new THREE.Mesh(new THREE.BoxGeometry(.16, .024, .03), new THREE.MeshBasicMaterial({ color: L.brow ?? L.hair }));
+      lid.position.set(sx * .1, .098, .215); lid.rotation.z = sx * .12; neck.add(lid);
+      // A separate brow above the lash line is most of what gives a face its
+      // expression; browAngle tilts it inward for a scowl.
+      const brow = new THREE.Mesh(new THREE.BoxGeometry(.125, .026, .028), new THREE.MeshBasicMaterial({ color: L.brow ?? L.hair }));
+      brow.position.set(sx * .102, .152, .212); brow.rotation.z = sx * (.1 + (L.browAngle ?? 0)); neck.add(brow);
       const iris = new THREE.Mesh(new THREE.SphereGeometry(.046, 12, 10), irisMat);
       iris.scale.set(1, 1.15, .35); iris.position.set(sx * .1, .012, .232); neck.add(iris);
       const pupil = new THREE.Mesh(new THREE.SphereGeometry(.022, 10, 8), ink);
@@ -2226,32 +2322,39 @@ function buildCharacter(L) {
   const armRows = L.fourArms ? [{ y: .46, key: '' }, { y: .16, key: '2' }] : [{ y: .46, key: '' }];
   for (const row of armRows) for (const side of [-1, 1]) {
     const sh = new THREE.Group(); sh.position.set(side * .31, row.y, 0); chest.add(sh);
-    const upper = limbSeg(.3, .095, L.bare ? L.skin : L.top); sh.add(upper);
-    const elbow = new THREE.Group(); elbow.position.y = -.4; upper.add(elbow);
-    const fore = limbSeg(.28, .085, L.sleeves ?? L.skin); elbow.add(fore);
-    const hand = outlined(new THREE.Mesh(new THREE.SphereGeometry(.088, 10, 8), toon(L.skin)), .12);
-    hand.position.y = -.38; hand.scale.set(.9, 1.15, .7); elbow.add(hand);
-    const thumb = new THREE.Mesh(new THREE.CapsuleGeometry(.026, .055, 3, 5), toon(L.skin));
-    thumb.position.set(side * .06, -.36, .03); thumb.rotation.z = -side * .5; elbow.add(thumb);
+    const upper = limbSeg(.34, .088, L.bare ? L.skin : L.top); sh.add(upper);
+    const elbow = new THREE.Group(); elbow.position.y = -.44; upper.add(elbow);
+    const fore = limbSeg(.32, .078, L.sleeves ?? L.skin); elbow.add(fore);
+    if (L.cuff) { const cf = new THREE.Mesh(new THREE.CylinderGeometry(.088, .088, .07, 10), toon(L.cuff)); cf.position.y = -.3; elbow.add(cf); }
+    const hand = outlined(new THREE.Mesh(new THREE.SphereGeometry(.082, 10, 8), toon(L.skin)), .12);
+    hand.position.y = -.42; hand.scale.set(.88, 1.18, .7); elbow.add(hand);
+    const thumb = new THREE.Mesh(new THREE.CapsuleGeometry(.024, .055, 3, 5), toon(L.skin));
+    thumb.position.set(side * .06, -.4, .03); thumb.rotation.z = -side * .5; elbow.add(thumb);
     for (let f = 0; f < 3; f++) {
-      const fing = new THREE.Mesh(new THREE.CapsuleGeometry(.022, .07, 3, 5), toon(L.skin));
-      fing.position.set((f - 1) * .04, -.45, 0); elbow.add(fing);
+      const fing = new THREE.Mesh(new THREE.CapsuleGeometry(.02, .075, 3, 5), toon(L.skin));
+      fing.position.set((f - 1) * .038, -.49, 0); elbow.add(fing);
     }
     if (L.markings) { const band = new THREE.Mesh(new THREE.TorusGeometry(.1, .018, 5, 14), ink); band.rotation.x = Math.PI / 2; band.position.y = -.2; upper.add(band); }
     arms[(side < 0 ? 'l' : 'r') + row.key] = { shoulder: sh, elbow, hand };
   }
   const legs = {};
   for (const side of [-1, 1]) {
-    const hip = new THREE.Group(); hip.position.set(side * .14, -.1, 0); pelvis.add(hip);
-    const thigh = limbSeg(.36, .12, L.bottom); hip.add(thigh);
-    const knee = new THREE.Group(); knee.position.y = -.46; thigh.add(knee);
-    const shin = limbSeg(.34, .095, L.bottom); knee.add(shin);
-    const foot = outlined(new THREE.Mesh(new THREE.BoxGeometry(.16, .1, .28), toon(L.sandals ?? 0x1a1a1a)), .1);
-    foot.position.set(0, -.46, .05); knee.add(foot);
+    // Anime figures are mostly leg: the thigh and shin are both longer than a
+    // realistic build would make them, and the pelvis rides higher to match.
+    const hip = new THREE.Group(); hip.position.set(side * .13, -.1, 0); pelvis.add(hip);
+    const thigh = limbSeg(.44, .115, L.bottom); hip.add(thigh);
+    const knee = new THREE.Group(); knee.position.y = -.54; thigh.add(knee);
+    const shin = limbSeg(.42, .088, L.bottom); knee.add(shin);
+    const foot = outlined(new THREE.Mesh(new THREE.BoxGeometry(.16, .1, .3), toon(L.sandals ?? 0x1a1a1a)), .1);
+    foot.position.set(0, -.54, .06); knee.add(foot);
     legs[side < 0 ? 'l' : 'r'] = { hip, knee, foot };
   }
+  // A head this size against those legs lands around six heads tall, which is
+  // where the poster art sits. Scaling the whole neck group keeps the face,
+  // the hair and every hat and horn on it in proportion with each other.
+  neck.scale.setScalar(L.headScale ?? .87);
   if (L.height) root.scale.setScalar(L.height);
-  return { root, pelvis, chest, neck, arms, legs, look: L, baseY: .98 };
+  return { root, pelvis, chest, neck, arms, legs, look: L, baseY: 1.14 };
 }
 
 /** Drive a rig from a movement/attack state. Procedural, no keyframes. */
@@ -3035,7 +3138,13 @@ const ENEMY_LOOKS = {
   jogo:        { skin: 0xd88a4a, hair: 0x2a1a14, hairStyle: 'none',  top: 0x6a2a1a, bottom: 0x4a1a14, sleeves: 0xd88a4a, eye: 0xffd54a, volcano: true, markings: true },
   mahito_b:    { skin: 0xd8e0d8, hair: 0x8fa8b8, hairStyle: 'short', top: 0x2a4a46, bottom: 0x1e3a36, sleeves: 0xd8e0d8, eye: 0x6cd8c0, stitches: true, collar: 0x1e3a36 },
   thunder_ninja:{ skin: 0x8a5a3a, hair: 0xf0f0f0, hairStyle: 'spiky', top: 0x2a3550, bottom: 0x1e2438, sleeves: 0xe8e8f0, eye: 0xffe45c, headband: 0x4a4a56, sash: 0xffd54a },
-  kyoto_student:{ skin: 0xefd0b0, hair: 0x2a1e18, hairStyle: 'swept', top: 0x1e3a2a, bottom: 0x162a20, sleeves: 0x1e3a2a, eye: 0x6a8f5a, collar: 0x162a20 },
+  blade_ninja: { skin: 0xe0c0a0, hair: 0x14141c, hairStyle: 'crop', top: 0x1e2430, bottom: 0x161a24, sleeves: 0x1e2430, eye: 0xdfe8f4, maskLower: 0x14181f, headband: 0x3a3a46, brow: 0x14141c, browAngle: .3 },
+  flame_dancer:{ skin: 0xd8a878, hair: 0xff8a3d, hairStyle: 'spiky', top: 0x6a2a1a, bottom: 0x3a1410, sleeves: 0xd8a878, eye: 0xffd54a, bare: true, sash: 0xff6b3d, markings: true },
+  blood_curse: { skin: 0xe8c8c0, hair: 0x9b1a2a, hairStyle: 'long', top: 0x2a1218, bottom: 0x1a0e12, sleeves: 0x9b1a2a, eye: 0xff2d55, markStripe: true, brow: 0x9b1a2a },
+  dagon_b:     { skin: 0xbfe0f0, hair: 0x2f6fb5, hairStyle: 'none', top: 0x2a6a8a, bottom: 0x1f4f6a, sleeves: 0xbfe0f0, eye: 0x6cd8ff, horns: true, markings: true },
+  kenjaku_b:   { skin: 0xe8d8c0, hair: 0x1a1a22, hairStyle: 'bun', top: 0x3a4426, bottom: 0x1a1622, sleeves: 0x3a4426, eye: 0x8aa84a, stitches: true, collar: 0x2a3018 },
+  toji_b:      { skin: 0xe8c8a0, hair: 0x141418, hairStyle: 'crop', top: 0x16161c, bottom: 0x141418, sleeves: 0x16161c, eye: 0x35502f, scar: true, bare: true, belt: 0x2a2a30, brow: 0x141418, browAngle: .32 },
+  kyoto_student:{ skin: 0xefd0b0, hair: 0x2a1e18, hairStyle: 'swept', top: 0x1e3a2a, bottom: 0x162a20, sleeves: 0x1e3a2a, eye: 0x6a8f5a, uniform: 0x16301f, cuff: 0x16301f, buckle: 0xc8a44a },
 };
 
 // ---- Creature builders ------------------------------------------------------
@@ -3197,7 +3306,7 @@ function makeEnemyMesh(t) {
       const bloom = new THREE.Mesh(new THREE.CircleGeometry(.24, 8), glowMat(0xffb0c8));
       bloom.position.set(-.34, .5, .1); bloom.rotation.set(-.6, -.5, 0); rig.chest.add(bloom);
     }
-    built = { vis, rig, height: 2.3 * t.size };
+    built = { vis, rig, height: 2.5 * t.size };
     g.userData.rig = rig;
   } else if (t.shape === 'toad') built = makeToad(t, col);
   else if (t.shape === 'imp') built = makeImp(t, col);
@@ -3228,11 +3337,20 @@ function makeEnemyMesh(t) {
 let nidSeq = 0;
 function spawnEnemy(typeId, pos) {
   const t = { ...ENEMIES[typeId], id: typeId };
+  // Enrage mutates these, so every enemy needs its own copy rather than the
+  // one shared with the ENEMIES table.
+  if (t.ranged) t.ranged = { ...t.ranged };
+  if (t.charge) t.charge = { ...t.charge };
   const mesh = makeEnemyMesh(t); mesh.position.copy(pos); scene.add(mesh);
-  const bar = document.createElement('div'); bar.className = 'ehp'; bar.innerHTML = `<b>${t.name}${t.boss ? ' ★' : ''}</b><i><b style="width:100%"></b></i>`; $('#floats').appendChild(bar);
+  const bar = document.createElement('div'); bar.className = 'ehp';
+  const G = GRADES[t.grade ?? 4];
+  bar.innerHTML = `<b>${t.name}${t.boss ? ' ★' : ''}</b><em style="color:${G.color}">${G.label}</em><i><b style="width:100%"></b></i>`;
+  $('#floats').appendChild(bar);
   const e = { id: typeId, t, mesh, bar, pos: mesh.position, hp: t.hp, maxHp: t.hp, state: 'idle', timer: 0, wander: pos.clone(), status: {}, defMul: 1, dead: false, hitFlash: 0,
     rig: mesh.userData.rig ?? null, vis: mesh.userData.vis, height: mesh.userData.height, phase: Math.random() * 6, lastPos: pos.clone(),
-    nextShot: (t.ranged ? 2 + Math.random() * 3 : 0), sep: new THREE.Vector3(), vel: new THREE.Vector3(), stagger: 0, airborne: false,
+    nextShot: (t.ranged ? 2 + Math.random() * 3 : 0), nextCharge: (t.charge ? 2 + Math.random() * 3 : 0),
+    nextSummon: (t.summon ? (t.summon.every ?? 9) * .5 : 0), summoned: 0, auraAcc: 0, enraged: false,
+    sep: new THREE.Vector3(), vel: new THREE.Vector3(), stagger: 0, airborne: false,
     nid: ++nidSeq, net: false, pvp: null, strafe: Math.random() < .5 ? 1 : -1 };
   enemies.push(e); return e;
 }
@@ -3240,13 +3358,25 @@ function enemyTakeHit(e, power, nature, from, onHit = {}) {
   if (e.dead) return;
   const eff = effectiveness(nature, e.t.nature);
   const buffMul = player.buff && now < player.buff.until ? player.buff.dmgMul : 1;
-  const dmg = Math.round(power * eff * (onHit.ignoreDef ? 1 : e.defMul) * buffMul * (0.9 + Math.random() * .2));
+  // Armour is a flat cut off everything except techniques that ignore defence.
+  const armour = onHit.ignoreDef ? 1 : 1 - (e.t.armor ?? 0);
+  const dmg = Math.round(power * eff * (onHit.ignoreDef ? 1 : e.defMul) * armour * buffMul * (0.9 + Math.random() * .2));
   // Who owns this health? Mine to subtract unless it belongs to another machine.
   let mine = true;
   if (!onHit.fromNet && typeof netInterceptHit === 'function' && netInterceptHit(e, dmg, nature)) mine = false;
   if (e.pvp) mine = false;
   if (mine) e.hp -= dmg;
   e.hitFlash = .12;
+  // Some of them get worse when they are losing.
+  if (e.t.enrage && !e.enraged && e.hp > 0 && e.hp < e.maxHp * (e.t.enrage.at ?? .35)) {
+    e.enraged = true;
+    e.t.speed *= e.t.enrage.speed ?? 1.4;
+    e.t.atk = Math.round(e.t.atk * (e.t.enrage.dmg ?? 1.45));
+    if (e.t.ranged) e.t.ranged.cd *= .65;
+    burst(e.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 0xff3b3b, 22);
+    log(`${e.t.name} is enraged.`, true);
+    if (e.bar) e.bar.classList.add('enraged');
+  }
   floatText(e.pos, dmg, eff > 1 ? 'se' : eff < 1 ? 'nve' : '');
   if (eff > 1) center("SUPER EFFECTIVE!", 700);
   if (from) {
@@ -3329,19 +3459,39 @@ function enemyShoot(e) {
   const from = e.pos.clone().add(new THREE.Vector3(0, (e.height ?? 2) * .62, 0));
   const aimAt = (e.tgt && e.tgt.pos) ? e.tgt.pos : player.pos;
   const to = aimAt.clone().add(new THREE.Vector3(0, 1.2, 0));
-  const flight = from.distanceTo(to) / R.speed;
-  const v = to.clone().sub(from).divideScalar(Math.max(.05, flight));
-  if (R.arc) v.y += 9 * flight;           // lobbed shots hang in the air
-  const m = outlined(new THREE.Mesh(new THREE.SphereGeometry(.34 + e.t.size * .12, 10, 8), new THREE.MeshBasicMaterial({ color: R.color ?? NATURE[e.t.nature].color })), .18);
-  m.position.copy(from); scene.add(m);
-  eprojectiles.push({ m, v, t: 0, power: R.power, nature: e.t.nature, owner: e, grav: R.arc ? 9 : 0, peer: e.tgt ? e.tgt.peer : null });
-  burst(from, R.color ?? NATURE[e.t.nature].color, 4);
+  const col = R.color ?? NATURE[e.t.nature].color;
+  // A volley is n shots fanned across `spread` radians; one shot is the default.
+  const n = Math.max(1, R.burst ?? 1);
+  for (let i = 0; i < n; i++) {
+    const flight = from.distanceTo(to) / R.speed;
+    const v = to.clone().sub(from).divideScalar(Math.max(.05, flight));
+    if (n > 1) {
+      const off = (i - (n - 1) / 2) * (R.spread ?? .13);
+      const c = Math.cos(off), sn = Math.sin(off);
+      const vx = v.x * c - v.z * sn, vz = v.x * sn + v.z * c;
+      v.x = vx; v.z = vz;
+    }
+    if (R.arc) v.y += 9 * flight;         // lobbed shots hang in the air
+    const m = outlined(new THREE.Mesh(new THREE.SphereGeometry((.34 + e.t.size * .12) * (R.size ?? 1), 10, 8), new THREE.MeshBasicMaterial({ color: col })), .18);
+    m.position.copy(from); scene.add(m);
+    eprojectiles.push({ m, v, t: 0, power: R.power, nature: e.t.nature, owner: e, grav: R.arc ? 9 : 0,
+      home: R.home ?? 0, peer: e.tgt ? e.tgt.peer : null });
+  }
+  burst(from, col, n > 1 ? 8 : 4);
 }
 function updateEnemyProjectiles(dt) {
   for (const p of eprojectiles) {
     if (p.done) continue;
     p.t += dt;
     p.v.y -= p.grav * dt;
+    if (p.home && p.t < 2.2) {
+      // A homing shot bends toward you instead of committing to its first line.
+      const tgt = player.pos.clone().add(new THREE.Vector3(0, 1.2, 0)).sub(p.m.position);
+      if (tgt.lengthSq() > .5) {
+        const sp = p.v.length();
+        p.v.addScaledVector(tgt.normalize(), p.home * dt * sp).setLength(sp);
+      }
+    }
     p.m.position.addScaledVector(p.v, dt);
     p.m.rotation.x += dt * 6; p.m.rotation.y += dt * 4;
     const chest = player.pos.clone().add(new THREE.Vector3(0, 1.1, 0));
@@ -3412,6 +3562,31 @@ function updateEnemies(dt) {
     e.mesh.userData.ring.material.opacity = 0;
     if (e.webMesh && !e.status.webbed) { e.mesh.remove(e.webMesh); e.webMesh = null; }
     if (e.nextShot > 0) e.nextShot -= dt;
+    if (e.nextCharge > 0) e.nextCharge -= dt;
+    // Regeneration, a damaging aura, and shikigami it calls up mid-fight.
+    if (e.t.regen && e.hp < e.maxHp) e.hp = Math.min(e.maxHp, e.hp + e.t.regen * dt);
+    if (e.t.aura) {
+      e.auraAcc += dt;
+      if (e.auraAcc > .6) {
+        e.auraAcc = 0;
+        if (!player.dead && e.pos.distanceTo(player.pos) < (e.t.aura.radius ?? 6)) hurtPlayer(e.t.aura.power ?? 6, e.t.nature, e);
+        burst(e.pos.clone().add(new THREE.Vector3(0, .8, 0)), NATURE[e.t.nature].color, 5);
+      }
+    }
+    if (e.t.summon) {
+      e.nextSummon -= dt;
+      const live = enemies.reduce((n, x) => n + (x.dead ? 0 : 1), 0);
+      if (e.nextSummon <= 0 && e.summoned < (e.t.summon.max ?? 6) && live < 30) {
+        e.nextSummon = e.t.summon.every ?? 9;
+        for (let i = 0; i < (e.t.summon.count ?? 2); i++) {
+          const a = Math.random() * Math.PI * 2, r = 2.5 + Math.random() * 2;
+          spawnEnemy(e.t.summon.of, e.pos.clone().add(new THREE.Vector3(Math.cos(a) * r, 0, Math.sin(a) * r)));
+          e.summoned++;
+        }
+        burst(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), NATURE[e.t.nature].color, 20);
+        log(`${e.t.name} calls up more of them.`, true);
+      }
+    }
 
     if (e.state === 'idle') {
       if (dist < 38) { e.state = 'chase'; }
@@ -3427,7 +3602,11 @@ function updateEnemies(dt) {
       // which left a dead ring between 3 m and 9 m where it did nothing at all.
       const R = e.t.ranged;
       const canShoot = R && canAct && e.nextShot <= 0 && dist > 4.5 && dist < 42;
-      if (canShoot) {
+      const canCharge = e.t.charge && canAct && e.nextCharge <= 0 && dist > 6 && dist < (e.t.charge.range ?? 26);
+      if (canCharge) {
+        e.state = 'charge'; e.timer = e.t.charge.tell ?? .55;
+        if (!e.tgt.peer && !player.dead) warnPlayer(e, e.timer);
+      } else if (canShoot) {
         e.state = 'aim'; e.timer = e.t.boss ? .55 : .75;
       } else {
         if (dist > 3 && canAct) {
@@ -3451,6 +3630,35 @@ function updateEnemies(dt) {
         e.state = 'chase'; e.nextShot = e.t.ranged.cd * (.8 + Math.random() * .5);
         e.mesh.userData.ring.material.color.setHex(0xff3b3b);
         if (!player.dead || e.tgt.peer) enemyShoot(e);
+      }
+    } else if (e.state === 'charge') {
+      // The tell before a lunge: it plants, the ring flares orange, then it goes.
+      e.timer -= dt;
+      e.mesh.userData.ring.material.opacity = .4 + .5 * Math.sin(now * 26) ** 2;
+      e.mesh.userData.ring.material.color.setHex(0xff8a3d);
+      if (e.status.root || e.status.stun) { e.state = 'chase'; e.nextCharge = 2; continue; }
+      if (e.timer <= 0) {
+        e.state = 'lunge'; e.timer = e.t.charge.time ?? .65;
+        e.lungeDir = toP.clone().setY(0).normalize(); e.lungeHit = false;
+        burst(e.pos.clone().add(new THREE.Vector3(0, .6, 0)), 0xff8a3d, 12);
+      }
+    } else if (e.state === 'lunge') {
+      e.timer -= dt;
+      moveEnemy(e, e.lungeDir, e.t.charge.speed ?? 22, dt);
+      if (!e.lungeHit && dist < 2.9) {
+        e.lungeHit = true;
+        const pw = Math.round(e.t.charge.power ?? e.t.atk * 1.7);
+        if (e.tgt && e.tgt.peer) netHurtRemote(e.tgt.peer, pw, e.t.nature);
+        else if (!player.dead) hurtPlayer(pw, e.t.nature, e);
+        burst(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), 0xff8a3d, 16);
+        shake = Math.max(shake, .5);
+      }
+      const popped = damageArmy(e.pos, 3.5, 14);
+      if (popped) burst(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), 0xffffff, Math.min(8, popped));
+      if (e.timer <= 0) {
+        e.state = 'recover'; e.timer = .65;
+        e.mesh.userData.ring.material.color.setHex(0xff3b3b);
+        e.nextCharge = (e.t.charge.cd ?? 7) * (.8 + Math.random() * .4);
       }
     } else if (e.state === 'windup') {
       e.timer -= dt; e.mesh.userData.ring.material.opacity = .35 + .6 * Math.sin(now * 25) ** 2;
@@ -4449,7 +4657,7 @@ function applyStyle(id, announce = true) {
   player.se = player.maxSe;
   setLook(id);
   renderSlots();
-  if (announce) { log(`Move set: ${st.name}.`, true); center(st.name.toUpperCase(), 1400); }
+  if (announce) { log(`Now playing as ${st.name}.`, true); center(st.name.toUpperCase(), 1400); }
 }
 function renderLoadout() {
   const box = $('#loadout-styles'); box.innerHTML = '';
@@ -5130,7 +5338,7 @@ function useGate(to) {
 }
 buildMap('times_square');
 requestAnimationFrame(frame);
-window.__rift = { army, camera, scene, buildCharacter, CHARACTERS, get rasengan() { return rasengan; }, get chidori() { return chidori; }, spawnArmy, damageArmy, arcBolt, slashArc,
+window.__rift = { army, camera, scene, buildCharacter, CHARACTERS, GRADES, enemyTakeHit, get rasengan() { return rasengan; }, get chidori() { return chidori; }, spawnArmy, damageArmy, arcBolt, slashArc,
   SKILLS, STYLES, ENEMIES, MAPS, MAP_IDS, NATURE, travelTo, buildMap, portals,
   net, setMode, useGate, setSolo, setTier, TIERS, get tier() { return tierName; },
   get currentMap() { return currentMap; }, get nearPortal() { return nearPortal; }, eprojectiles, spawnEnemy, player, enemies, buildings, debris, cars, civilians, damageBuildings, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, startCharge, releaseCharge, hurtPlayer, castSkill, OUTPUT_TIERS, ARSENALS, cycleWeapon, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
@@ -5144,7 +5352,7 @@ function start(styleId) {
     try { screen.orientation?.lock?.('landscape').catch(() => {}); } catch (e) { void e; }
   }
   applyStyle(styleId, false); renderSlots(); spawnWave();
-  log(`Move set: ${STYLES[styleId].name}. Press 1-5 to use techniques.`, true);
+  log(`Playing as ${STYLES[styleId].name}. Press 1-5 to use techniques.`, true);
   log('Spider-Man: "Kid, catch!" You equipped the Web-Shooter. Hold Right Mouse or E and aim high to swing.', true);
   canvas.requestPointerLock?.();
 }
@@ -5160,13 +5368,123 @@ function moveSetCard(id, st) {
   extra.push(`<b>Spirit Energy</b> — ${isFinite(st.energy ?? 1000) ? (st.energy ?? 1000) : 'infinite, nothing he does costs him anything'}.`);
   if (st.ultimate) extra.push(`<b>G · ${st.ultimate.name}</b> — ${st.ultimate.cost} SE, lasts ${st.ultimate.duration}s${id === 'gojo' ? ', no cooldown' : `, ${st.ultimate.cd}s cooldown`}.`);
   for (const p of st.passives ?? []) extra.push(p);
-  card.innerHTML = `<div class="ms-head"><div class="ms-portrait" style="background:${hex(t)}${id === 'sukuna' ? ';background-image:repeating-linear-gradient(180deg,transparent 0 9px,#07030a 9px 11px)' : ''}"><i style="background:${hex(h)}"></i><b style="background:${hex(v)}"></b></div><div><div class="display ms-name">${st.name}</div><div class="ms-blurb">${st.blurb}</div></div></div>
-    <ul class="ms-tech">${tech}</ul>
-    ${extra.length ? `<div class="ms-extra">${extra.join('<br>')}</div>` : ''}
-    <button class="pick">${msMode === 'start' ? 'Play as this' : 'Switch to this'}</button>`;
+  card.innerHTML = `<canvas class="ms-view" width="${PREVIEW_W}" height="${PREVIEW_H}"></canvas>
+    <div class="ms-body">
+      <div class="ms-head"><div class="ms-portrait" hidden style="background:${hex(t)}${id === 'sukuna' ? ';background-image:repeating-linear-gradient(180deg,transparent 0 9px,#07030a 9px 11px)' : ''}"><i style="background:${hex(h)}"></i><b style="background:${hex(v)}"></b></div><div><div class="display ms-name">${st.name}</div><div class="ms-blurb">${st.blurb}</div></div></div>
+      <ul class="ms-tech">${tech}</ul>
+      ${extra.length ? `<div class="ms-extra">${extra.join('<br>')}</div>` : ''}
+      <button class="pick">${msMode === 'start' ? 'Play as this' : 'Switch to this'}</button>
+    </div>`;
   card.onclick = (ev) => { selectMoveSet(id); if (ev.target.classList.contains('pick')) confirmMoveSet(); };
   return card;
 }
+// ---- Character turntables ---------------------------------------------------
+// Every card on the select screen shows the real rig, turning, running through
+// the same show-off loop: idle, a slash, a technique with the character's own
+// colour in their hand, a kick. One offscreen WebGL context renders all of them
+// in turn and each frame is blitted into that card's own 2D canvas, so twenty-
+// five live characters cost one context and one draw call per visible card.
+const PREVIEW_W = 244, PREVIEW_H = 380;
+const preview = { on: false, r: null, scene: null, cam: null, cards: [], t: 0, last: 0, failed: false };
+function previewInit() {
+  if (preview.r || preview.failed) return !!preview.r;
+  try {
+    const r = new THREE.WebGLRenderer({ antialias: false, alpha: true, powerPreference: 'low-power' });
+    r.setPixelRatio(1); r.setSize(PREVIEW_W, PREVIEW_H, false);
+    r.outputColorSpace = THREE.SRGBColorSpace;
+    const sc = new THREE.Scene();
+    // Brighter than the street: a card is a display case, so nobody in a black
+    // uniform is allowed to read as a silhouette.
+    sc.add(new THREE.HemisphereLight(0xe8ecff, 0x4a3a6a, 3.4));
+    const key = new THREE.DirectionalLight(0xfff4e2, 2.6); key.position.set(3, 6, 5); sc.add(key);
+    const fill = new THREE.DirectionalLight(0xffffff, 1.5); fill.position.set(-2, 2, 6); sc.add(fill);
+    const rim = new THREE.DirectionalLight(0x9fd6ff, 1.6); rim.position.set(-4, 3, -5); sc.add(rim);
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(1.15, 32), new THREE.MeshBasicMaterial({ color: 0x1a1230, transparent: true, opacity: .8 }));
+    disc.rotation.x = -Math.PI / 2; disc.position.y = .01; sc.add(disc);
+    const cam = new THREE.PerspectiveCamera(30, PREVIEW_W / PREVIEW_H, .1, 40);
+    cam.position.set(0, 1.55, 7.2); cam.lookAt(0, 1.3, 0);
+    preview.r = r; preview.scene = sc; preview.cam = cam;
+    return true;
+  } catch (err) { preview.failed = true; return false; }
+}
+/** Build one card's rig plus the glowing effect it holds up mid-loop. */
+function previewRig(id) {
+  const rig = buildCharacter(CHARACTERS[id] ?? CHARACTERS.default);
+  const sig = (CHARACTERS[id] ?? CHARACTERS.default).sig ?? 0xb06cff;
+  const fx = new THREE.Group(); fx.visible = false; rig.arms.r.hand.add(fx);
+  const orb = new THREE.Mesh(new THREE.SphereGeometry(.19, 14, 10), new THREE.MeshBasicMaterial({ color: sig, transparent: true, opacity: .95 }));
+  orb.position.y = -.16; fx.add(orb);
+  const halo = new THREE.Mesh(new THREE.TorusGeometry(.3, .035, 6, 22), new THREE.MeshBasicMaterial({ color: sig, transparent: true, opacity: .6 }));
+  halo.position.y = -.16; fx.add(halo);
+  const shards = [];
+  for (let i = 0; i < 4; i++) {
+    const sh = new THREE.Mesh(new THREE.ConeGeometry(.05, .2, 4), new THREE.MeshBasicMaterial({ color: sig }));
+    fx.add(sh); shards.push(sh);
+  }
+  const aura = new THREE.Mesh(new THREE.RingGeometry(.85, 1.12, 32), new THREE.MeshBasicMaterial({ color: sig, transparent: true, opacity: 0, side: THREE.DoubleSide }));
+  aura.rotation.x = -Math.PI / 2; aura.position.y = .02; rig.root.add(aura);
+  return { rig, fx, orb, halo, shards, aura };
+}
+function drawPreview(c) {
+  if (!c.built) { try { Object.assign(c, previewRig(c.id)); c.built = true; } catch (err) { c.dead = true; return; } }
+  const t = preview.t + c.offset, cyc = t % 6.4;
+  const rig = c.rig;
+  rig.root.rotation.y = t * .8;                       // the turntable itself
+  const st = { phase: t * 2.4, moving: false, amp: .32, air: false, swing: false };
+  if (cyc > 1.5 && cyc < 2.5) st.attack = { kind: 'slash', k: (cyc - 1.5) };
+  else if (cyc > 4.7 && cyc < 5.5) st.attack = { kind: 'kick', k: (cyc - 4.7) / .8 };
+  poseRig(rig, st);
+  const casting = cyc >= 2.7 && cyc <= 4.4;
+  c.fx.visible = casting;
+  c.aura.material.opacity = 0;
+  if (casting) {
+    const k = (cyc - 2.7) / 1.7, pulse = Math.sin(k * Math.PI);
+    // Both hands up and forward, the way every one of these characters holds a
+    // technique before letting it go.
+    rig.arms.r.shoulder.rotation.set(-1.15 - pulse * .35, 0, -.3);
+    rig.arms.r.elbow.rotation.x = -.55;
+    rig.arms.l.shoulder.rotation.set(-.75, 0, .42);
+    rig.arms.l.elbow.rotation.x = -.9;
+    rig.chest.rotation.x = -.08;
+    c.orb.scale.setScalar(.35 + pulse * 1.15);
+    c.halo.scale.setScalar(.5 + pulse * 1.1); c.halo.rotation.x = t * 3.4; c.halo.rotation.y = t * 2.1;
+    c.shards.forEach((sh, i) => {
+      const a = t * 4 + i * Math.PI / 2, rad = .26 + pulse * .3;
+      sh.position.set(Math.cos(a) * rad, -.16 + Math.sin(a * 1.4) * .12, Math.sin(a) * rad);
+      sh.rotation.set(a, a * .7, 0); sh.scale.setScalar(.5 + pulse);
+    });
+    c.aura.material.opacity = pulse * .5;
+    c.aura.scale.setScalar(.8 + pulse * .5);
+  }
+  preview.scene.add(rig.root);
+  preview.r.render(preview.scene, preview.cam);
+  preview.scene.remove(rig.root);
+  c.ctx.drawImage(preview.r.domElement, 0, 0, PREVIEW_W, PREVIEW_H);
+}
+function previewTick(now) {
+  if (!preview.on) return;
+  requestAnimationFrame(previewTick);
+  const dt = Math.min(.06, (now - preview.last) / 1000 || .016);
+  if (dt < (Q.fx < .5 ? .045 : .028)) return;         // cap the turntables around 22-35 fps
+  preview.last = now; preview.t += dt;
+  const h = innerHeight;
+  for (const c of preview.cards) {
+    if (c.dead) continue;
+    const r = c.canvas.getBoundingClientRect();
+    if (r.bottom < -60 || r.top > h + 60) continue;   // off-screen cards cost nothing
+    drawPreview(c);
+  }
+}
+function previewStart(grid) {
+  if (!previewInit()) { for (const el of grid.querySelectorAll('.ms-portrait')) el.hidden = false;
+    for (const el of grid.querySelectorAll('.ms-view')) el.hidden = true; return; }
+  preview.cards = [...grid.children].map((card, i) => {
+    const canvas = card.querySelector('.ms-view');
+    return { id: card.dataset.id, canvas, ctx: canvas.getContext('2d'), offset: i * 1.7, built: false };
+  });
+  preview.on = true; preview.last = 0; requestAnimationFrame(previewTick);
+}
+function previewStop() { preview.on = false; }
 function selectMoveSet(id) {
   msSelected = id;
   for (const c of $('#ms-grid').children) c.classList.toggle('selected', c.dataset.id === id);
@@ -5181,9 +5499,11 @@ function openMoveSets(mode) {
   $('#ms-confirm').disabled = true; $('#ms-hint').textContent = 'Select a character.';
   if (player.style) selectMoveSet(player.style); else if (msSelected) selectMoveSet(msSelected);
   $('#movesets').hidden = false; document.exitPointerLock?.();
+  previewStart(grid);
 }
 function confirmMoveSet() {
   if (!msSelected) return;
+  previewStop();
   $('#movesets').hidden = true;
   if (msMode === 'start') start(msSelected);
   else { if (msSelected !== player.style) applyStyle(msSelected); canvas.requestPointerLock?.(); }
@@ -5223,7 +5543,7 @@ $('#voice-btn').onclick = () => { audio.voice = !audio.voice; localStorage.setIt
 syncAudioBtns();
 $('#open-movesets').onclick = () => openMoveSets('start');
 $('#ms-confirm').onclick = confirmMoveSet;
-$('#ms-close').onclick = () => { $('#movesets').hidden = true; canvas.requestPointerLock?.(); };
+$('#ms-close').onclick = () => { previewStop(); $('#movesets').hidden = true; canvas.requestPointerLock?.(); };
 $('#retry').onclick = () => {
   for (const e of enemies) { if (!e.dead) { scene.remove(e.mesh); e.bar.remove(); } }
   enemies.length = 0; wave = 0; player.hp = player.maxHp; player.se = player.maxSe; player.dead = false; player.pos.copy(MAPS[currentMap].spawn); player.vel.set(0, 0, 0);
