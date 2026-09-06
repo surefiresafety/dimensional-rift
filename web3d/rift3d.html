@@ -760,8 +760,9 @@ const STYLES = {
       title: 'WE ARE VENOM', color: 0xf0f0f0,
       log: 'The suit crawls up over him and takes the mouth off the mask. Forty seconds as Venom, then Peter gets the body back.' } },
   docock: { name: 'Doctor Octopus', blurb: 'Otto Octavius and four arms that answer faster than his own. He does not need to get close, and he does anyway.',
-    passives: ['The arms give him reach: bare hands hit for 26 from two metres further out than anyone else.', 'Actuator Sweep covers a nine-metre arc — the widest basic technique in the game.', 'Pin Down roots for four seconds and softens everything it holds.'],
+    passives: ['The arms give him reach: bare hands hit for 26 from two metres further out than anyone else.', 'The four arms fight by themselves: each picks its own target inside nine metres and strikes on its own cooldown while you do something else.', 'Actuator Sweep covers a nine-metre arc — the widest basic technique in the game.', 'Pin Down roots for four seconds and softens everything it holds.'],
     m1: 26, m1Range: 2,
+    autoLimbs: { count: 4, reach: 9, power: 26, cd: 1.5, color: 0xa8b2be, claw: true, knock: 6 },
     pool: ['actuator_sweep', 'tentacle_grab', 'debris_hurl', 'pin_down', 'actuator_guard'], slots: ['actuator_sweep', 'tentacle_grab', 'debris_hurl', 'pin_down', 'actuator_guard'],
     ultimate: { skill: 'fusion_flare', name: 'Fusion Flare', cost: 38, cd: 27, duration: 1 } },
   nanami: { name: 'Nanami Kento: Ratio Technique', blurb: 'A salaryman who went back to sorcery because the hours were no better either way. Methodical, blunt, and very hard to survive.',
@@ -785,18 +786,21 @@ const STYLES = {
     pool: ['speech_stop', 'speech_blast', 'speech_crush', 'speech_explode', 'speech_sleep'], slots: ['speech_stop', 'speech_blast', 'speech_crush', 'speech_explode', 'speech_sleep'],
     ultimate: { skill: 'speech_die', name: 'DIE', cost: 44, cd: 30, duration: 1 } },
   carnage: { name: 'Carnage', blurb: 'Cletus Kasady wearing the red one. Venom has a code it mostly keeps. This has none.',
-    passives: ['Blades, webbing and Impale all feed him: a fifth to a third of the damage comes back as health.', 'Bare hands hit for 30 with blades on the ends of them.', 'He spins his own webbing: hold E to swing on a red line. Tendril Spear is in his pool.'],
+    passives: ['Blades, webbing and Impale all feed him: a fifth to a third of the damage comes back as health.', 'Four tendrils fight on their own inside eight and a half metres, and they feed him too.', 'Bare hands hit for 30 with blades on the ends of them.', 'He spins his own webbing: hold E to swing on a red line. Tendril Spear is in his pool.'],
     m1: 30, m1Range: 1.2,
+    autoLimbs: { count: 4, reach: 8.5, power: 22, cd: 1.3, color: 0xd4142a, knock: 5, onHit: { leech: .2 } },
     pool: ['carnage_blades', 'impale', 'red_web', 'carnage_swarm', 'blood_frenzy', 'tendril_spear'], slots: ['carnage_blades', 'impale', 'red_web', 'carnage_swarm', 'blood_frenzy'],
     ultimate: { skill: 'maximum_carnage', name: 'MAXIMUM CARNAGE', cost: 38, cd: 28, duration: 1 } },
   antivenom: { name: 'Anti-Venom', blurb: 'The white one. It cures what it touches, and being cured by it is not pleasant.',
-    passives: ['Almost everything he does heals him: Cleansing Touch alone gives back 45% of its damage.', 'Antibody Shell eats four hits and burns whoever threw them.', 'White Lash is his webbing, and he swings on a white line with E.'],
+    passives: ['Almost everything he does heals him: Cleansing Touch alone gives back 45% of its damage.', 'Three tendrils fight on their own inside eight metres, and a third of what they deal comes back as health.', 'Antibody Shell eats four hits and burns whoever threw them.', 'White Lash is his webbing, and he swings on a white line with E.'],
     m1: 28, m1Range: 1.1,
+    autoLimbs: { count: 3, reach: 8, power: 20, cd: 1.5, color: 0xeef2f6, knock: 4, onHit: { leech: .35 } },
     pool: ['cleansing_touch', 'white_lash', 'antibody_burst', 'antibody_shell', 'purify'], slots: ['cleansing_touch', 'white_lash', 'antibody_burst', 'antibody_shell', 'purify'],
     ultimate: { skill: 'total_cure', name: 'TOTAL CURE', cost: 38, cd: 26, duration: 1 } },
   venom: { name: 'Venom: The Symbiote', blurb: 'The black suit, and it is not a costume. Everything Peter does, it does harder and enjoys more.',
-    passives: ['No Spider-Sense and none of Peter\'s techniques, but the symbiote spins its own webbing: hold E to swing on a black line.', 'Bare hands hit for 34 with the reach of the tendrils behind them.', 'Spider-Man turns into this with G, and turns back when it runs out.'],
+    passives: ['No Spider-Sense and none of Peter\'s techniques, but the symbiote spins its own webbing: hold E to swing on a black line.', 'Three tendrils fight on their own, picking their own targets inside eight metres while you do something else.', 'Bare hands hit for 34 with the reach of the tendrils behind them.', 'Spider-Man turns into this with G, and turns back when it runs out.'],
     m1: 34, m1Range: 1.4,
+    autoLimbs: { count: 3, reach: 8, power: 24, cd: 1.6, color: 0x2a2a34, knock: 5 },
     pool: ['symbiote_lash', 'venom_pounce', 'black_web', 'tendril_slam', 'symbiote_feed'], slots: ['symbiote_lash', 'venom_pounce', 'black_web', 'tendril_slam', 'symbiote_feed'],
     ultimate: { skill: 'we_are_venom', name: 'WE ARE VENOM', cost: 34, cd: 24, duration: 1 } },
   yuji: { name: 'Yuji: The Vessel', blurb: 'Fists, Black Flash, blood. G lets Sukuna out; die once and he takes the wheel.',
@@ -4871,6 +4875,69 @@ function strike() {
     hit = true; } }
   if (!hit) burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)).addScaledVector(dir, 1.5), 0xffffff, 3);
 }
+// ---------------------------------------------------------------------------
+// Autonomous limbs.
+//
+// Doc Ock's actuators and the symbiotes' tendrils are not held weapons — they
+// have their own opinions. Each one picks a target inside its reach and lashes
+// out on its own cooldown while you are busy doing something else. You never
+// press anything for this.
+// ---------------------------------------------------------------------------
+const limbLashes = [];
+function limbOf(style) { return style ? STYLES[style]?.autoLimbs ?? null : null; }
+function spawnLash(from, to, cfg, idx) {
+  const dir = to.clone().sub(from);
+  const len = dir.length();
+  if (len < .01) return;
+  const geo = cfg.claw
+    ? new THREE.CylinderGeometry(.05, .11, len, 7)      // an actuator tapers to its claw
+    : new THREE.CylinderGeometry(.02, .09, len, 6);     // a tendril tapers to a point
+  const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: cfg.color, transparent: true, opacity: .96 }));
+  m.position.copy(from).add(dir.clone().multiplyScalar(.5));
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+  scene.add(m);
+  limbLashes.push({ m, t: 0, life: .28 });
+  if (cfg.claw) {
+    const claw = new THREE.Mesh(new THREE.ConeGeometry(.13, .3, 5), m.material);
+    claw.position.copy(to); scene.add(claw);
+    limbLashes.push({ m: claw, t: 0, life: .28 });
+  }
+}
+function updateAutoLimbs(dt) {
+  for (let i = limbLashes.length - 1; i >= 0; i--) {
+    const L = limbLashes[i];
+    L.t += dt;
+    // Out fast, back slower: the retract is what makes it read as a limb.
+    const k = L.t / L.life;
+    L.m.scale.setScalar(k < .3 ? k / .3 : 1 - (k - .3) / .7);
+    L.m.material.opacity = .96 * (1 - k);
+    if (L.t >= L.life) { scene.remove(L.m); L.m.geometry.dispose(); L.m.material.dispose(); limbLashes.splice(i, 1); }
+  }
+  const cfg = limbOf(player.style);
+  if (!cfg || player.dead) return;
+  player.limbCd ??= [];
+  const origin = player.pos.clone().add(new THREE.Vector3(0, 1.35, 0));
+  for (let i = 0; i < cfg.count; i++) {
+    player.limbCd[i] = (player.limbCd[i] ?? (i * cfg.cd) / cfg.count) - dt;
+    if (player.limbCd[i] > 0) continue;
+    // Each limb picks its own target, so a crowd gets spread between them
+    // rather than all four arms landing on the same enemy.
+    let best = null, bestD = cfg.reach;
+    for (let n = 0; n < enemies.length; n++) {
+      const e = enemies[(n + i) % enemies.length];
+      if (!e || e.dead) continue;
+      const d = e.pos.distanceTo(player.pos);
+      if (d < bestD) { best = e; bestD = d; break; }
+    }
+    if (!best) { player.limbCd[i] = .25; continue; }
+    player.limbCd[i] = cfg.cd * (.85 + Math.random() * .3);
+    const at = best.pos.clone().add(new THREE.Vector3(0, (best.height ?? 2) * .5, 0));
+    const from = origin.clone().add(new THREE.Vector3(Math.cos(i * 1.9) * .45, Math.sin(i * 2.3) * .25, Math.sin(i * 1.9) * .3));
+    spawnLash(from, at, cfg, i);
+    enemyTakeHit(best, cfg.power, cfg.nature ?? 'physical', player.pos, { knock: cfg.knock ?? 4, ...(cfg.onHit ?? {}) });
+    sfx.hit?.();
+  }
+}
 function updateProjectiles(dt) {
   for (const p of projectiles) {
     if (p.done) continue;
@@ -5439,6 +5506,7 @@ function frame(t) {
   updateStreets(worldDt);
   updateEnemies(worldDt);
   updateProjectiles(worldDt);
+  updateAutoLimbs(worldDt);
   updateEnemyProjectiles(worldDt);
   updateFxLights(real);
   pruneEnemies();
