@@ -285,7 +285,7 @@
         <tr><td>Move / Look</td><td>WASD · mouse (click to capture, or drag)</td></tr>
         <tr><td>Web-Swing</td><td>Hold Right Mouse or E, release to let go. Aim high at a building. Spider-Man, Venom, Carnage and Anti-Venom each swing on their own line.</td></tr>
         <tr><td>Strike</td><td>Left Mouse</td></tr>
-        <tr><td>Techniques</td><td>1 2 3 4 5. Everyone waits on cooldowns except Gojo, who never does.</td></tr>
+        <tr><td>Techniques</td><td>1 2 3 4 5. Everyone waits on their own cooldowns; Gojo waits four seconds on everything.</td></tr>
         <tr><td>Dodge</td><td>C. When the screen goes purple, Spider-Sense is open: dodge for a Perfect Dodge.</td></tr>
         <tr><td>Loadout</td><td>Tab</td></tr>
         <tr><td>Ultimate</td><td>G (Yuji: Sukuna for a minute · Megumi: summon Mahoraga)</td></tr>
@@ -688,8 +688,8 @@ const SKILLS = {
   rabbit_escape:   { name: 'Rabbit Escape', origin: 'Megumi', nature: 'physical', cost: 10, cd: 14, type: 'evade', duration: 3, speedMul: 1.5, desc: 'A swarm of rabbits. Untouchable and fast for 3 seconds.' },
 };
 const STYLES = {
-  gojo: { name: 'Gojo: Limitless', blurb: 'Six Eyes and Limitless. Nothing reaches him, everything reaches you.', energy: Infinity,
-    passives: ['All Cursed: never weak, never super effective. Raw numbers instead.', 'Hold E to fly. Limitless does not care about the ground.'],
+  gojo: { name: 'Gojo: Limitless', blurb: 'Six Eyes and Limitless. Nothing reaches him, everything reaches you.', energy: Infinity, cdFlat: 4,
+    passives: ['All Cursed: never weak, never super effective. Raw numbers instead.', 'Hold E to fly. Limitless does not care about the ground.', 'Four seconds on everything, ultimate included, instead of each technique\'s own cooldown. Spirit Energy is still free.'],
     pool: ['blue', 'red', 'hollow_purple', 'infinity', 'rct_heal'], slots: ['blue', 'red', 'hollow_purple', 'infinity', 'rct_heal'],
     ultimate: { skill: 'unlimited_void', name: 'Domain: Unlimited Void', cost: 40, cd: 34, duration: 5 } },
   naruto: { name: 'Naruto: Uzumaki', blurb: 'Clones, Rasengan, Sage Mode. Relentless and mobile.',
@@ -4068,7 +4068,10 @@ function aimDir() {
   for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().add(new THREE.Vector3(0, 1, 0)).sub(player.pos.clone().add(new THREE.Vector3(0, 1.4, 0))); const d = to.length(); if (d < bestD && (d < 4.5 || to.clone().normalize().dot(camF) > .5)) { best = to.normalize(); bestD = d; } }
   return best ?? camF;
 }
-const noCooldowns = () => player.style === 'gojo';
+// A style can either skip cooldowns entirely or run one flat number in place of
+// every technique's own. Gojo does the latter: four seconds on everything.
+const noCooldowns = () => !!(player.style && STYLES[player.style]?.noCd);
+const flatCd = () => (player.style ? STYLES[player.style]?.cdFlat : null) ?? null;
 function buffCost() { return player.buff && now < player.buff.until ? (player.buff.costMul ?? 1) : 1; }
 function activateSlot(i) {
   const id = player.slots[i]; if (!id) return;
@@ -4091,7 +4094,7 @@ function castSkill(id, opts = {}) {
     const cost = Math.ceil(s.cost * (W?.costMul ?? 1) * outputCost() * buffCost());
     if (player.se < cost) { log(`Not enough Spirit Energy for ${s.name}.`); return false; }
     player.se -= cost; player.lastCost = cost; player.regenBlockedUntil = now + 2.5;
-    if (!noCooldowns()) player.cooldowns[id] = now + s.cd * (W?.cdMul ?? 1);
+    if (!noCooldowns()) player.cooldowns[id] = now + (flatCd() ?? s.cd * (W?.cdMul ?? 1));
   }
   const slotEl = opts.slot != null ? $('#slots').children[opts.slot] : null;
   if (slotEl) { slotEl.classList.add('flash'); setTimeout(() => slotEl.classList.remove('flash'), 350); }
@@ -4498,7 +4501,7 @@ function useUltimate() {
   const ucost = Math.ceil(u.cost * outputCost() * buffCost());
   if (player.se < ucost) { log(`Not enough Spirit Energy for ${u.name}.`); return; }
   player.se -= ucost;
-  if (!noCooldowns()) player.ultCd = now + u.cd;
+  if (!noCooldowns()) player.ultCd = now + (flatCd() ?? u.cd);
   if (u.kind === 'transform') {
     const from = player.style;
     player.transform = { from, until: now + u.duration };
@@ -5559,7 +5562,7 @@ function moveSetCard(id, st) {
     return `<li><i style="background:${hex(NATURE[sk.nature].color)}"></i><span><b>${sk.name}</b> <span style="opacity:.6">${NATURE[sk.nature].label} · ${sk.cost} SE</span><small>${sk.desc}</small></span>${slot >= 0 ? `<span class="slotno">slot ${slot + 1}</span>` : '<span class="pool">pool</span>'}</li>`; }).join('');
   const extra = [];
   extra.push(`<b>Spirit Energy</b> — ${isFinite(st.energy ?? 1000) ? (st.energy ?? 1000) : 'infinite, nothing he does costs him anything'}.`);
-  if (st.ultimate) extra.push(`<b>G · ${st.ultimate.name}</b> — ${st.ultimate.cost} SE, lasts ${st.ultimate.duration}s${id === 'gojo' ? ', no cooldown' : `, ${st.ultimate.cd}s cooldown`}.`);
+  if (st.ultimate) extra.push(`<b>G · ${st.ultimate.name}</b> — ${st.ultimate.cost} SE, lasts ${st.ultimate.duration}s${st.noCd ? ', no cooldown' : `, ${st.cdFlat ?? st.ultimate.cd}s cooldown`}.`);
   for (const p of st.passives ?? []) extra.push(p);
   card.innerHTML = `<canvas class="ms-view" width="${PREVIEW_W}" height="${PREVIEW_H}"></canvas>
     <div class="ms-body">
