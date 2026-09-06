@@ -20,7 +20,7 @@
   .slot { width: 82px; height: 82px; background: var(--panel); border: 2px solid var(--line); border-radius: 6px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 6px; }
   .slot .key { position: absolute; top: 4px; left: 6px; font-size: 11px; opacity: .6; }
   .slot .cost { position: absolute; top: 4px; right: 6px; font-size: 11px; color: var(--se); }
-  .slot .name { font-size: 12px; font-weight: 600; line-height: 1.1; }
+  .slot .name { font-size: 12px; font-weight: 600; line-height: 1.1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
   .slot .nature { font-size: 10px; opacity: .75; }
   .slot .cd { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.6); }
   .slot.empty { opacity: .45; border-style: dashed; }
@@ -72,7 +72,8 @@
   #charge .mark { position: absolute; top: -3px; bottom: -3px; width: 2px; background: rgba(255,255,255,.75); }
   #charge .tier { font-size: 22px; margin-bottom: 4px; text-shadow: 0 0 12px #000, 2px 2px 0 #000; }
   #charge .hint { font-size: 12px; opacity: .8; margin-top: 4px; }
-  #dead { background: rgba(6,4,10,.82); backdrop-filter: grayscale(1) contrast(1.1); }
+  #dead { background: rgba(6,4,10,.82); }
+  #dead.grey { backdrop-filter: grayscale(1) contrast(1.1); }
   #wasted { position: absolute; left: 0; right: 0; top: 22%; text-align: center; pointer-events: none; }
   #wasted .bar { background: rgba(0,0,0,.72); padding: 18px 0; border-top: 2px solid rgba(255,255,255,.12); border-bottom: 2px solid rgba(255,255,255,.12); animation: wasted 1.1s ease-out; }
   #wasted span { font-family: Bangers, Impact, serif; font-size: 84px; letter-spacing: .1em; color: #c0392b; text-shadow: 0 0 26px rgba(192,57,43,.8), 3px 3px 0 #000; }
@@ -522,7 +523,9 @@ const WAVES = [
 // =============================================================================
 const canvas = document.getElementById('c');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -545,10 +548,26 @@ function outlined(mesh, thickness = .06) {
 
 const sun = new THREE.DirectionalLight(0xfff1d6, 2.6);
 sun.position.set(60, 120, 40); sun.castShadow = true;
-sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.mapSize.set(3072, 3072); sun.shadow.bias = -0.0006; sun.shadow.normalBias = .03;
 Object.assign(sun.shadow.camera, { left: -90, right: 90, top: 90, bottom: -90, near: 10, far: 300 });
 scene.add(sun);
 scene.add(new THREE.HemisphereLight(0x8a6cff, 0x2b1d44, 1.1));
+// A cool rim light from behind so silhouettes separate from the skyline.
+const rimLight = new THREE.DirectionalLight(0x8fd0ff, 1.5);
+rimLight.position.set(-70, 50, -80); scene.add(rimLight);
+const fillLight = new THREE.DirectionalLight(0xff9ad0, .55);
+fillLight.position.set(40, 20, 90); scene.add(fillLight);
+// Gradient sky dome instead of a flat clear colour.
+{
+  const skyGeo = new THREE.SphereGeometry(420, 32, 20);
+  const skyMat = new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false,
+    uniforms: { top: { value: new THREE.Color(0x1a0f38) }, mid: { value: new THREE.Color(0x3a1c5c) }, bot: { value: new THREE.Color(0x120a20) } },
+    vertexShader: 'varying float h; void main(){ vec4 wp = modelMatrix * vec4(position,1.0); h = normalize(wp.xyz).y; gl_Position = projectionMatrix * viewMatrix * wp; }',
+    fragmentShader: 'uniform vec3 top; uniform vec3 mid; uniform vec3 bot; varying float h; void main(){ float t = clamp(h*0.5+0.5,0.0,1.0); vec3 c = t < 0.5 ? mix(bot, mid, t*2.0) : mix(mid, top, (t-0.5)*2.0); gl_FragColor = vec4(c,1.0); }',
+  });
+  scene.add(new THREE.Mesh(skyGeo, skyMat));
+}
 
 // City: a grid of toon boxes with ink outlines. Rooftops are walkable, walls are web anchors.
 const buildings = [];
@@ -762,34 +781,31 @@ const player = {
 // with elbows, two legs with knees. Joints are empty Groups, so rotating one
 // swings everything below it. That is what the animation code drives.
 const CHARACTERS = {
-  default:   { skin: 0xf3c9a0, hair: 0x3a2a1a, hairStyle: 'short',  top: 0xd8323c, bottom: 0x2a2a3a, eye: 0x2a2a2a },
-  // Naruto: orange jumpsuit with the black shoulder panels, leaf headband, whiskers, blue eyes.
-  naruto:    { skin: 0xf3c9a0, hair: 0xffd23f, hairStyle: 'spiky',  top: 0xff7a10, bottom: 0xff7a10, sleeves: 0xff7a10, shoulders: 0x1e1e2c, eye: 0x3f8fd0, headband: 0x2a4a8a, whiskers: true, sandals: 0x2244aa, belt: 0x1e1e2c, hairLen: 1.05 },
-  // Sasuke: dark shirt, high collar, rope belt, swept blue-black hair, Rinnegan.
-  sasuke:    { skin: 0xf7dcc0, hair: 0x191b34, hairStyle: 'swept',  top: 0x171a3c, bottom: 0xdcdce8, sleeves: 0x171a3c, eye: 0x9b2020, rinnegan: true, collar: 0x101228, sash: 0x7a4fbf, cape: 0x101228 },
-  // Gojo: black high-collar uniform, white spikes, blindfold.
-  gojo:      { skin: 0xf7dcc0, hair: 0xf4f4ff, hairStyle: 'spiky',  top: 0x101018, bottom: 0x101018, sleeves: 0x101018, eye: 0x5ad4ff, blindfold: 0x191922, collar: 0x1e1e2a, belt: 0x1e1e2a, hairLen: 1.1 },
-  // Sukuna: pale pink hair, black markings everywhere, four arms, dark kimono.
-  sukuna:    { skin: 0xf2d6c6, hair: 0xf7c6c6, hairStyle: 'spiky',  top: 0x180508, bottom: 0x180508, sleeves: 0xf2d6c6, eye: 0xff2d55, markings: true, fourArms: true, sash: 0x6a0c14 },
-  // Yuji: black school uniform, hood, pink hair.
-  yuji:      { skin: 0xf3c9a0, hair: 0xff8f9c, hairStyle: 'short',  top: 0x22222a, bottom: 0x22222a, sleeves: 0x22222a, eye: 0x8a4a2a, hood: 0x2c2c36, collar: 0x2c2c36 },
-  // Megumi: black uniform, tall spiky black hair, green eyes.
-  megumi:    { skin: 0xf7dcc0, hair: 0x101430, hairStyle: 'spiky',  top: 0x13163a, bottom: 0x13163a, sleeves: 0x13163a, eye: 0x3f7f6a, collar: 0x0d1028, hairLen: 1.25 },
-  // Toji: black shirt, bare arms, the scar across his mouth.
-  toji:      { skin: 0xe8c8a0, hair: 0x141418, hairStyle: 'short',  top: 0x16161c, bottom: 0x141418, eye: 0x35502f, scar: true, bare: true, belt: 0x2a2a30 },
-  kashimo:   { skin: 0xf3d6b8, hair: 0xf5e6a0, hairStyle: 'long',   top: 0x2a2340, bottom: 0x2a2340, sleeves: 0x2a2340, eye: 0xffe45c, sash: 0xffd54a },
-  spiderman: { skin: 0xd8323c, hair: 0xd8323c, hairStyle: 'none',   top: 0xd8323c, bottom: 0x1f2f8f, sleeves: 0xd8323c, eye: 0xffffff, mask: true, webs: true },
-  geto:      { skin: 0xf3d6b8, hair: 0x14141c, hairStyle: 'long',   top: 0x2a2030, bottom: 0x1a1622, sleeves: 0x2a2030, eye: 0x6a4a7a, collar: 0x3a2c44 },
-  kenjaku:   { skin: 0xe8d8c0, hair: 0x1a1a22, hairStyle: 'long',   top: 0x24202c, bottom: 0x1a1622, sleeves: 0x24202c, eye: 0xb06cff, stitches: true },
-  choso:     { skin: 0xf0d2b8, hair: 0x1a1a22, hairStyle: 'short',  top: 0x2a1a20, bottom: 0x1a1218, sleeves: 0x9b1a2a, eye: 0x9b1a2a, markStripe: true },
-  mahito:    { skin: 0xd8e0d8, hair: 0x8fa8b8, hairStyle: 'short',  top: 0x2a4a46, bottom: 0x1e3a36, sleeves: 0xd8e0d8, eye: 0x6cd8c0, stitches: true },
-  jogoC:     { skin: 0xd88a4a, hair: 0x2a1a14, hairStyle: 'none',   top: 0x6a2a1a, bottom: 0x4a1a14, sleeves: 0xd88a4a, eye: 0xffd54a, volcano: true },
-  hanamiC:   { skin: 0x8fbf6a, hair: 0x3f7a3a, hairStyle: 'none',   top: 0x5b7a3a, bottom: 0x3f5a2a, sleeves: 0x8fbf6a, eye: 0xffe45c, horns: true },
-  dagonC:    { skin: 0xbfe0f0, hair: 0x2f6fb5, hairStyle: 'none',   top: 0x2a6a8a, bottom: 0x1f4f6a, sleeves: 0xbfe0f0, eye: 0x6cd8ff, horns: true },
-  eleven:    { skin: 0xf3d6c0, hair: 0x6a4a2a, hairStyle: 'short', top: 0xf0e0d0, bottom: 0x2a3a5a, sleeves: 0xf0e0d0, eye: 0x4a3a2a, nosebleed: true },
-  jean:      { skin: 0xf7dcc0, hair: 0xd94f1a, hairStyle: 'long',  top: 0x1f7a3a, bottom: 0xd4302a, sleeves: 0x1f7a3a, eye: 0x3f8f5f, sash: 0xffd54a },
-  ironman:   { skin: 0xd4302a, hair: 0xd4302a, hairStyle: 'none',  top: 0xd4302a, bottom: 0xd4302a, sleeves: 0xffc83d, eye: 0x9fe0ff, mask: true, reactor: true, shoulders: 0xffc83d },
-  tophat:    { skin: 0xf0f0f0, hair: 0x101010, hairStyle: 'none',  top: 0x181818, bottom: 0x101010, sleeves: 0xf0f0f0, eye: 0x101010, tophat: true, mono: true, collar: 0xf0f0f0 },
+  default:   { sig: 0xffe45c, skin: 0xf3c9a0, hair: 0x3a2a1a, hairStyle: 'short',  top: 0xd8323c, bottom: 0x2a2a3a, eye: 0x2a2a2a },
+  // Naruto: Vivid Tangelo jumpsuit, Funky Yellow hair, Smurf-blue eyes, Dark Sea Blue trim.
+  naruto:    { sig: 0xf66c2d, skin: 0xf3c9a0, hair: 0xe7e419, hairStyle: 'spiky',  top: 0xf66c2d, bottom: 0xf66c2d, sleeves: 0xf66c2d, shoulders: 0x363641, eye: 0x4691cc, headband: 0x082c8c, whiskers: true, sandals: 0x082c8c, belt: 0x363641, hairLen: 1.05 },
+  // Sasuke: Sport Black and Vintage Dark Blue, Authentic Silver trim, Uchiha red eye.
+  sasuke:    { sig: 0x9b6cff, skin: 0xf7dcc0, hair: 0x151313, hairStyle: 'swept',  top: 0x293241, bottom: 0xa7a7a9, sleeves: 0x293241, eye: 0xe10000, rinnegan: true, collar: 0x151313, sash: 0x13386c, cape: 0x151313 },
+  // Gojo: black uniform, white hair, the blindfold.
+  gojo:      { sig: 0x5ad4ff, skin: 0xf7dcc0, hair: 0xf4f4ff, hairStyle: 'spiky',  top: 0x101018, bottom: 0x101018, sleeves: 0x101018, eye: 0x5ad4ff, blindfold: 0x191922, collar: 0x1e1e2a, belt: 0x1e1e2a, hairLen: 1.1 },
+  sukuna:    { sig: 0xff2d55, skin: 0xf2d6c6, hair: 0xf7c6c6, hairStyle: 'spiky',  top: 0x180508, bottom: 0x180508, sleeves: 0xf2d6c6, eye: 0xff2d55, markings: true, fourArms: true, sash: 0x6a0c14 },
+  yuji:      { sig: 0xff8f9c, skin: 0xf3c9a0, hair: 0xff8f9c, hairStyle: 'short',  top: 0x22222a, bottom: 0x22222a, sleeves: 0x22222a, eye: 0x8a4a2a, hood: 0x2c2c36, collar: 0x2c2c36 },
+  megumi:    { sig: 0x2f6f6a, skin: 0xf7dcc0, hair: 0x101430, hairStyle: 'spiky',  top: 0x13163a, bottom: 0x13163a, sleeves: 0x13163a, eye: 0x2f6f6a, collar: 0x0d1028, hairLen: 1.25 },
+  toji:      { sig: 0x9fe870, skin: 0xe8c8a0, hair: 0x141418, hairStyle: 'short',  top: 0x16161c, bottom: 0x141418, eye: 0x35502f, scar: true, bare: true, belt: 0x2a2a30 },
+  kashimo:   { sig: 0xffe45c, skin: 0xf3d6b8, hair: 0xf5e6a0, hairStyle: 'long',   top: 0x2a2340, bottom: 0x2a2340, sleeves: 0x2a2340, eye: 0xffe45c, sash: 0xffd54a },
+  spiderman: { sig: 0xd8323c, skin: 0xd8323c, hair: 0xd8323c, hairStyle: 'none',   top: 0xd8323c, bottom: 0x1f2f8f, sleeves: 0xd8323c, eye: 0xffffff, mask: true, webs: true },
+  geto:      { sig: 0x4a3a8a, skin: 0xf3d6b8, hair: 0x14141c, hairStyle: 'long',   top: 0x2a2030, bottom: 0x1a1622, sleeves: 0x2a2030, eye: 0x6a4a7a, collar: 0x3a2c44 },
+  kenjaku:   { sig: 0x8aa84a, skin: 0xe8d8c0, hair: 0x1a1a22, hairStyle: 'long',   top: 0x3a4426, bottom: 0x1a1622, sleeves: 0x3a4426, eye: 0x8aa84a, stitches: true },
+  choso:     { sig: 0x9b1a2a, skin: 0xf0d2b8, hair: 0x1a1a22, hairStyle: 'short',  top: 0x2a1a20, bottom: 0x1a1218, sleeves: 0x9b1a2a, eye: 0x9b1a2a, markStripe: true },
+  // Mahito: Loblolly skin, Lyla shawl, Winter Blue trim, and the patchwork stitches.
+  mahito:    { sig: 0xb06cff, skin: 0xbacccf, hair: 0xdcd3c9, hairStyle: 'long',   top: 0x272633, bottom: 0x25345a, sleeves: 0xbacccf, eye: 0x6b6f6f, stitches: true },
+  jogoC:     { sig: 0xff6b3d, skin: 0xd88a4a, hair: 0x2a1a14, hairStyle: 'none',   top: 0x6a2a1a, bottom: 0x4a1a14, sleeves: 0xd88a4a, eye: 0xffd54a, volcano: true },
+  hanamiC:   { sig: 0x8fbf6a, skin: 0x8fbf6a, hair: 0x3f7a3a, hairStyle: 'none',   top: 0x5b7a3a, bottom: 0x3f5a2a, sleeves: 0x8fbf6a, eye: 0xffe45c, horns: true },
+  dagonC:    { sig: 0x5aa9ff, skin: 0xbfe0f0, hair: 0x2f6fb5, hairStyle: 'none',   top: 0x2a6a8a, bottom: 0x1f4f6a, sleeves: 0xbfe0f0, eye: 0x6cd8ff, horns: true },
+  eleven:    { sig: 0xc0392b, skin: 0xf3d6c0, hair: 0x6a4a2a, hairStyle: 'short',  top: 0xf0e0d0, bottom: 0x2a3a5a, sleeves: 0xf0e0d0, eye: 0x4a3a2a, nosebleed: true },
+  jean:      { sig: 0xd94f1a, skin: 0xf7dcc0, hair: 0xd94f1a, hairStyle: 'long',   top: 0x1f7a3a, bottom: 0xd4302a, sleeves: 0x1f7a3a, eye: 0x3f8f5f, sash: 0xffd54a },
+  ironman:   { sig: 0xffc83d, skin: 0xd4302a, hair: 0xd4302a, hairStyle: 'none',   top: 0xd4302a, bottom: 0xd4302a, sleeves: 0xffc83d, eye: 0x9fe0ff, mask: true, reactor: true, shoulders: 0xffc83d },
+  tophat:    { sig: 0xf0f0f0, skin: 0xf0f0f0, hair: 0x101010, hairStyle: 'none',   top: 0x181818, bottom: 0x101010, sleeves: 0xf0f0f0, eye: 0x101010, tophat: true, collar: 0xf0f0f0 },
 };
 CHARACTERS.jogo = CHARACTERS.jogoC; CHARACTERS.hanami = CHARACTERS.hanamiC; CHARACTERS.dagon = CHARACTERS.dagonC;
 
@@ -1344,6 +1360,9 @@ function die() {
   if (player.style && STYLES[player.style].takeover && !player.sukunaUsed) { sukunaTakeover(); return; }
   player.dead = true; closeSense(); releaseSwing(false);
   $('#dead-text').textContent = `You reached wave ${wave + 1} with ${player.kills} extractions. Techniques learned: ${player.learned.map((s) => SKILLS[s].name).join(', ')}.`;
+  // One death in ten gets the GTA send-off instead of the usual card.
+  $('#wasted').hidden = Math.random() >= .1;
+  $('#dead').classList.toggle('grey', !$('#wasted').hidden);
   $('#dead').hidden = false; document.exitPointerLock?.();
 }
 
@@ -1982,11 +2001,16 @@ function renderSlots() {
 }
 const LOOKS = { default: [0xd8323c, 0xffe45c, 0xffffff], sukuna: [0x1a0508, 0xe8d0c0, 0xff2d55], megumi: [0x0d1230, 0xe8d0c0, 0x5aa9ff], yuji: [0x2a2a2a, 0xe8d0c0, 0xff8a8a], gojo: [0x0b0a14, 0xf0f0f0, 0x5ad4ff], naruto: [0xff8a1f, 0xffe45c, 0x5aa9ff], toji: [0x1c2a1c, 0xe8d0c0, 0x9fe870], sasuke: [0x14163a, 0xe8d0c0, 0x9b6cff], kashimo: [0x2a2340, 0xe8d0c0, 0xffe45c] };
 let sukunaAura = null, sukunaEmber = 0;
+let sigRing = null;
 function setLook(style) {
   const L = CHARACTERS[style] ?? CHARACTERS.default;
   if (playerRig) body.remove(playerRig.root);
   playerRig = buildCharacter(L);
   body.add(playerRig.root);
+  // A ring in the character's own colour, so you always know who you are.
+  if (sigRing) body.remove(sigRing);
+  sigRing = new THREE.Mesh(new THREE.RingGeometry(.58, .76, 40), new THREE.MeshBasicMaterial({ color: L.sig ?? 0xffe45c, side: THREE.DoubleSide, transparent: true, opacity: .62, depthWrite: false }));
+  sigRing.rotation.x = -Math.PI / 2; sigRing.position.y = .04; body.add(sigRing);
   if (sukunaAura) { body.remove(sukunaAura); sukunaAura = null; }
   if (L.markings) {
     sukunaAura = new THREE.Mesh(new THREE.RingGeometry(.8, 1.5, 32), new THREE.MeshBasicMaterial({ color: 0xff2d55, side: THREE.DoubleSide, transparent: true, opacity: .55 }));
@@ -2156,6 +2180,7 @@ function frame(t) {
   }
   if (player.swinging) { webLine.geometry.setFromPoints([player.pos.clone().add(new THREE.Vector3(0, 1.4, 0)), player.anchor]); }
   if (cloneMesh) cloneMesh.rotation.y += worldDt;
+  if (sigRing) { sigRing.rotation.z += real * .7; sigRing.material.opacity = .45 + .18 * Math.sin(now * 3); }
   if (sukunaAura) { sukunaAura.rotation.z += real * 2.5; sukunaAura.material.opacity = .4 + .25 * Math.sin(now * 6); sukunaEmber += real; if (sukunaEmber > .12) { sukunaEmber = 0; const g = new THREE.Mesh(partGeo, new THREE.MeshBasicMaterial({ color: Math.random() < .5 ? 0xff2d55 : 0x120008 })); g.position.copy(player.pos).add(new THREE.Vector3((Math.random() - .5) * 1.6, .2, (Math.random() - .5) * 1.6)); scene.add(g); bursts.push({ m: g, v: new THREE.Vector3((Math.random() - .5) * 2, 4 + Math.random() * 3, (Math.random() - .5) * 2), t: 0, float: true }); } }
 
   updateCharge(playerDt);
