@@ -310,7 +310,7 @@
       <div class="setup-row quality-row"></div>
       <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
         <button id="open-movesets">Select your character</button>
-        <span style="opacity:.7;font-size:12px">Twenty-five characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
+        <span style="opacity:.7;font-size:12px">Twenty-six characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
       </div>
     </div>
   </div>
@@ -645,6 +645,14 @@ const SKILLS = {
   sky_maximum:     { name: 'Thin Ice Breaker: Maximum', origin: 'Uro', nature: 'wind', cost: 38, cd: 30, type: 'trap', range: 6, radius: 24, power: 320, color: 0xbfe0ff, onHit: { knock: 34, root: 2 }, desc: 'She breaks the whole thing at once and stands underneath it.' },
 
   kurama_cloak:    { name: 'Kurama Chakra Mode', origin: 'Naruto', nature: 'fire', cost: 35, cd: 32, type: 'buff', duration: 25, dmgMul: 2.2, speedMul: 1.5, costMul: .5, regen: 12, color: 0xffb340, desc: "Kurama's chakra floods every jutsu: far more damage, faster, half price, chakra pouring back." },
+  // --- Venom: the symbiote rewrites every one of Spider-Man's techniques ---
+  symbiote_lash:   { name: 'Symbiote Lash', origin: 'Venom', nature: 'physical', cost: 6, cd: .9, type: 'melee', range: 7, arc: .42, power: 96, knock: 26, color: 0x1a1a22, desc: 'Two tendrils come out of his back and take the whole arc in front of him.' },
+  black_web:       { name: 'Black Webbing', origin: 'Venom', nature: 'physical', cost: 8, cd: 2, type: 'projectile', speed: 50, radius: 1.1, power: 52, aoe: 4, color: 0x2a2a34, onHit: { root: 3.5, defDown: .45 }, desc: 'Heavier and meaner than the web fluid. Pins them and softens them up.' },
+  tendril_slam:    { name: 'Tendril Slam', origin: 'Venom', nature: 'physical', cost: 14, cd: 4.5, type: 'trap', range: 5, radius: 10, power: 128, color: 0x1a1a22, onHit: { knock: 30 }, desc: 'Every tendril at once, straight down into the street.' },
+  venom_pounce:    { name: 'Pounce', origin: 'Venom', nature: 'physical', cost: 10, cd: 2.6, type: 'dash', range: 20, power: 118, onHit: { knock: 20, defDown: .3 }, desc: 'He crosses the gap on all fours and lands on top of you.' },
+  symbiote_feed:   { name: 'Feed', origin: 'Venom', nature: 'physical', cost: 16, cd: 9, type: 'heal', percent: .3, desc: 'The symbiote takes what it needs from whatever is nearby and gives it back to him.' },
+  we_are_venom:    { name: 'WE ARE VENOM', origin: 'Venom', nature: 'physical', cost: 34, cd: 24, type: 'trap', range: 0, radius: 20, power: 300, color: 0xf0f0f0, onHit: { knock: 40, root: 2.5 }, desc: 'The suit comes off him in every direction at once.' },
+
   spider_verse:    { name: 'Spider-Verse Assist', origin: 'Spider-Man', nature: 'physical', cost: 32, cd: 30, type: 'clones', mesh: 'spider', count: 3, duration: 20, power: 30, speed: 12, desc: 'Three spiders from other dimensions drop in and fight beside you.' },
 
   // --- Megumi Fushiguro: Ten Shadows ---
@@ -670,7 +678,14 @@ const STYLES = {
   spiderman: { name: 'Spider-Man: Neighborhood', blurb: 'Webs, kicks, Spider-Sense. Control the fight, then punish.',
     passives: ['Webbed enemies move at 40% speed and take 25% more damage.'],
     pool: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'healing_factor', 'web_trap'], slots: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'healing_factor'],
-    ultimate: { skill: 'spider_verse', name: 'Spider-Verse Assist', cost: 32, cd: 30, duration: 20 } },
+    ultimate: { kind: 'transform', into: 'venom', name: 'Symbiote: Venom', cost: 34, cd: 44, duration: 40,
+      title: 'WE ARE VENOM', color: 0xf0f0f0,
+      log: 'The suit crawls up over him and takes the mouth off the mask. Forty seconds as Venom, then Peter gets the body back.' } },
+  venom: { name: 'Venom: The Symbiote', blurb: 'The black suit, and it is not a costume. Everything Peter does, it does harder and enjoys more.',
+    passives: ['Nothing here is Spider-Man\'s: no webs, no Spider-Sense, no swinging. Tendrils instead.', 'Bare hands hit for 34 with the reach of the tendrils behind them.', 'Spider-Man turns into this with G, and turns back when it runs out.'],
+    m1: 34, m1Range: 1.4,
+    pool: ['symbiote_lash', 'venom_pounce', 'black_web', 'tendril_slam', 'symbiote_feed'], slots: ['symbiote_lash', 'venom_pounce', 'black_web', 'tendril_slam', 'symbiote_feed'],
+    ultimate: { skill: 'we_are_venom', name: 'WE ARE VENOM', cost: 34, cd: 24, duration: 1 } },
   yuji: { name: 'Yuji: The Vessel', blurb: 'Fists, Black Flash, blood. G lets Sukuna out; die once and he takes the wheel.',
     passives: ['Left click: 70% of strikes are Black Flash (x2.5, Cursed).', 'First death: Sukuna takes over at full health with his set.'],
     pool: ['divergent_fist', 'black_flash', 'manji_kick', 'piercing_blood', 'rct_heal'], slots: ['divergent_fist', 'black_flash', 'manji_kick', 'piercing_blood', 'rct_heal'],
@@ -2009,6 +2024,11 @@ const CHARACTERS = {
   ishigori:  { height: 1.2, sig: 0xffd54a, skin: 0xe0b088, hair: 0xf0e08a, hairStyle: 'spiky', top: 0x2a2a30, bottom: 0x2a2a30, sleeves: 0xe0b088, eye: 0xffd54a, bare: true, belt: 0x3a3a44, brow: 0xf0e08a, browAngle: .42 },
   // Uro: pale kimono top over dark hakama, black hair in a long tail.
   uro:       { sig: 0x9fd6ff, skin: 0xf3d6b8, hair: 0x1a1a24, hairStyle: 'ponytail', top: 0xdcd8ce, bottom: 0x2a3550, sleeves: 0xdcd8ce, eye: 0x5aa9ff, sash: 0x8fa8c8, collar: 0xdcd8ce, hairLen: 1.2 },
+  // Venom: the suit is the character. Black everything, white spider, white
+  // eyes raked back, and a mouth the mask never had.
+  venom:     { height: 1.18, sig: 0xf0f0f0, skin: 0x0a0a10, hair: 0x0a0a10, hairStyle: 'none', top: 0x0a0a10, bottom: 0x0a0a10,
+               sleeves: 0x0a0a10, eye: 0xf4f4f8, mask: true, venomEyes: true, fangs: true, spider: 0xeceff4,
+               shoulders: 0x121218, sandals: 0x0a0a10 },
   tophat:    { buckle: 0xf0f0f0, brow: 0x101010, sig: 0xf0f0f0, skin: 0xf0f0f0, hair: 0x101010, hairStyle: 'none',   top: 0x181818, bottom: 0x101010, sleeves: 0xf0f0f0, eye: 0x101010, tophat: true, collar: 0xf0f0f0 },
 };
 CHARACTERS.jogo = CHARACTERS.jogoC; CHARACTERS.hanami = CHARACTERS.hanamiC; CHARACTERS.dagon = CHARACTERS.dagonC;
@@ -2095,6 +2115,20 @@ function buildCharacter(L) {
     t2.position.set(sx * .12, -.18, -.18); t2.rotation.z = sx * .12; pelvis.add(t2);
   }
   if (L.webs) for (let i = 0; i < 4; i++) { const w = new THREE.Mesh(new THREE.TorusGeometry(.09 + i * .055, .012, 4, 14), ink); w.rotation.x = Math.PI / 2 - .35; w.position.set(0, .32, .18); chest.add(w); }
+  if (L.spider) {                    // the big symbiote spider, front and back
+    const sm = new THREE.MeshBasicMaterial({ color: L.spider });
+    for (const [z, flip] of [[.245, 1], [-.245, -1]]) {
+      const body = new THREE.Mesh(new THREE.SphereGeometry(.075, 10, 8), sm);
+      body.scale.set(.8, 1.5, .3); body.position.set(0, .33, z); chest.add(body);
+      const head2 = new THREE.Mesh(new THREE.SphereGeometry(.045, 8, 6), sm);
+      head2.scale.set(1, 1, .3); head2.position.set(0, .47, z); chest.add(head2);
+      for (let i = 0; i < 4; i++) for (const sx of [-1, 1]) {
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(.026, .3 + i * .07, .02), sm);
+        leg.position.set(sx * (.09 + i * .05), .33 - i * .02, z);
+        leg.rotation.z = sx * flip * (.5 + i * .28); chest.add(leg);
+      }
+    }
+  }
   if (L.markings) for (const y of [.5, .3, .12]) { const b = new THREE.Mesh(new THREE.TorusGeometry(.28, .022, 6, 20), ink); b.rotation.x = Math.PI / 2; b.position.y = y; chest.add(b); }
 
   const neck = new THREE.Group(); neck.position.y = .58; chest.add(neck);
@@ -2111,10 +2145,6 @@ function buildCharacter(L) {
   nose.rotation.x = Math.PI / 2; nose.position.set(0, -.015, .235); neck.add(nose);
   const neckCol = new THREE.Mesh(new THREE.CylinderGeometry(.095, .115, .18, 10), toon(L.skin));
   neckCol.position.y = -.25; neck.add(neckCol);
-  if (!L.mask && !L.maskLower) {   // a mouth line, so the face is not just eyes
-    const mouth = new THREE.Mesh(new THREE.BoxGeometry(.052, .014, .02), new THREE.MeshBasicMaterial({ color: 0x8a4a48 }));
-    mouth.position.set(0, -.1, .222); neck.add(mouth);
-  }
 
   if (!L.mask && !L.blindfold) {
     // Anime eyes are large and layered: white, iris, pupil, highlight.
@@ -2126,10 +2156,6 @@ function buildCharacter(L) {
       sc.scale.set(1, 1.25, .42); sc.position.set(sx * .1, .025, .205); neck.add(sc);
       const lid = new THREE.Mesh(new THREE.BoxGeometry(.16, .024, .03), new THREE.MeshBasicMaterial({ color: L.brow ?? L.hair }));
       lid.position.set(sx * .1, .098, .215); lid.rotation.z = sx * .12; neck.add(lid);
-      // A separate brow above the lash line is most of what gives a face its
-      // expression; browAngle tilts it inward for a scowl.
-      const brow = new THREE.Mesh(new THREE.BoxGeometry(.125, .026, .028), new THREE.MeshBasicMaterial({ color: L.brow ?? L.hair }));
-      brow.position.set(sx * .102, .152, .212); brow.rotation.z = sx * (.1 + (L.browAngle ?? 0)); neck.add(brow);
       const iris = new THREE.Mesh(new THREE.SphereGeometry(.046, 12, 10), irisMat);
       iris.scale.set(1, 1.15, .35); iris.position.set(sx * .1, .012, .232); neck.add(iris);
       const pupil = new THREE.Mesh(new THREE.SphereGeometry(.022, 10, 8), ink);
@@ -2146,6 +2172,16 @@ function buildCharacter(L) {
         tomoe.position.set(sx * .1 + Math.cos(a) * .028, .012 + Math.sin(a) * .03, .246); neck.add(tomoe);
       }
     }
+  } else if (L.venomEyes) {
+    // Huge white teardrops raked back toward the temples, black around them.
+    for (const sx of [-1, 1]) {
+      const o = new THREE.Mesh(new THREE.SphereGeometry(.145, 12, 8), ink);
+      o.scale.set(1.45, .95, .4); o.position.set(sx * .112, .045, .175); o.rotation.z = sx * .42; neck.add(o);
+      const w = new THREE.Mesh(new THREE.SphereGeometry(.125, 12, 8), new THREE.MeshBasicMaterial({ color: 0xf4f4f8 }));
+      w.scale.set(1.5, .85, .45); w.position.set(sx * .112, .045, .196); w.rotation.z = sx * .42; neck.add(w);
+      const tip = new THREE.Mesh(new THREE.ConeGeometry(.05, .16, 4), new THREE.MeshBasicMaterial({ color: 0xf4f4f8 }));
+      tip.position.set(sx * .215, .105, .17); tip.rotation.set(Math.PI / 2, 0, -sx * 1.1); neck.add(tip);
+    }
   } else {
     for (const sx of [-1, 1]) {
       const o = new THREE.Mesh(new THREE.SphereGeometry(.1, 10, 8), ink);
@@ -2153,6 +2189,21 @@ function buildCharacter(L) {
       const e = new THREE.Mesh(new THREE.SphereGeometry(.085, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffffff }));
       e.scale.set(1.25, .85, .5); e.position.set(sx * .105, .03, .205); neck.add(e);
     }
+  }
+  if (L.fangs) {
+    // The grin: two rows of teeth and a tongue that will not stay in.
+    const gum = new THREE.Mesh(new THREE.BoxGeometry(.26, .11, .06), new THREE.MeshBasicMaterial({ color: 0x1a0308 }));
+    gum.position.set(0, -.115, .195); neck.add(gum);
+    const tooth = new THREE.MeshBasicMaterial({ color: 0xf4f4f8 });
+    for (let i = 0; i < 7; i++) {
+      const x = (i - 3) * .036;
+      const up = new THREE.Mesh(new THREE.ConeGeometry(.017, .055 + (i === 1 || i === 5 ? .03 : 0), 4), tooth);
+      up.position.set(x, -.128, .222); up.rotation.x = Math.PI; neck.add(up);
+      const dn = new THREE.Mesh(new THREE.ConeGeometry(.015, .045, 4), tooth);
+      dn.position.set(x + .018, -.088, .222); neck.add(dn);
+    }
+    const tongue = new THREE.Mesh(new THREE.CapsuleGeometry(.026, .3, 4, 8), toon(0xc0294a));
+    tongue.position.set(.02, -.27, .21); tongue.rotation.set(.5, 0, .35); neck.add(tongue);
   }
   // Brows and a mouth line do more for recognition than any amount of colour.
   if (!L.mask) {
@@ -2519,6 +2570,7 @@ function startEAction() {
   else if (a === 'chidori') startChidori();
   else if (a === 'dismantle') castSkill('dismantle_s', {});
   else if (a === 'garden') castSkill('chimera_garden', {});
+  else if (player.style === 'venom') log('The symbiote does not do web-lines. Pounce instead.');
   else log('No web-shooters. Only Spider-Man swings.');
 }
 function endEAction() {
@@ -4312,9 +4364,9 @@ function useUltimate() {
     const from = player.style;
     player.transform = { from, until: now + u.duration };
     applyStyle(u.into, false); player.hp = Math.min(player.maxHp, player.hp + 150); player.cooldowns = {};
-    hitStop = .3; screenFlash(1); shake = 1.2; center('SUKUNA POSSESSION', 2000); camDist = 3.5;
-    log(`"Finally." Sukuna has the body for ${u.duration} seconds. Yuji returns when it ends.`, true);
-    burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), 0xff2d55, 40);
+    hitStop = .3; screenFlash(1); shake = 1.2; center(u.title ?? 'SUKUNA POSSESSION', 2000); camDist = 3.5;
+    log(u.log ?? `"Finally." Sukuna has the body for ${u.duration} seconds. Yuji returns when it ends.`, true);
+    burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), u.color ?? 0xff2d55, 40);
     for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() < 12) { e.pos.addScaledVector(to.normalize(), 4); e.status.stun = 1.2; } }
   } else if (u.skill) {
     castSkill(u.skill, { free: true });
@@ -4365,8 +4417,10 @@ function strike() {
   const bfChance = player.style ? STYLES[player.style].m1BlackFlash ?? 0 : 0;
   const blackFlash = bfChance > 0 && Math.random() < bfChance;
   const W = currentWeapon();
-  const m1 = W ? W.m1 : 16;
-  for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() <= 2.8 + e.t.size && to.normalize().dot(dir.clone().setY(0).normalize()) > .3) {
+  const S = player.style ? STYLES[player.style] : null;
+  const m1 = W ? W.m1 : (S?.m1 ?? 16);
+  const reach = 2.8 + (W ? 0 : S?.m1Range ?? 0);
+  for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() <= reach + e.t.size && to.normalize().dot(dir.clone().setY(0).normalize()) > .3) {
     if (blackFlash) { if (!hit) { player.blackFlashes++; center('BLACK FLASH', 700); hitStop = .16; screenFlash(.7); shake = .8; } burst(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), 0x120008, 16); burst(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), 0xff2d55, 8); enemyTakeHit(e, 16 * 2.5, 'cursed', player.pos, { knock: 9 }); }
     else {
       enemyTakeHit(e, m1, 'physical', player.pos, { knock: 5 + (W?.knock ?? 0) * .4, ignoreDef: W?.ignoreDef });
@@ -5338,7 +5392,7 @@ function useGate(to) {
 }
 buildMap('times_square');
 requestAnimationFrame(frame);
-window.__rift = { army, camera, scene, buildCharacter, CHARACTERS, GRADES, enemyTakeHit, get rasengan() { return rasengan; }, get chidori() { return chidori; }, spawnArmy, damageArmy, arcBolt, slashArc,
+window.__rift = { army, camera, scene, buildCharacter, CHARACTERS, GRADES, enemyTakeHit, strike, get rasengan() { return rasengan; }, get chidori() { return chidori; }, spawnArmy, damageArmy, arcBolt, slashArc,
   SKILLS, STYLES, ENEMIES, MAPS, MAP_IDS, NATURE, travelTo, buildMap, portals,
   net, setMode, useGate, setSolo, setTier, TIERS, get tier() { return tierName; },
   get currentMap() { return currentMap; }, get nearPortal() { return nearPortal; }, eprojectiles, spawnEnemy, player, enemies, buildings, debris, cars, civilians, damageBuildings, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, startCharge, releaseCharge, hurtPlayer, castSkill, OUTPUT_TIERS, ARSENALS, cycleWeapon, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
