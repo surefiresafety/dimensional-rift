@@ -51,6 +51,7 @@
   .wm-card .here-tag { font-size: 10px; letter-spacing: .12em; color: var(--gold); }
   @media (prefers-reduced-motion: reduce) { .wm-card:hover { transform: none; } }
   button.ghost.on { border-color: var(--gold); color: var(--gold); }
+  .tb.on { border-color: var(--gold); color: var(--gold); box-shadow: 0 0 12px rgba(255,213,74,.35); }
   .quality-row { display: flex; gap: 6px; align-items: center; }
 
   /* ---- Touch controls ---- */
@@ -73,11 +74,12 @@
   #tbtns .tb[data-act=jump]   { right: 100px; bottom: 8px; }
   #tbtns .tb[data-act=dodge]  { right: 8px; bottom: 144px; }
   #tbtns .tb[data-act=swing]  { right: 104px; bottom: 82px; }
-  #tmisc { position: absolute; right: max(16px, env(safe-area-inset-right)); bottom: 214px; display: flex; flex-direction: column; gap: 8px; }
+  #tmisc { position: absolute; right: max(16px, env(safe-area-inset-right)); bottom: 214px; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
   #tmenu { position: absolute; left: max(14px, env(safe-area-inset-left)); top: 92px; display: flex; gap: 6px; }
+  #tmisc .tb, #tmenu .tb { position: relative; flex: none; }
   #gate-btn { position: absolute; left: 50%; bottom: 200px; transform: translateX(-50%); border-radius: 22px; width: auto; height: 42px; padding: 0 20px; font-size: 14px; }
-  #rotate { position: absolute; inset: 0; background: #0b0a14; display: none; align-items: center; justify-content: center;
-    text-align: center; font-size: 20px; padding: 30px; z-index: 40; }
+  #rotate { position: absolute; inset: 0; background: #0b0a14; display: none; flex-direction: column; align-items: center; justify-content: center;
+    gap: 10px; text-align: center; font-size: 20px; padding: 30px; z-index: 40; }
   html.touch #rotate.show { display: flex; }
 
   @media (max-width: 980px), (pointer: coarse) {
@@ -124,6 +126,11 @@
   @media (prefers-reduced-motion: reduce) { #speedlines { display: none; } }
   #reticle { position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px; border: 2px solid rgba(255,255,255,.7); border-radius: 50%; }
   #reticle.web { border-color: var(--gold); box-shadow: 0 0 10px var(--gold); }
+  #reticle.locked { width: 20px; height: 20px; margin: -10px; border-radius: 0; border: 0; background:
+    linear-gradient(var(--gold), var(--gold)) center/2px 20px no-repeat,
+    linear-gradient(var(--gold), var(--gold)) center/20px 2px no-repeat; opacity: .85; }
+  #lock-tag { position: absolute; left: 50%; top: calc(50% + 22px); transform: translateX(-50%); font-size: 10px;
+    letter-spacing: .18em; color: var(--gold); text-shadow: 0 1px 3px #000; pointer-events: none; }
   .float { position: absolute; font-size: 22px; font-weight: 800; text-shadow: 2px 2px 0 #000; transform: translate(-50%, -50%); pointer-events: none; }
   .float.se { color: var(--gold); font-size: 26px; }
   .float.nve { color: #aaa; font-size: 16px; }
@@ -211,6 +218,7 @@
     <div id="vignette"></div>
     <div id="speedlines"></div>
     <div id="reticle"></div>
+    <div id="lock-tag" hidden>SHIFT LOCK</div>
     <div id="vitals">
       <div class="label"><span>Rift Walker</span><span id="hp-text">500 / 500</span></div>
       <div class="bar"><i id="hp-bar" style="width:100%"></i></div>
@@ -219,7 +227,7 @@
     </div>
     <div id="wave"><small id="map-name">Times Square</small><div class="display" id="wave-title">Wave 1</div><small id="wave-sub"></small><small id="who"></small></div>
     <div id="slots"></div>
-    <div id="basic">LMB Strike · RMB / E hold: Web-Swing · Shift Dodge<br>Space Jump · 1–5 Techniques · G Ultimate<br>Hold B Output charge · Tab Loadout · M Move sets<br>Q Step through a gate · N World map</div>
+    <div id="basic">LMB Strike · RMB / E hold: Web-Swing · C Dodge<br>Space Jump · 1–5 Techniques · G Ultimate · Shift lock<br>Hold B Output charge · Tab Loadout · M Move sets<br>Q Step through a gate · N World map</div>
     <div id="log"></div>
     <div id="center"></div>
     <div id="charge" hidden><div class="tier display"></div><div class="track"><i class="fill"></i><span class="mark" style="left:50%"></span><span class="mark" style="left:100%"></span></div><div class="hint">Hold B. Release to store it for your next ability.</div></div>
@@ -238,6 +246,7 @@
       <div id="tmisc">
         <button class="tb sm" data-act="ult">G</button>
         <button class="tb sm" data-act="charge">B</button>
+        <button class="tb sm" id="btn-lock" data-act="lock">LOCK</button>
       </div>
       <div id="tmenu">
         <button class="tb sm" data-act="loadout">Kit</button>
@@ -261,10 +270,11 @@
         <tr><td>Web-Swing</td><td>Hold Right Mouse or E, release to let go. Aim high at a building.</td></tr>
         <tr><td>Strike</td><td>Left Mouse</td></tr>
         <tr><td>Techniques</td><td>1 2 3 4 5. Everyone waits on cooldowns except Gojo, who never does.</td></tr>
-        <tr><td>Dodge</td><td>Shift. When the screen goes purple, Spider-Sense is open: dodge for a Perfect Dodge.</td></tr>
+        <tr><td>Dodge</td><td>C. When the screen goes purple, Spider-Sense is open: dodge for a Perfect Dodge.</td></tr>
         <tr><td>Loadout</td><td>Tab</td></tr>
         <tr><td>Ultimate</td><td>G (Yuji: Sukuna for a minute · Megumi: summon Mahoraga)</td></tr>
         <tr><td>Move sets</td><td>M</td></tr>
+        <tr><td>Shift lock</td><td>Shift. The camera locks over your shoulder and you always face where you look.</td></tr>
         <tr><td>Gates</td><td>Q at a glowing ring. Every world has a ring of them, one per destination.</td></tr>
         <tr><td>World map</td><td>N</td></tr>
         <tr><td>Output charge</td><td>Hold B to power up, release to store it. Tap = Minimum (x1.5), 5 s = Medium (x2.5), 10 s = Maximum (x4). It supercharges your next ability.</td></tr>
@@ -1832,26 +1842,26 @@ const CHARACTERS = {
   // Naruto: Vivid Tangelo jumpsuit, Funky Yellow hair, Smurf-blue eyes, Dark Sea Blue trim.
   naruto:    { sig: 0xf66c2d, skin: 0xf3c9a0, hair: 0xe7e419, hairStyle: 'spiky',  top: 0xf66c2d, bottom: 0xf66c2d, sleeves: 0xf66c2d, shoulders: 0x363641, eye: 0x4691cc, headband: 0x082c8c, whiskers: true, sandals: 0x082c8c, belt: 0x363641, hairLen: 1.05 },
   // Sasuke: Sport Black and Vintage Dark Blue, Authentic Silver, Uchiha red eye.
-  sasuke:    { sig: 0x9b6cff, skin: 0xf7dcc0, hair: 0x151313, hairStyle: 'swept',  top: 0x293241, bottom: 0xa7a7a9, sleeves: 0x293241, eye: 0xe10000, rinnegan: true, collar: 0x151313, sash: 0x13386c, cape: 0x151313 },
-  gojo:      { sig: 0x5ad4ff, skin: 0xf7dcc0, hair: 0xf4f4ff, hairStyle: 'spiky',  top: 0x101018, bottom: 0x101018, sleeves: 0x101018, eye: 0x5ad4ff, blindfold: 0x191922, collar: 0x1e1e2a, belt: 0x1e1e2a, hairLen: 1.1 },
-  sukuna:    { sig: 0xff2d55, skin: 0xf2d6c6, hair: 0xf7c6c6, hairStyle: 'spiky',  top: 0x180508, bottom: 0x180508, sleeves: 0xf2d6c6, eye: 0xff2d55, markings: true, fourArms: true, sash: 0x6a0c14 },
+  sasuke:    { browAngle: .3, sig: 0x9b6cff, skin: 0xf7dcc0, hair: 0x151313, hairStyle: 'swept',  top: 0x293241, bottom: 0xa7a7a9, sleeves: 0x293241, eye: 0xe10000, rinnegan: true, collar: 0x151313, sash: 0x13386c, cape: 0x151313 },
+  gojo:      { brow: 0xd8d8e8, sig: 0x5ad4ff, skin: 0xf7dcc0, hair: 0xf4f4ff, hairStyle: 'spiky',  top: 0x101018, bottom: 0x101018, sleeves: 0x101018, eye: 0x5ad4ff, blindfold: 0x191922, collar: 0x1e1e2a, belt: 0x1e1e2a, hairLen: 1.1 },
+  sukuna:    { brow: 0xe0a8a8, browAngle: .34, sig: 0xff2d55, skin: 0xf2d6c6, hair: 0xf7c6c6, hairStyle: 'spiky',  top: 0x180508, bottom: 0x180508, sleeves: 0xf2d6c6, eye: 0xff2d55, markings: true, fourArms: true, sash: 0x6a0c14 },
   yuji:      { sig: 0xff8f9c, skin: 0xf3c9a0, hair: 0xff8f9c, hairStyle: 'short',  top: 0x22222a, bottom: 0x22222a, sleeves: 0x22222a, eye: 0x8a4a2a, hood: 0x2c2c36, collar: 0x2c2c36 },
   megumi:    { sig: 0x2f6f6a, skin: 0xf7dcc0, hair: 0x101430, hairStyle: 'spiky',  top: 0x13163a, bottom: 0x13163a, sleeves: 0x13163a, eye: 0x2f6f6a, collar: 0x0d1028, hairLen: 1.25 },
-  toji:      { sig: 0x9fe870, skin: 0xe8c8a0, hair: 0x141418, hairStyle: 'short',  top: 0x16161c, bottom: 0x141418, eye: 0x35502f, scar: true, bare: true, belt: 0x2a2a30 },
+  toji:      { browAngle: .3, sig: 0x9fe870, skin: 0xe8c8a0, hair: 0x141418, hairStyle: 'short',  top: 0x16161c, bottom: 0x141418, eye: 0x35502f, scar: true, bare: true, belt: 0x2a2a30 },
   kashimo:   { sig: 0xffe45c, skin: 0xf3d6b8, hair: 0xf5e6a0, hairStyle: 'long',   top: 0x2a2340, bottom: 0x2a2340, sleeves: 0x2a2340, eye: 0xffe45c, sash: 0xffd54a },
   spiderman: { sig: 0xd8323c, skin: 0xd8323c, hair: 0xd8323c, hairStyle: 'none',   top: 0xd8323c, bottom: 0x1f2f8f, sleeves: 0xd8323c, eye: 0xffffff, mask: true, webs: true },
   geto:      { sig: 0x4a3a8a, skin: 0xf3d6b8, hair: 0x14141c, hairStyle: 'long',   top: 0x2a2030, bottom: 0x1a1622, sleeves: 0x2a2030, eye: 0x6a4a7a, collar: 0x3a2c44 },
   kenjaku:   { sig: 0x8aa84a, skin: 0xe8d8c0, hair: 0x1a1a22, hairStyle: 'long',   top: 0x3a4426, bottom: 0x1a1622, sleeves: 0x3a4426, eye: 0x8aa84a, stitches: true },
   choso:     { sig: 0x9b1a2a, skin: 0xf0d2b8, hair: 0x1a1a22, hairStyle: 'short',  top: 0x2a1a20, bottom: 0x1a1218, sleeves: 0x9b1a2a, eye: 0x9b1a2a, markStripe: true },
   // Mahito: Loblolly skin, Lyla shawl, Winter Blue trim, patchwork stitches.
-  mahito:    { sig: 0xb06cff, skin: 0xbacccf, hair: 0xdcd3c9, hairStyle: 'long',   top: 0x272633, bottom: 0x25345a, sleeves: 0xbacccf, eye: 0x6b6f6f, stitches: true },
+  mahito:    { brow: 0xb8bfc4, sig: 0xb06cff, skin: 0xbacccf, hair: 0xdcd3c9, hairStyle: 'long',   top: 0x272633, bottom: 0x25345a, sleeves: 0xbacccf, eye: 0x6b6f6f, stitches: true },
   jogoC:     { sig: 0xff6b3d, skin: 0xd88a4a, hair: 0x2a1a14, hairStyle: 'none',   top: 0x6a2a1a, bottom: 0x4a1a14, sleeves: 0xd88a4a, eye: 0xffd54a, volcano: true },
   hanamiC:   { sig: 0x8fbf6a, skin: 0x8fbf6a, hair: 0x3f7a3a, hairStyle: 'none',   top: 0x5b7a3a, bottom: 0x3f5a2a, sleeves: 0x8fbf6a, eye: 0xffe45c, horns: true },
   dagonC:    { sig: 0x5aa9ff, skin: 0xbfe0f0, hair: 0x2f6fb5, hairStyle: 'none',   top: 0x2a6a8a, bottom: 0x1f4f6a, sleeves: 0xbfe0f0, eye: 0x6cd8ff, horns: true },
   eleven:    { sig: 0xc0392b, skin: 0xf3d6c0, hair: 0x6a4a2a, hairStyle: 'short',  top: 0xf0e0d0, bottom: 0x2a3a5a, sleeves: 0xf0e0d0, eye: 0x4a3a2a, nosebleed: true },
   jean:      { sig: 0xd94f1a, skin: 0xf7dcc0, hair: 0xd94f1a, hairStyle: 'long',   top: 0x1f7a3a, bottom: 0xd4302a, sleeves: 0x1f7a3a, eye: 0x3f8f5f, sash: 0xffd54a },
   ironman:   { sig: 0xffc83d, skin: 0xd4302a, hair: 0xd4302a, hairStyle: 'none',   top: 0xd4302a, bottom: 0xd4302a, sleeves: 0xffc83d, eye: 0x9fe0ff, mask: true, reactor: true, shoulders: 0xffc83d },
-  tophat:    { sig: 0xf0f0f0, skin: 0xf0f0f0, hair: 0x101010, hairStyle: 'none',   top: 0x181818, bottom: 0x101010, sleeves: 0xf0f0f0, eye: 0x101010, tophat: true, collar: 0xf0f0f0 },
+  tophat:    { brow: 0x101010, sig: 0xf0f0f0, skin: 0xf0f0f0, hair: 0x101010, hairStyle: 'none',   top: 0x181818, bottom: 0x101010, sleeves: 0xf0f0f0, eye: 0x101010, tophat: true, collar: 0xf0f0f0 },
 };
 CHARACTERS.jogo = CHARACTERS.jogoC; CHARACTERS.hanami = CHARACTERS.hanamiC; CHARACTERS.dagon = CHARACTERS.dagonC;
 
@@ -1909,6 +1919,17 @@ function buildCharacter(L) {
       e.scale.set(1.25, .85, .5); e.position.set(sx * .105, .03, .205); neck.add(e);
     }
   }
+  // Brows and a mouth line do more for recognition than any amount of colour.
+  if (!L.mask) {
+    for (const sx of [-1, 1]) {
+      const brow = new THREE.Mesh(new THREE.BoxGeometry(.085, .022, .02), new THREE.MeshBasicMaterial({ color: L.brow ?? L.hair }));
+      brow.position.set(sx * .095, .105, .215);
+      brow.rotation.z = sx * (L.browAngle ?? .18);
+      neck.add(brow);
+    }
+    const mouth = new THREE.Mesh(new THREE.BoxGeometry(.055, .014, .02), new THREE.MeshBasicMaterial({ color: 0x8a5a4a }));
+    mouth.position.set(0, -.075, .225); neck.add(mouth);
+  }
   if (L.whiskers) for (const sx of [-1, 1]) for (const yy of [-.06, -.01, .04]) {
     const w = new THREE.Mesh(new THREE.BoxGeometry(.11, .015, .015), ink);
     w.position.set(sx * .17, yy, .17); neck.add(w);
@@ -1928,6 +1949,13 @@ function buildCharacter(L) {
   if (L.hairStyle === 'spiky') {
     const cap = new THREE.Mesh(new THREE.SphereGeometry(.245, 14, 10, 0, Math.PI * 2, 0, Math.PI * .55), hairMat);
     cap.position.y = .04; neck.add(cap);
+    // Bangs hanging over the forehead: the front of the silhouette.
+    for (let i = 0; i < 5; i++) {
+      const fr = new THREE.Mesh(new THREE.ConeGeometry(.058, .2 + (i % 2) * .06, 5), hairMat);
+      fr.position.set((i - 2) * .085, .17, .17);
+      fr.rotation.set(2.5 + (i % 2) * .2, 0, (i - 2) * .12);
+      neck.add(fr);
+    }
     for (let i = 0; i < 13; i++) {
       const a = (i / 13) * Math.PI * 2, r = .12 + (i % 3) * .035;
       const sp = new THREE.Mesh(new THREE.ConeGeometry(.075, (.3 + (i % 4) * .05) * (L.hairLen ?? 1), 5), hairMat);
@@ -1942,6 +1970,14 @@ function buildCharacter(L) {
   } else if (L.hairStyle === 'long') {
     const cap = new THREE.Mesh(new THREE.SphereGeometry(.25, 14, 10, 0, Math.PI * 2, 0, Math.PI * .62), hairMat);
     cap.position.y = .03; neck.add(cap);
+    for (const sx of [-1, 1]) {
+      const side = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.06, .34, 4, 6), hairMat), .07);
+      side.position.set(sx * .22, -.08, .06); neck.add(side);
+    }
+    for (let i = 0; i < 4; i++) {
+      const fr = new THREE.Mesh(new THREE.ConeGeometry(.05, .2, 5), hairMat);
+      fr.position.set((i - 1.5) * .1, .16, .17); fr.rotation.x = 2.6; neck.add(fr);
+    }
     const tail = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.1, .8, 4, 8), hairMat), .07);
     tail.position.set(0, -.35, -.22); tail.rotation.x = -.25; neck.add(tail);
   } else if (L.hairStyle === 'short') {
@@ -2168,7 +2204,7 @@ function physSwing(dt) {
   if (input.lengthSq() > 0) v.add(input.multiplyScalar(PHYS.pump * dt));
   v.multiplyScalar(Math.max(0, 1 - PHYS.drag * dt));
   if (player.rope > player.ropeTarget) player.rope = Math.max(player.ropeTarget, player.rope - 28 * dt);
-  if (keys.has('KeyC') || keys.has('ControlLeft')) player.rope = Math.max(3, player.rope - PHYS.reel * dt);
+  if (keys.has('ControlLeft') || keys.has('ControlRight')) player.rope = Math.max(3, player.rope - PHYS.reel * dt);
   if (player.reelInput) { player.rope = THREE.MathUtils.clamp(player.rope + player.reelInput, 3, PHYS.maxRope); player.ropeTarget = Math.min(player.ropeTarget, player.rope); player.reelInput = 0; }
   const to = player.anchor.clone().sub(player.pos); const dist = to.length();
   if (dist > 1e-4) {
@@ -2191,6 +2227,17 @@ function physSwing(dt) {
 // ---- Movement & camera ----
 const keys = new Set();
 let camYaw = Math.PI, camPitch = .34, camDist = 7.5;
+// Shift lock: the character turns with the camera and the view sits over the
+// right shoulder, so where you look is where you face. Toggle with Q.
+let shiftLock = false, shoulder = 0;
+function toggleShiftLock(on) {
+  shiftLock = on ?? !shiftLock;
+  $('#lock-tag').hidden = !shiftLock;
+  $('#reticle').classList.toggle('locked', shiftLock);
+  const btn = $('#btn-lock'); if (btn) btn.classList.toggle('on', shiftLock);
+  log(shiftLock ? 'Shift lock on: you face where the camera looks.' : 'Shift lock off.');
+  if (shiftLock) canvas.requestPointerLock?.();
+}
 function moveInput() {
   const f = new THREE.Vector3(Math.sin(camYaw), 0, Math.cos(camYaw)), r = new THREE.Vector3(-f.z, 0, f.x);
   const v = new THREE.Vector3();
@@ -2210,7 +2257,8 @@ function physWalk(dt) {
   player.vel.z += (target.z - player.vel.z) * Math.min(1, k * dt);
   // Falling is heavier than rising: the arc peaks and then it commits.
   player.vel.y -= PHYS.gravity * (player.vel.y < 0 ? 1.45 : 1) * dt;
-  if (input.lengthSq() > 0) player.yaw = Math.atan2(input.x, input.z);
+  if (shiftLock) player.yaw = camYaw;                       // face the camera, strafe freely
+  else if (input.lengthSq() > 0) player.yaw = Math.atan2(input.x, input.z);
   const fallSpeed = player.vel.y;
   const wasAir = !player.onGround;
   player.onGround = false;
@@ -2256,9 +2304,11 @@ function landed(fallSpeed) {
   if (v > 24) { hitStop = Math.max(hitStop, .05); damageBuildings(player.pos, 3 + heavy * 4, 30 * heavy); }
 }
 function updateCamera(dt) {
-  const targetDist = player.swinging ? 9.5 : 6.2;
+  const targetDist = player.swinging ? 9.5 : shiftLock ? 4.4 : 6.2;
   camDist += (targetDist - camDist) * Math.min(1, 4 * dt);
+  shoulder += ((shiftLock ? .95 : 0) - shoulder) * Math.min(1, 8 * dt);
   const focus = player.pos.clone().add(new THREE.Vector3(0, 1.5, 0));
+  if (shoulder > .01) focus.add(new THREE.Vector3(Math.cos(camYaw), 0, -Math.sin(camYaw)).multiplyScalar(shoulder));
   // Behind the player horizontally, ABOVE by the pitch. The y term used to be
   // negated, which parked the default camera under the road.
   const off = new THREE.Vector3(-Math.sin(camYaw) * Math.cos(camPitch), Math.sin(camPitch), -Math.cos(camYaw) * Math.cos(camPitch)).multiplyScalar(camDist);
@@ -3767,6 +3817,7 @@ function tbPress(act, on) {
     else if (act === 'jump') tryJump();
     else if (act === 'dodge') dodge();
     else if (act === 'swing') startSwing();
+    else if (act === 'lock') toggleShiftLock();
     else if (act === 'ult') useUltimate();
     else if (act === 'charge') startCharge();
     else if (act === 'gate') { if (nearPortal) useGate(nearPortal.to); }
@@ -3840,12 +3891,14 @@ addEventListener('keydown', (e) => {
   keys.add(e.code);
   if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) tryJump(); }
   if (e.code === 'KeyE') startSwing();
-  if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') dodge();
+  if ((e.code === 'ShiftLeft' || e.code === 'ShiftRight') && !e.repeat) toggleShiftLock();
+  if (e.code === 'KeyC' && !e.repeat) dodge();
   if (e.code === 'KeyF') strike();
   if (/^Digit[1-5]$/.test(e.code) && !e.repeat) activateSlot(Number(e.code[5]) - 1);
   if (e.code === 'KeyG' && !e.repeat) useUltimate();
   if (e.code === 'KeyQ' && !e.repeat) { if (nearPortal) useGate(nearPortal.to); else log('No gate within reach. They ring the arena.'); }
   if (e.code === 'KeyB' && !e.repeat) startCharge();
+  if (e.code === 'KeyL' && !e.repeat) toggleShiftLock();   // alias for Shift
   if (e.code === 'KeyR' && !e.repeat) {
     const a = arsenalOf(player.style);
     if (a && a.key === 'r') { const w = cycleWeapon(); renderSlots(); center(w.name.toUpperCase(), 1000); log(`Switched to ${w.name}. ${w.note}`, true); }
