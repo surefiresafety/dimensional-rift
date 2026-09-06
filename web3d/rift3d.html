@@ -280,6 +280,7 @@
         <tr><td>Dodge</td><td>C. When the screen goes purple, Spider-Sense is open: dodge for a Perfect Dodge.</td></tr>
         <tr><td>Loadout</td><td>Tab</td></tr>
         <tr><td>Ultimate</td><td>G (Yuji: Sukuna for a minute · Megumi: summon Mahoraga)</td></tr>
+        <tr><td>Signature (E)</td><td>Spider-Man swings · Iron Man, Jean and Eleven fly · Naruto charges a Rasengan · Sasuke charges Chidori · Megumi opens his domain · Yuji cuts with Dismantle</td></tr>
         <tr><td>Move sets</td><td>M</td></tr>
         <tr><td>Shift lock</td><td>Shift. The camera locks over your shoulder and you always face where you look.</td></tr>
         <tr><td>Gates</td><td>Q at a glowing ring. Every world has a ring of them, one per destination.</td></tr>
@@ -464,7 +465,7 @@ const SKILLS = {
 
   // --- Naruto: Uzumaki ---
   rasengan_n:      { name: 'Rasengan', origin: 'Naruto', nature: 'wind', cost: 10, cd: 3, type: 'melee', range: 3.4, power: 75, knock: 18, desc: 'Spiralling chakra slammed into the enemy.' },
-  multi_clone:     { name: 'Multi Shadow Clone', origin: 'Naruto', nature: 'physical', cost: 14, cd: 10, type: 'clones', army: true, count: 1000, duration: 18, power: 14, desc: 'Charge it with B first: a tap makes 1,000 clones, Medium 5,000, Maximum 10,000. Ten HP each, and they throw their own Rasengan and Rasenshuriken.' },
+  multi_clone:     { name: 'Multi Shadow Clone', origin: 'Naruto', nature: 'physical', cost: 14, cd: 10, type: 'clones', army: true, count: 4, duration: 18, power: 14, desc: 'Uncharged it makes three to five clones. Charge it with B first for the real thing: Minimum Output 1,000, Medium 5,000, Maximum 10,000. Ten HP each, and they throw their own Rasengan and Rasenshuriken.' },
   rasenshuriken:   { name: 'Rasenshuriken', origin: 'Naruto', nature: 'wind', cost: 26, cd: 9, type: 'projectile', speed: 26, radius: 1.4, power: 110, aoe: 6, spin: true, desc: 'A blade of wind. Explodes into a storm on impact.' },
   sage_mode:       { name: 'Sage Mode', origin: 'Naruto', nature: 'physical', cost: 20, cd: 25, type: 'buff', duration: 10, dmgMul: 1.6, speedMul: 1.35, desc: 'Nature energy. Every hit is heavier, you move faster, chakra returns.' },
   tailed_beast_bomb: { name: 'Tailed Beast Bomb', origin: 'Naruto', nature: 'fire', cost: 34, cd: 14, type: 'projectile', speed: 22, radius: 2.2, power: 150, aoe: 8, onHit: { burn: 5 }, desc: "Kurama's chakra, compressed and fired." },
@@ -545,6 +546,7 @@ const SKILLS = {
   flower_field:    { name: 'Flower Field', origin: 'Hanami', nature: 'earth', cost: 16, cd: 8, type: 'trap', range: 8, radius: 10, power: 72, color: 0x8fbf6a, onHit: { root: 3, poison: 5 }, desc: 'Blossoms erupt through the road and hold everything in place.' },
   wood_spikes:     { name: 'Wooden Ball', origin: 'Hanami', nature: 'earth', cost: 12, cd: 4, type: 'projectile', speed: 32, radius: 1.2, power: 84, aoe: 5, desc: 'A ball of packed wood that bursts into spikes.' },
   drain_life:      { name: 'Drain', origin: 'Hanami', nature: 'earth', cost: 14, cd: 10, type: 'heal', percent: .3, desc: 'Pulls life out of the ground and back into himself.' },
+  chimera_garden:  { name: 'Domain: Chimera Shadow Garden', origin: 'Megumi', nature: 'earth', cost: 34, cd: 26, type: 'domain', duration: 7, radius: 36, power: 44, tick: .4, color: 0x0a0a12, floor: 0x14142a, edge: 0x5aa9ff, sky: 0x05050c, sunLevel: .5, title: 'CHIMERA SHADOW GARDEN', desc: 'The ground turns to shadow and every shikigami he has can rise out of it.' },
   hanami_domain:   { name: 'Domain: Garden of Rot', origin: 'Hanami', nature: 'earth', cost: 40, cd: 34, type: 'domain', duration: 6, radius: 34, power: 46, tick: .45, color: 0x1c3a14, floor: 0x35662a, edge: 0x8fbf6a, sky: 0x0e1e0a, sunColor: 0xa8d86a, title: 'GARDEN OF ROT', desc: 'The barrier fills with roots and everything inside is slowly taken apart.' },
 
   // --- Dagon ---
@@ -587,7 +589,9 @@ const SKILLS = {
   bullet_time:     { name: 'Bullet Time', origin: 'Top Hat', nature: 'physical', cost: 34, cd: 30, type: 'freeze', duration: 7, power: 40, desc: 'The panel holds. He keeps moving; nothing else does.' },
 
   // --- Kakashi Hatake: Copy Ninja ---
-  raikiri:         { name: 'Lightning Blade', origin: 'Kakashi', nature: 'lightning', cost: 14, cd: 3, type: 'dash', range: 14, power: 130, onHit: { paralyze: 2.5, knock: 14 }, desc: 'Chidori refined until it cuts. He runs it straight through.' },
+  chidori_k:       { name: 'Chidori', origin: 'Kakashi', nature: 'lightning', cost: 14, cd: 3, type: 'dash', range: 14, power: 130, onHit: { paralyze: 2.5, knock: 14 }, desc: 'His own technique. He runs it straight through whatever is in the way.' },
+  rasengan_k:      { name: 'Rasengan', origin: 'Kakashi', nature: 'wind', cost: 12, cd: 3, type: 'melee', range: 3.6, arc: .25, power: 95, knock: 20, desc: 'Copied with the Sharingan and driven in at close range.' },
+  raikiri:         { name: 'Lightning Blade', origin: 'Kakashi', nature: 'lightning', cost: 16, cd: 4, type: 'dash', range: 16, power: 155, onHit: { paralyze: 3, knock: 18 }, desc: 'Chidori sharpened until it cuts clean through.' },
   water_dragon_k:  { name: 'Water Dragon Jutsu', origin: 'Kakashi', nature: 'water', cost: 16, cd: 4, type: 'projectile', speed: 34, radius: 1.4, power: 105, aoe: 6, onHit: { knock: 18 }, desc: 'A dragon of water rises out of nothing and comes down on them.' },
   mud_wall_k:      { name: 'Earth Style: Mud Wall', origin: 'Kakashi', nature: 'earth', cost: 12, cd: 8, type: 'shield', charges: 3, duration: 12, color: 0xc9a068, desc: 'A wall of packed earth takes the next three hits for him.' },
   ninja_hounds_k:  { name: 'Summoning: Ninja Hounds', origin: 'Kakashi', nature: 'earth', cost: 16, cd: 12, type: 'clones', mesh: 'dog', count: 3, duration: 16, power: 26, speed: 12, desc: 'The pack comes up out of the ground and pins whatever it catches.' },
@@ -634,7 +638,7 @@ const STYLES = {
     takeover: 'sukuna', m1BlackFlash: .7,
     ultimate: { kind: 'transform', into: 'sukuna', name: 'Sukuna Possession', cost: 30, cd: 46, duration: 60 } },
   megumi: { name: 'Megumi: Ten Shadows', blurb: 'Shikigami do the fighting. G calls the one he cannot control.',
-    passives: ['Shikigami fight on their own and pick the nearest enemy.'],
+    passives: ['Shikigami fight on their own and pick the nearest enemy.', 'E opens Chimera Shadow Garden; G calls the one he cannot control.'],
     pool: ['divine_dogs', 'nue', 'toad_s', 'max_elephant', 'rabbit_escape'], slots: ['divine_dogs', 'nue', 'toad_s', 'max_elephant', 'rabbit_escape'],
     ultimate: { kind: 'mahoraga', name: 'Summon Mahoraga', cost: 50, cd: 34, duration: 30 } },
   toji: { name: 'Toji: Heavenly Restriction', blurb: 'No cursed energy, just a body that outclasses sorcerers and a bag of cursed tools.',
@@ -690,8 +694,8 @@ const STYLES = {
     pool: ['gun_shot', 'quick_draw', 'grenade', 'execute_shot', 'switch_gun'], slots: ['gun_shot', 'quick_draw', 'grenade', 'execute_shot', 'switch_gun'],
     ultimate: { skill: 'bullet_time', name: 'Bullet Time', cost: 34, cd: 30, duration: 7 } },
   kakashi: { name: 'Kakashi: Copy Ninja', blurb: 'One eye, a thousand jutsu, and a book he would rather be reading.',
-    passives: ['Lightning Blade paralyses whatever it passes through.', 'Mud Wall eats three hits outright.'],
-    pool: ['raikiri', 'water_dragon_k', 'mud_wall_k', 'ninja_hounds_k', 'kamui'], slots: ['raikiri', 'water_dragon_k', 'mud_wall_k', 'ninja_hounds_k', 'kamui'],
+    passives: ['Chidori paralyses whatever it passes through.', 'He copied Rasengan and the Shadow Clone Jutsu. Uncharged it is three to five clones; charge B first for a thousand or more.', 'Lightning Blade, Water Dragon and Mud Wall are in his pool: swap them in with Tab.'],
+    pool: ['chidori_k', 'rasengan_k', 'multi_clone', 'ninja_hounds_k', 'kamui', 'raikiri', 'water_dragon_k', 'mud_wall_k'], slots: ['chidori_k', 'rasengan_k', 'multi_clone', 'ninja_hounds_k', 'kamui'],
     ultimate: { skill: 'kamui_raikiri', name: 'Kamui Lightning Blade', cost: 38, cd: 30, duration: 1 } },
   sasuke: { name: 'Sasuke: Rinnegan', blurb: 'Space and time bend around him. Teleport, stop the clock, take it back.',
     passives: ['Work in progress: more Rinnegan techniques to come.'],
@@ -2322,7 +2326,7 @@ function findAnchor() {
 // E is a signature action, not a universal one. Only Spider-Man carries
 // web-shooters; the fliers take off; Naruto winds up a Rasengan; Sukuna's
 // technique leaks out of Yuji.
-const E_ACTION = { spiderman: 'swing', ironman: 'fly', jean: 'fly', eleven: 'fly', naruto: 'rasengan', sasuke: 'chidori', yuji: 'dismantle' };
+const E_ACTION = { spiderman: 'swing', ironman: 'fly', jean: 'fly', eleven: 'fly', naruto: 'rasengan', sasuke: 'chidori', yuji: 'dismantle', megumi: 'garden' };
 const eActionOf = () => E_ACTION[player.style] ?? null;
 function startEAction() {
   const a = eActionOf();
@@ -2331,6 +2335,7 @@ function startEAction() {
   else if (a === 'rasengan') startRasengan();
   else if (a === 'chidori') startChidori();
   else if (a === 'dismantle') castSkill('dismantle_s', {});
+  else if (a === 'garden') castSkill('chimera_garden', {});
   else log('No web-shooters. Only Spider-Man swings.');
 }
 function endEAction() {
@@ -2465,7 +2470,7 @@ function speedLines(ms = 200) {
 // InstancedMeshes and a flat array: one draw call for every torso, one for every
 // head, no per-clone Object3D at all. Damage is aggregated per enemy rather than
 // reported per clone, so a thousand fists still arrive as one number.
-const ARMY_TIERS = [1000, 5000, 10000];   // tap, Medium output, Maximum output
+const ARMY_TIERS = [1000, 5000, 10000];   // Minimum, Medium, Maximum output. Uncharged is the normal jutsu: 3-5 clones.
 // The clones do not just punch: every so often one winds up a jutsu of its own.
 const ARMY_JUTSU = [
   { name: 'Rasengan', nature: 'wind', speed: 34, radius: .7, power: 58, cost: 0, cd: 0, color: 0x5aa9ff },
@@ -2483,7 +2488,8 @@ function clearArmy() {
 }
 function spawnArmy(count, duration, power, look) {
   clearArmy();
-  const cap = Math.max(1, Math.round(count * (Q.army ?? 1)));   // quality thins the crowd
+  // Quality thins a crowd, but the plain jutsu is only a handful of clones: keep those exact.
+  const cap = count <= 8 ? count : Math.max(1, Math.round(count * (Q.army ?? 1)));
   // A crowd of a thousand only ever reads as a crowd, so the bodies get cheaper
   // the more of them there are: fewer segments, and the work is spread over
   // several frames instead of all landing on one.
@@ -2509,7 +2515,8 @@ function spawnArmy(count, duration, power, look) {
   }
   army.until = now + duration; army.power = power; army.tick = 0; army.retarget = 0; army.cast = 0; army.shots = 0;
   army.fpsAcc = wallNow(); army.fpsN = 0; army.thinAt = wallNow() + 2.5; army.cullR = spread + 12;
-  shout('Shadow Clone Jutsu'); log(`Shadow Clone Jutsu: ${cap.toLocaleString()} clones, 10 HP each.`, true);
+  shout(cap >= 1000 ? 'Multi Shadow Clone Jutsu' : 'Shadow Clone Jutsu');
+  log(`${cap >= 1000 ? 'Multi Shadow Clone Jutsu' : 'Shadow Clone Jutsu'}: ${cap.toLocaleString()} clones, 10 HP each.`, true);
   center(cap >= 500 ? `${cap.toLocaleString()} SHADOW CLONES` : 'SHADOW CLONES', 1600);
   burst(player.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 0xffffff, cap >= 500 ? 30 : 16);
   if (cap >= 500) { shake = Math.max(shake, 1.2); screenFlash(.5); }
@@ -3762,7 +3769,7 @@ function castSkill(id, opts = {}) {
     log(`${s.name}: the next ${Math.round(s.charges * B)} hits stop before they reach you${s.reflect ? ' and the attacker takes the charge' : ''}.`, true);
     center(s.name.toUpperCase(), 900);
   } else if (s.type === 'clones' && s.army) {
-    spawnArmy(lastOutputTier >= 0 ? ARMY_TIERS[lastOutputTier] : s.count, s.duration, s.power, CHARACTERS[player.style] ?? CHARACTERS.default);
+    spawnArmy(lastOutputTier >= 0 ? ARMY_TIERS[lastOutputTier] : 3 + ((Math.random() * 3) | 0), s.duration, s.power, CHARACTERS[player.style] ?? CHARACTERS.default);
     player.decoy = true;
   } else if (s.type === 'clones') {
     player.decoy = true;
