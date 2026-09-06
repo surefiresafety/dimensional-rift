@@ -289,7 +289,7 @@
         <tr><td>Dodge</td><td>C. When the screen goes purple, Spider-Sense is open: dodge for a Perfect Dodge.</td></tr>
         <tr><td>Loadout</td><td>Tab</td></tr>
         <tr><td>Ultimate</td><td>G (Yuji: Sukuna for a minute · Megumi: summon Mahoraga)</td></tr>
-        <tr><td>Signature (E)</td><td>Spider-Man swings · Iron Man, Jean and Eleven fly · Naruto charges a Rasengan · Sasuke charges Chidori · Megumi opens his domain · Yuji cuts with Dismantle</td></tr>
+        <tr><td>Signature (E)</td><td>Spider-Man swings · Gojo, Iron Man, Jean and Eleven fly · Naruto charges a Rasengan · Sasuke charges Chidori · Megumi opens his domain · Yuji cuts with Dismantle</td></tr>
         <tr><td>Select character</td><td>M</td></tr>
         <tr><td>Shift lock</td><td>Shift. The camera locks over your shoulder and you always face where you look.</td></tr>
         <tr><td>Gates</td><td>Q at a glowing ring. Every world has a ring of them, one per destination.</td></tr>
@@ -656,7 +656,7 @@ const SKILLS = {
 };
 const STYLES = {
   gojo: { name: 'Gojo: Limitless', blurb: 'Six Eyes and Limitless. Nothing reaches him, everything reaches you.', energy: Infinity,
-    passives: ['All Cursed: never weak, never super effective. Raw numbers instead.'],
+    passives: ['All Cursed: never weak, never super effective. Raw numbers instead.', 'Hold E to fly. Limitless does not care about the ground.'],
     pool: ['blue', 'red', 'hollow_purple', 'infinity', 'rct_heal'], slots: ['blue', 'red', 'hollow_purple', 'infinity', 'rct_heal'],
     ultimate: { skill: 'unlimited_void', name: 'Domain: Unlimited Void', cost: 40, cd: 34, duration: 5 } },
   naruto: { name: 'Naruto: Uzumaki', blurb: 'Clones, Rasengan, Sage Mode. Relentless and mobile.',
@@ -2509,7 +2509,7 @@ function findAnchor() {
 // E is a signature action, not a universal one. Only Spider-Man carries
 // web-shooters; the fliers take off; Naruto winds up a Rasengan; Sukuna's
 // technique leaks out of Yuji.
-const E_ACTION = { spiderman: 'swing', ironman: 'fly', jean: 'fly', eleven: 'fly', naruto: 'rasengan', sasuke: 'chidori', yuji: 'dismantle', megumi: 'garden' };
+const E_ACTION = { spiderman: 'swing', ironman: 'fly', jean: 'fly', eleven: 'fly', gojo: 'fly', naruto: 'rasengan', sasuke: 'chidori', yuji: 'dismantle', megumi: 'garden' };
 const eActionOf = () => E_ACTION[player.style] ?? null;
 function startEAction() {
   const a = eActionOf();
