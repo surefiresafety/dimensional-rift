@@ -310,7 +310,7 @@
       <div class="setup-row quality-row"></div>
       <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
         <button id="open-movesets">Select your character</button>
-        <span style="opacity:.7;font-size:12px">Thirty-three characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
+        <span style="opacity:.7;font-size:12px">Thirty-four characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
       </div>
     </div>
   </div>
@@ -717,6 +717,14 @@ const SKILLS = {
   arm_block:       { name: 'Arm Block', origin: 'Winter Soldier', nature: 'physical', cost: 11, cd: 11, type: 'shield', charges: 4, duration: 13, reflect: 60, color: 0xb8bec8, desc: 'He puts the metal arm between him and it. Four times, and whatever hits it comes back.' },
   winter_protocol: { name: 'Winter Protocol', origin: 'Winter Soldier', nature: 'physical', cost: 34, cd: 25, type: 'beam', range: 52, radius: 3, power: 330, ignoreDef: true, color: 0xffd54a, desc: 'Everything he was trained to be, in one long burst down the street.' },
 
+  // --- Nanami Kento: the Ratio Technique. Seven to three, every time -------
+  ratio_strike:    { name: 'Ratio Technique', origin: 'Nanami', nature: 'cursed', cost: 8, cd: 1.1, type: 'melee', range: 5, arc: .3, power: 86, knock: 14, crit: { chance: .7, mul: 2.4, ramp: .04, tag: '7:3', color: 0xd8b46a }, desc: 'He divides them into ten and hits the seven-to-three point. Seven times in ten that is a guaranteed weak spot.' },
+  cleaver_sweep:   { name: 'Blunt Cleaver', origin: 'Nanami', nature: 'physical', cost: 6, cd: 1.4, type: 'melee', range: 6, arc: -.35, power: 74, knock: 20, desc: 'The blade has no edge. It does not need one, and it takes the whole arc.' },
+  ratio_collapse:  { name: 'Collapse', origin: 'Nanami', nature: 'cursed', cost: 14, cd: 4, type: 'beam', range: 32, radius: 2.4, power: 156, ignoreDef: true, color: 0xd8b46a, knock: 20, desc: 'The ratio applied to the ground under them rather than to them. Defence is not part of the calculation.' },
+  ratio_mark:      { name: 'Divide', origin: 'Nanami', nature: 'cursed', cost: 9, cd: 3, type: 'projectile', speed: 60, radius: .9, power: 68, pierce: true, color: 0xd8b46a, onHit: { defDown: .45 }, desc: 'He works out where the seam is and everything that follows lands on it.' },
+  blunt_throw:     { name: 'Thrown Cleaver', origin: 'Nanami', nature: 'physical', cost: 8, cd: 2.6, type: 'projectile', speed: 58, radius: .8, power: 104, pierce: true, color: 0xdfe8f4, onHit: { knock: 16 }, desc: 'He would rather not. It works, so he does.' },
+  overtime:        { name: 'Overtime', origin: 'Nanami', nature: 'cursed', cost: 30, cd: 26, type: 'buff', duration: 22, dmgMul: 2.3, speedMul: 1.35, costMul: .5, regen: 8, color: 0xd8b46a, desc: 'Working hours are over. Everything past the clock comes out of a bigger reserve, and he stops being careful with it.' },
+
   spider_verse:    { name: 'Spider-Verse Assist', origin: 'Spider-Man', nature: 'physical', cost: 32, cd: 30, type: 'clones', mesh: 'spider', count: 3, duration: 20, power: 30, speed: 12, desc: 'Three spiders from other dimensions drop in and fight beside you.' },
 
   // --- Megumi Fushiguro: Ten Shadows ---
@@ -750,6 +758,10 @@ const STYLES = {
     m1: 26, m1Range: 2,
     pool: ['actuator_sweep', 'tentacle_grab', 'debris_hurl', 'pin_down', 'actuator_guard'], slots: ['actuator_sweep', 'tentacle_grab', 'debris_hurl', 'pin_down', 'actuator_guard'],
     ultimate: { skill: 'fusion_flare', name: 'Fusion Flare', cost: 38, cd: 27, duration: 1 } },
+  nanami: { name: 'Nanami Kento: Ratio Technique', blurb: 'A salaryman who went back to sorcery because the hours were no better either way. Methodical, blunt, and very hard to survive.',
+    passives: ['Ratio Technique crits seven times in ten for 2.4x — the seven-to-three point, and it builds toward a certainty when it misses.', 'Collapse ignores defence outright; Divide strips 45% of it for everything after.', 'Overtime is the ultimate: 2.3x damage for twenty-two seconds at half the cost.'],
+    pool: ['ratio_strike', 'cleaver_sweep', 'ratio_collapse', 'ratio_mark', 'blunt_throw'], slots: ['ratio_strike', 'cleaver_sweep', 'ratio_collapse', 'ratio_mark', 'blunt_throw'],
+    ultimate: { skill: 'overtime', name: 'Overtime', cost: 30, cd: 26, duration: 22 } },
   nobara: { name: 'Nobara Kugisaki: Straw Doll', blurb: 'Hammer, nails, and a technique that makes distance stop mattering. She did not come to Tokyo to lose.',
     passives: ['Straw Doll leaves a nail in them for twelve seconds. Hairpin, Resonance and the ultimate all hit far harder against anything carrying one.', 'Resonance and Resonance: Maximum ignore defence entirely.', 'Open with Straw Doll, then pick which one they get.'],
     pool: ['straw_doll', 'hairpin', 'resonance', 'nail_barrage', 'hammer_swing'], slots: ['straw_doll', 'hairpin', 'resonance', 'nail_barrage', 'hammer_swing'],
@@ -2152,6 +2164,10 @@ const CHARACTERS = {
   winter:    { height: 1.08, sig: 0xb8bec8, skin: 0xe8c8a8, hair: 0x241d18, hairStyle: 'long', top: 0x1a1c22, bottom: 0x16181d,
                sleeves: 0x1a1c22, eye: 0x5a7a8a, metalArm: 0xb8bec8, maskLower: 0x14161a, vest: 0x22252c,
                belt: 0x2a2d34, pouch: true, brow: 0x241d18, browAngle: .34, hairLen: 1.2 },
+  // Nanami: tan suit, blue shirt, leopard tie, round tinted lenses. Blond.
+  nanami:    { height: 1.09, sig: 0xd8b46a, skin: 0xf0d2ae, hair: 0xd8c07a, hairStyle: 'crop', top: 0xd6cbb2, bottom: 0xc2b79c,
+               sleeves: 0xd6cbb2, eye: 0x8a7a4a, goggles: 0x4a4a52, lens: 0x3a3020, collar: 0x4a7a9a,
+               necktie: 0xc89a4a, tieSpots: true, buckle: 0x8a7a5a, brow: 0xd8c07a, browAngle: .2 },
   tophat:    { buckle: 0xf0f0f0, brow: 0x101010, sig: 0xf0f0f0, skin: 0xf0f0f0, hair: 0x101010, hairStyle: 'none',   top: 0x181818, bottom: 0x101010, sleeves: 0xf0f0f0, eye: 0x101010, tophat: true, collar: 0xf0f0f0 },
 };
 CHARACTERS.jogo = CHARACTERS.jogoC; CHARACTERS.hanami = CHARACTERS.hanamiC; CHARACTERS.dagon = CHARACTERS.dagonC;
@@ -2232,6 +2248,17 @@ function buildCharacter(L) {
   if (L.pouch) {                     // ninja hip pouch
     const pch = outlined(new THREE.Mesh(new THREE.BoxGeometry(.2, .17, .12), toon(0x3a2a1a)), .07);
     pch.position.set(.24, -.02, -.14); pelvis.add(pch);
+  }
+  if (L.necktie) {
+    const tm = toon(L.necktie);
+    const knot = new THREE.Mesh(new THREE.BoxGeometry(.07, .07, .05), tm);
+    knot.position.set(0, .52, .245); chest.add(knot);
+    const blade = new THREE.Mesh(new THREE.BoxGeometry(.085, .34, .035), tm);
+    blade.position.set(0, .33, .25); chest.add(blade);
+    if (L.tieSpots) for (let i = 0; i < 7; i++) {   // the leopard print
+      const sp = new THREE.Mesh(new THREE.CircleGeometry(.014, 6), new THREE.MeshBasicMaterial({ color: 0x3a2a18 }));
+      sp.position.set(((i % 3) - 1) * .026, .45 - Math.floor(i / 3) * .07, .269); chest.add(sp);
+    }
   }
   if (L.tie) for (const sx of [-1, 1]) {   // hanging sash tails
     const t2 = new THREE.Mesh(new THREE.BoxGeometry(.08, .42, .04), toon(L.tie));
@@ -4238,7 +4265,13 @@ function castSkill(id, opts = {}) {
       if (s.bonusStatus && e.status[s.bonusStatus]) { power *= s.bonusMul ?? 1; center(s.bonusTag ?? 'LINKED!', 500); }
       if (s.finisher) power *= 1 + s.finisher * (1 - e.hp / e.maxHp);
       if (s.crit) {
-        if (Math.random() < s.crit.chance + player.flashRamp) { power *= s.crit.mul; player.flashRamp = 0; center('BLACK FLASH', 1000); hitStop = .22; screenFlash(.85); shake = 1; burst(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), 0x120008, 24); burst(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), 0xff2d55, 12); }
+        if (Math.random() < s.crit.chance + player.flashRamp) {
+          power *= s.crit.mul; player.flashRamp = 0;
+          center(s.crit.tag ?? 'BLACK FLASH', 1000); hitStop = .22; screenFlash(.85); shake = 1;
+          const cc = s.crit.color ?? 0xff2d55;
+          burst(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), 0x120008, 24);
+          burst(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), cc, 12);
+        }
         else player.flashRamp += s.crit.ramp;
       }
       if ((s.breaksBarrier || W?.breaksBarrier) && e.defMul < 1) { e.defMul = 1; floatText(e.pos, 'BARRIER BROKEN', 'se'); }
