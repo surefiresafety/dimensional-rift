@@ -455,7 +455,7 @@ const SKILLS = {
 
   // --- Naruto: Uzumaki ---
   rasengan_n:      { name: 'Rasengan', origin: 'Naruto', nature: 'wind', cost: 10, cd: 3, type: 'melee', range: 3.4, power: 75, knock: 18, desc: 'Spiralling chakra slammed into the enemy.' },
-  multi_clone:     { name: 'Multi Shadow Clone', origin: 'Naruto', nature: 'physical', cost: 14, cd: 10, type: 'clones', count: 3, duration: 7, power: 14, desc: 'Three clones fight beside you. One takes your next hit.' },
+  multi_clone:     { name: 'Multi Shadow Clone', origin: 'Naruto', nature: 'physical', cost: 14, cd: 10, type: 'clones', army: true, count: 5, duration: 18, power: 14, desc: 'Charge it with B first: a tap makes 5 clones, Medium makes 500, Maximum makes 1000. Ten HP each.' },
   rasenshuriken:   { name: 'Rasenshuriken', origin: 'Naruto', nature: 'wind', cost: 26, cd: 9, type: 'projectile', speed: 26, radius: 1.4, power: 110, aoe: 6, spin: true, desc: 'A blade of wind. Explodes into a storm on impact.' },
   sage_mode:       { name: 'Sage Mode', origin: 'Naruto', nature: 'physical', cost: 20, cd: 25, type: 'buff', duration: 10, dmgMul: 1.6, speedMul: 1.35, desc: 'Nature energy. Every hit is heavier, you move faster, chakra returns.' },
   tailed_beast_bomb: { name: 'Tailed Beast Bomb', origin: 'Naruto', nature: 'fire', cost: 34, cd: 14, type: 'projectile', speed: 22, radius: 2.2, power: 150, aoe: 8, onHit: { burn: 5 }, desc: "Kurama's chakra, compressed and fired." },
@@ -479,6 +479,7 @@ const SKILLS = {
   black_flash:     { name: 'Black Flash', origin: 'Yuji', nature: 'cursed', cost: 9, cd: 2.5, type: 'melee', range: 3.2, arc: .3, power: 45, crit: { chance: .3, mul: 2.5, ramp: .12 }, knock: 10, desc: 'Cursed energy within 0.000001 seconds of impact. When it sparks, x2.5.' },
   manji_kick:      { name: 'Manji Kick', origin: 'Yuji', nature: 'physical', cost: 8, cd: 3, type: 'dash', range: 8, power: 50, onHit: { knock: 28 }, desc: 'A spinning kick that launches the enemy across the street.' },
   piercing_blood:  { name: 'Piercing Blood', origin: 'Yuji', nature: 'cursed', cost: 14, cd: 6, type: 'projectile', speed: 62, radius: .45, power: 72, pierce: true, desc: 'Blood manipulation. A needle of blood that goes through everything.' },
+  healing_factor:  { name: 'Healing Factor', origin: 'Spider-Man', nature: 'physical', cost: 22, cd: 16, type: 'heal', percent: .4, desc: 'The spider bite did more than give him webs. Restores 40% HP.' },
   rct_heal:        { name: 'Reverse Cursed Technique', origin: 'Jujutsu', nature: 'cursed', cost: 22, cd: 16, type: 'heal', percent: .4, desc: 'Turn cursed energy positive and stitch yourself back together. Restores 40% HP.' },
   incomplete_shrine: { name: 'Incomplete Shrine', origin: 'Sukuna', nature: 'wind', cost: 26, cd: 22, type: 'domain', mode: 'slash', open: true, radius: 44, duration: 6, tick: .4, power: 34, color: 0xff2a2a, floor: 0x5a0c0c, edge: 0xff6b6b, sky: 0x2a0a08, sunColor: 0xff8a6a, title: 'INCOMPLETE SHRINE', desc: 'The shrine without its barrier. Wider reach than the real thing, but it cuts less deep.' },
 
@@ -608,7 +609,7 @@ const STYLES = {
     ultimate: { skill: 'malevolent_shrine', name: 'Domain: Malevolent Shrine', cost: 45, cd: 100, duration: 6 } },
   spiderman: { name: 'Spider-Man: Neighborhood', blurb: 'Webs, kicks, Spider-Sense. Control the fight, then punish.',
     passives: ['Webbed enemies move at 40% speed and take 25% more damage.'],
-    pool: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'rct_heal', 'web_trap'], slots: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'rct_heal'],
+    pool: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'healing_factor', 'web_trap'], slots: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'healing_factor'],
     ultimate: { skill: 'spider_verse', name: 'Spider-Verse Assist', cost: 32, cd: 80, duration: 20 } },
   yuji: { name: 'Yuji: The Vessel', blurb: 'Fists, Black Flash, blood. G lets Sukuna out; die once and he takes the wheel.',
     passives: ['Left click: 70% of strikes are Black Flash (x2.5, Cursed).', 'First death: Sukuna takes over at full health with his set.'],
@@ -717,9 +718,9 @@ const canvas = document.getElementById('c');
 const IS_TOUCH = matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
 const CORES = navigator.hardwareConcurrency ?? 4;
 const TIERS = {
-  high:   { name: 'High',   dpr: 1.5, shadows: 2048, density: 1,   fx: 1,   fog: 1,    lines: true,  aa: true,  lights: 5 },
-  medium: { name: 'Medium', dpr: 1,   shadows: 1024, density: .72, fx: .6,  fog: .8,   lines: true,  aa: false, lights: 3 },
-  low:    { name: 'Low',    dpr: .75, shadows: 0,    density: .5,  fx: .35, fog: .62,  lines: false, aa: false, lights: 2 },
+  high:   { name: 'High',   dpr: 1.5, shadows: 2048, density: 1,   fx: 1,   fog: 1,    lines: true,  aa: true,  lights: 5, army: 1 },
+  medium: { name: 'Medium', dpr: 1,   shadows: 1024, density: .72, fx: .6,  fog: .8,   lines: true,  aa: false, lights: 3, army: .6 },
+  low:    { name: 'Low',    dpr: .75, shadows: 0,    density: .5,  fx: .35, fog: .62,  lines: false, aa: false, lights: 2, army: .3 },
 };
 function autoTier() {
   if (!IS_TOUCH) return CORES <= 4 ? 'medium' : 'high';
@@ -1829,7 +1830,7 @@ const player = {
   swinging: false, anchor: new THREE.Vector3(), rope: 0, releaseAt: -10,
   invulnUntil: 0, graceUntil: 0, nextDodge: 0, decoy: false, strikeCd: 0,
   lastGround: 0, airJumps: 0, jumpBuffered: -10, jumpHeld: false, reelInput: 0, dustAcc: 0,
-  shield: 0, shieldUntil: 0, buff: null, style: null, evadeUntil: 0, sukunaUsed: false, flashRamp: 0, blackFlashes: 0, ultCd: 0, transform: null, charging: null, output: null, freezeUntil: 0, weapon: null, shieldReflect: 0, infinity: false,
+  flying: false, shield: 0, shieldUntil: 0, buff: null, style: null, evadeUntil: 0, sukunaUsed: false, flashRamp: 0, blackFlashes: 0, ultCd: 0, transform: null, charging: null, output: null, freezeUntil: 0, weapon: null, shieldReflect: 0, infinity: false,
   sense: { active: false, until: 0, attacker: null },
   kills: 0, dead: false,
 };
@@ -2172,8 +2173,230 @@ function findAnchor() {
   if (!best) for (let k = 0; k < 16; k++) for (const elev of [35, 55, 72]) consider(k / 16 * Math.PI * 2, THREE.MathUtils.degToRad(elev), 0);
   return best;
 }
+// E is a signature action, not a universal one. Only Spider-Man carries
+// web-shooters; the fliers take off; Naruto winds up a Rasengan; Sukuna's
+// technique leaks out of Yuji.
+const E_ACTION = { spiderman: 'swing', ironman: 'fly', jean: 'fly', eleven: 'fly', naruto: 'rasengan', yuji: 'dismantle' };
+const eActionOf = () => E_ACTION[player.style] ?? null;
+function startEAction() {
+  const a = eActionOf();
+  if (a === 'swing') { if (!startSwing()) log('No anchor in reach. Aim higher.'); }
+  else if (a === 'fly') startFlight();
+  else if (a === 'rasengan') startRasengan();
+  else if (a === 'dismantle') castSkill('dismantle_s', {});
+  else log('No web-shooters. Only Spider-Man swings.');
+}
+function endEAction() {
+  const a = eActionOf();
+  if (a === 'swing') releaseSwing();
+  else if (a === 'fly') endFlight();
+  else if (a === 'rasengan') releaseRasengan();
+}
+
+// ---- Shadow clone army ------------------------------------------------------
+// A charged Multi Shadow Clone can put a thousand bodies on the street. Drawing
+// a thousand skeletons would kill the frame rate, so the army lives in two
+// InstancedMeshes and a flat array: one draw call for every torso, one for every
+// head, no per-clone Object3D at all. Damage is aggregated per enemy rather than
+// reported per clone, so a thousand fists still arrive as one number.
+const ARMY_TIERS = [5, 500, 1000];        // tap, Medium output, Maximum output
+const army = { bodies: null, heads: null, list: [], until: 0, power: 14, tick: 0, retarget: 0, slices: 1, slice: 0 };
+const _am = new THREE.Matrix4(), _aq = new THREE.Quaternion(), _av = new THREE.Vector3(), _as = new THREE.Vector3(1, 1, 1);
+const _ay = new THREE.Vector3(0, 1, 0);
+const ARMY_HIDDEN = new THREE.Matrix4().makeScale(0, 0, 0);
+
+function clearArmy() {
+  if (army.bodies) { scene.remove(army.bodies); army.bodies.geometry.dispose(); army.bodies = null; }
+  if (army.heads) { scene.remove(army.heads); army.heads.geometry.dispose(); army.heads = null; }
+  army.list.length = 0; army.until = 0;
+}
+function spawnArmy(count, duration, power, look) {
+  clearArmy();
+  const cap = Math.max(1, Math.round(count * (Q.army ?? 1)));   // quality thins the crowd
+  // A crowd of a thousand only ever reads as a crowd, so the bodies get cheaper
+  // the more of them there are: fewer segments, and the work is spread over
+  // several frames instead of all landing on one.
+  const big = cap > 200;
+  army.slices = big ? 3 : 1;
+  army.slice = 0;
+  army.bodies = new THREE.InstancedMesh(new THREE.CapsuleGeometry(.28, .8, big ? 2 : 4, big ? 5 : 6), toon(look.top), cap);
+  army.heads = new THREE.InstancedMesh(new THREE.SphereGeometry(.22, big ? 5 : 8, big ? 4 : 6), toon(look.skin), cap);
+  for (const im of [army.bodies, army.heads]) {
+    im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    im.frustumCulled = false; im.castShadow = false;
+    scene.add(im);
+  }
+  const spread = Math.sqrt(cap) * 1.15;
+  for (let i = 0; i < cap; i++) {
+    const a = i * 2.399963;                       // golden angle spreads them evenly
+    const r = 2 + spread * Math.sqrt(i / cap);
+    army.list.push({ x: player.pos.x + Math.cos(a) * r, z: player.pos.z + Math.sin(a) * r, yaw: a, hp: 10, dead: false, tgt: 0, bob: Math.random() * 6 });
+  }
+  army.until = now + duration; army.power = power; army.tick = 0; army.retarget = 0;
+  log(`Shadow Clone Jutsu: ${cap.toLocaleString()} clones, 10 HP each.`, true);
+  center(cap >= 500 ? `${cap.toLocaleString()} SHADOW CLONES` : 'SHADOW CLONES', 1600);
+  burst(player.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 0xffffff, cap >= 500 ? 30 : 16);
+  if (cap >= 500) { shake = Math.max(shake, 1.2); screenFlash(.5); }
+}
+/** A swing into the crowd pops whatever was standing there. */
+function damageArmy(pos, radius, dmg) {
+  if (!army.list.length) return 0;
+  let killed = 0;
+  const rr = radius * radius;
+  for (const c of army.list) {
+    if (c.dead) continue;
+    const dx = c.x - pos.x, dz = c.z - pos.z;
+    if (dx * dx + dz * dz > rr) continue;
+    c.hp -= dmg;
+    if (c.hp <= 0) { c.dead = true; killed++; }
+  }
+  return killed;
+}
+function updateArmy(dt) {
+  if (!army.list.length) return;
+  if (now > army.until) { clearArmy(); log('The clones pop out of existence.'); return; }
+
+  const live = enemies.filter((e) => !e.dead);
+  army.retarget -= dt;
+  const pickTargets = army.retarget <= 0;
+  if (pickTargets) army.retarget = 1.2;
+  army.tick -= dt;
+  const doDamage = army.tick <= 0 && live.length > 0;
+  if (doDamage) army.tick = .45;
+  const tally = doDamage ? new Map() : null;
+
+  // Move and re-matrix one slice per frame; a third of a crowd stepping each
+  // frame is invisible at this scale and costs a third of the work.
+  const slices = army.slices;
+  const sdt = dt * slices;
+  const start = army.slice;
+  army.slice = (army.slice + 1) % slices;
+  let alive = 0;
+  for (let i = 0; i < army.list.length; i++) {
+    const c = army.list[i];
+    if (c.dead) { if (!c.hidden) { c.hidden = true; army.bodies.setMatrixAt(i, ARMY_HIDDEN); army.heads.setMatrixAt(i, ARMY_HIDDEN); } continue; }
+    alive++;
+    if (i % slices !== start) continue;
+    if (pickTargets && live.length) c.tgt = (i + (now | 0)) % live.length;
+    const t = live[c.tgt] ?? live[0];
+    const ax = t ? t.pos.x : player.pos.x, az = t ? t.pos.z : player.pos.z;
+    const dx = ax - c.x, dz = az - c.z;
+    const d = Math.hypot(dx, dz) || 1;
+    const want = t ? 1.8 : 4;
+    if (d > want) { const sp = (t ? 9 : 6) * sdt / d; c.x += dx * sp; c.z += dz * sp; }
+    c.yaw = Math.atan2(dx, dz);
+    c.bob += sdt * 12;
+
+    const hop = Math.abs(Math.sin(c.bob)) * .08;
+    _aq.setFromAxisAngle(_ay, c.yaw);
+    _av.set(c.x, .78 + hop, c.z); _am.compose(_av, _aq, _as); army.bodies.setMatrixAt(i, _am);
+    _av.set(c.x, 1.48 + hop, c.z); _am.compose(_av, _aq, _as); army.heads.setMatrixAt(i, _am);
+  }
+  army.bodies.instanceMatrix.needsUpdate = true;
+  army.heads.instanceMatrix.needsUpdate = true;
+
+  if (doDamage) for (const c of army.list) {
+    if (c.dead) continue;
+    const t = live[c.tgt] ?? live[0];
+    if (!t) break;
+    if (Math.hypot(t.pos.x - c.x, t.pos.z - c.z) < 3) tally.set(t, (tally.get(t) ?? 0) + 1);
+  }
+
+  // One aggregated hit per enemy, however many fists arrived.
+  if (tally) for (const [e, hits] of tally) {
+    if (e.dead) continue;
+    enemyTakeHit(e, army.power * Math.min(hits, 40), 'physical', player.pos, { knock: 2 });
+  }
+  if (alive === 0) clearArmy();
+}
+
+// ---- Flight (Iron Man, Jean Grey, Eleven) -----------------------------------
+let thrusters = null, thrustPuff = 0;
+function startFlight() {
+  if (player.flying || player.dead) return;
+  releaseSwing(false);
+  player.flying = true;
+  player.vel.y = Math.max(player.vel.y, 5);
+  const col = (CHARACTERS[player.style] ?? CHARACTERS.default).sig ?? 0x9fe0ff;
+  thrusters = new THREE.Group();
+  for (const sx of [-1, 1]) {
+    const jet = new THREE.Mesh(new THREE.ConeGeometry(.18, 1.1, 10), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false }));
+    jet.rotation.x = Math.PI; jet.position.set(sx * .16, .1, 0); thrusters.add(jet);
+  }
+  scene.add(thrusters);
+  center('FLIGHT', 700);
+}
+function endFlight() {
+  player.flying = false;
+  if (thrusters) { scene.remove(thrusters); thrusters = null; }
+}
+function updateFlight(dt) {
+  if (!thrusters) return;
+  thrusters.position.copy(player.pos).add(new THREE.Vector3(0, .35, 0));
+  thrusters.rotation.y = body.rotation.y;
+  for (const j of thrusters.children) { j.scale.y = .7 + Math.random() * .6; j.material.opacity = .6 + Math.random() * .3; }
+  thrustPuff += dt;
+  if (thrustPuff > .05) {
+    thrustPuff = 0;
+    const col = (CHARACTERS[player.style] ?? CHARACTERS.default).sig ?? 0x9fe0ff;
+    const g = new THREE.Mesh(partGeo, new THREE.MeshBasicMaterial({ color: col, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+    g.position.copy(player.pos).add(new THREE.Vector3((Math.random() - .5) * .5, .2, (Math.random() - .5) * .5));
+    scene.add(g); bursts.push({ m: g, v: new THREE.Vector3(0, -4 - Math.random() * 3, 0), t: 0, float: true });
+  }
+}
+
+// ---- Rasengan: hold E to wind it up, release to drive it in ----------------
+let rasengan = null;
+function startRasengan() {
+  if (rasengan || player.dead) return;
+  rasengan = { t: 0, m: new THREE.Group() };
+  const core = new THREE.Mesh(new THREE.SphereGeometry(.3, 18, 14), new THREE.MeshBasicMaterial({ color: 0x9fd6ff, transparent: true, opacity: .85, blending: THREE.AdditiveBlending, depthWrite: false }));
+  const shell = new THREE.Mesh(new THREE.SphereGeometry(.42, 16, 12), new THREE.MeshBasicMaterial({ color: 0x5aa9ff, wireframe: true, transparent: true, opacity: .5, blending: THREE.AdditiveBlending, depthWrite: false }));
+  rasengan.m.add(core, shell); rasengan.core = core; rasengan.shell = shell;
+  scene.add(rasengan.m);
+  log('Chakra spinning. Hold E to build it, release to drive it in.', true);
+}
+function updateRasengan(dt) {
+  if (!rasengan) return;
+  rasengan.t += dt;
+  const k = Math.min(1, rasengan.t / 2.2);
+  const hand = playerRig?.arms?.r?.hand;
+  if (hand) hand.getWorldPosition(rasengan.m.position);
+  else rasengan.m.position.copy(player.pos).add(new THREE.Vector3(0, 1.2, 0));
+  rasengan.m.scale.setScalar(.6 + k * 1.5);
+  rasengan.shell.rotation.y += dt * (6 + k * 22);
+  rasengan.shell.rotation.x += dt * (4 + k * 14);
+  rasengan.core.material.opacity = .6 + .3 * Math.sin(now * 20);
+  if (k >= 1 && Math.random() < dt * 6) burst(rasengan.m.position.clone(), 0x9fd6ff, 2);
+}
+function releaseRasengan() {
+  if (!rasengan) return;
+  const k = Math.min(1, rasengan.t / 2.2);
+  const at = rasengan.m.position.clone();
+  scene.remove(rasengan.m); rasengan = null;
+  playAnim('punch', .32);
+  const dir = aimDir().setY(0).normalize();
+  player.yaw = Math.atan2(dir.x, dir.z);
+  const power = 55 + 165 * k;
+  const reach = 3.4 + k * 1.6;
+  burst(at, 0x5aa9ff, 14 + Math.round(k * 22));
+  shake = Math.max(shake, .4 + k); hitStop = Math.max(hitStop, .06 + k * .1);
+  if (k > .95) { center('RASENGAN!', 900); screenFlash(.45); }
+  let hit = false;
+  for (const e of enemies) {
+    if (e.dead) continue;
+    const to = e.pos.clone().sub(player.pos).setY(0);
+    if (to.length() > reach + e.t.size || to.normalize().dot(dir) < .2) continue;
+    enemyTakeHit(e, power, 'wind', player.pos, { knock: 14 + k * 24 });
+    hit = true;
+  }
+  damageBuildings(player.pos.clone().addScaledVector(dir, 2.5), 4 + k * 4, 60 + k * 200);
+  if (!hit) log(`Rasengan spent on the air (${Math.round(k * 100)}% charged).`);
+}
+
 function startSwing() {
   if (player.swinging || player.dead) return false;
+  if (player.style && player.style !== 'spiderman') return false;   // web-shooters are his alone
   if (now - player.releaseAt < .15) return false;
   const a = findAnchor(); if (!a) return false;
   player.anchor.copy(a);
@@ -2256,7 +2479,13 @@ function physWalk(dt) {
   player.vel.x += (target.x - player.vel.x) * Math.min(1, k * dt);
   player.vel.z += (target.z - player.vel.z) * Math.min(1, k * dt);
   // Falling is heavier than rising: the arc peaks and then it commits.
-  player.vel.y -= PHYS.gravity * (player.vel.y < 0 ? 1.45 : 1) * dt;
+  if (player.flying) {
+    // Hover and climb while the key is held; steering is the same stick.
+    player.vel.y += (10 - player.vel.y) * Math.min(1, 3.2 * dt);
+    const ft = input.clone().multiplyScalar(PHYS.walk * 2.1 * buffed);
+    player.vel.x += (ft.x - player.vel.x) * Math.min(1, 4 * dt);
+    player.vel.z += (ft.z - player.vel.z) * Math.min(1, 4 * dt);
+  } else player.vel.y -= PHYS.gravity * (player.vel.y < 0 ? 1.45 : 1) * dt;
   if (shiftLock) player.yaw = camYaw;                       // face the camera, strafe freely
   else if (input.lengthSq() > 0) player.yaw = Math.atan2(input.x, input.z);
   const fallSpeed = player.vel.y;
@@ -2265,6 +2494,7 @@ function physWalk(dt) {
   player.pos.addScaledVector(player.vel, dt);
   resolveCollisions();
   if (player.onGround) {
+    if (player.flying && player.vel.y <= 0) endFlight();
     player.lastGround = now; player.airJumps = 0;
     if (wasAir) landed(fallSpeed);
     if (now - player.jumpBuffered < PHYS.buffer) { player.jumpBuffered = -10; doJump(PHYS.jump); }
@@ -2764,6 +2994,9 @@ function updateEnemies(dt) {
           if (e.tgt && e.tgt.peer) netHurtRemote(e.tgt.peer, e.t.atk, e.t.nature);
           else if (!player.dead) hurtPlayer(e.t.atk, e.t.nature, e);
         }
+        // A swing into the crowd pops whatever clones were standing there.
+        const popped = damageArmy(e.pos, 4.5, 12);
+        if (popped) burst(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), 0xffffff, Math.min(8, popped));
       }
     } else if (e.state === 'recover') {
       e.timer -= dt; if (e.timer <= 0) e.state = 'chase';
@@ -2948,6 +3181,15 @@ function burst(pos, color, n) {
   const ring = new THREE.Mesh(new THREE.RingGeometry(.4, .6, 24), addMat(color, 1));
   ring.position.copy(pos); ring.lookAt(camera.position); scene.add(ring); bursts.push({ m: ring, ring: true, t: 0 });
   sparks(pos, color, Math.min(14, 2 + Math.round(n / 2.2)), 10 + n * .5);
+  // A white core that pops and dies in three frames reads as the actual hit.
+  const core = new THREE.Mesh(new THREE.SphereGeometry(.32 + n * .014, 12, 9), addMat(0xffffff, 1));
+  core.position.copy(pos); scene.add(core); bursts.push({ m: core, core: true, t: 0 });
+  // Anything sizeable also kicks a shockwave across the ground.
+  if (n >= 12 && pos.y < 14) {
+    const wave = new THREE.Mesh(new THREE.RingGeometry(.6, 1.1, 40), addMat(color, .85));
+    wave.rotation.x = -Math.PI / 2; wave.position.set(pos.x, .12, pos.z);
+    scene.add(wave); bursts.push({ m: wave, wave: true, t: 0, grow: 6 + n * .5 });
+  }
   if (n >= 10) flashLight(pos, color, 34 + n * 2.6, .2 + n * .004, 26 + n);
   if (n >= 18) shockwave(pos.clone(), color, .8, 2 + n * .35, .34, 0);
 }
@@ -2995,6 +3237,8 @@ function castSkill(id, opts = {}) {
   if (s.type === 'projectile') {
     const m = outlined(new THREE.Mesh(new THREE.SphereGeometry(s.radius, 12, 10), new THREE.MeshBasicMaterial({ color: s.color ?? NATURE[s.nature].color })), .12);
     if (s.spin) { const blades = new THREE.Mesh(new THREE.TorusGeometry(s.radius * 2.2, .18, 6, 4), new THREE.MeshBasicMaterial({ color: 0xffffff })); blades.rotation.x = Math.PI / 2; m.add(blades); m.userData.spin = true; }
+    const halo = new THREE.Mesh(new THREE.SphereGeometry(s.radius * 2.1, 12, 9), addMat(s.color ?? NATURE[s.nature].color, .35));
+    m.add(halo); m.userData.halo = halo;
     m.position.copy(origin).addScaledVector(dir, 1); scene.add(m);
     projectiles.push({ m, v: dir.clone().multiplyScalar(s.speed), s, t: 0, trail: [], boost: B * WM });
   } else if (s.type === 'melee') {
@@ -3128,6 +3372,9 @@ function castSkill(id, opts = {}) {
     shieldMesh.position.copy(player.pos).add(new THREE.Vector3(0, 1.3, 0)); scene.add(shieldMesh);
     log(`${s.name}: the next ${Math.round(s.charges * B)} hits stop before they reach you${s.reflect ? ' and the attacker takes the charge' : ''}.`, true);
     center(s.name.toUpperCase(), 900);
+  } else if (s.type === 'clones' && s.army) {
+    spawnArmy(lastOutputTier >= 0 ? ARMY_TIERS[lastOutputTier] : s.count, s.duration, s.power, CHARACTERS[player.style] ?? CHARACTERS.default);
+    player.decoy = true;
   } else if (s.type === 'clones') {
     player.decoy = true;
     for (let i = 0; i < s.count; i++) {
@@ -3268,9 +3515,12 @@ let chargeAura = null, chargeEmber = 0;
 const wallNow = () => performance.now() / 1000;
 function outputCost() { return player.output ? player.output.cost : 1; }
 /** Spend the stored charge on the ability being cast. Returns its damage multiplier. */
+let lastOutputTier = -1;
 function consumeOutput() {
+  lastOutputTier = -1;
   if (!player.output) return 1;
   const o = player.output; player.output = null;
+  lastOutputTier = OUTPUT_TIERS.indexOf(o.tier);
   center(o.name.toUpperCase() + ' RELEASED', 1100); screenFlash(o.tier === OUTPUT_TIERS[2] ? .8 : .35);
   shake = Math.max(shake, o.dmg * .3); hitStop = Math.max(hitStop, o.tier === OUTPUT_TIERS[2] ? .16 : .06);
   burst(player.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), o.tier.color, 20);
@@ -3430,6 +3680,7 @@ function updateProjectiles(dt) {
     p.t += dt; p.m.position.addScaledVector(p.v, dt); p.v.y -= 4 * dt;
     if (p.t > .25 && p.t % .06 < dt) { const g = new THREE.Mesh(partGeo, p.m.material); g.position.copy(p.m.position); scene.add(g); bursts.push({ m: g, v: new THREE.Vector3(), t: .3 }); }
     if (p.m.userData.spin) p.m.rotation.y += dt * 30;
+    if (p.m.userData.halo) { const puls = 1 + .12 * Math.sin(now * 24); p.m.userData.halo.scale.setScalar(puls); p.m.userData.halo.material.opacity = .28 + .12 * Math.sin(now * 18); }
     for (const e of enemies) { if (e.dead) continue; if (p.hit?.has(e)) continue; if (p.m.position.distanceTo(e.pos.clone().add(new THREE.Vector3(0, 1, 0))) < p.s.radius + 1.1 * e.t.size) { enemyTakeHit(e, p.s.power * (p.boost ?? 1), p.s.nature, player.pos, p.s.onHit); if (p.s.pierce) { (p.hit ??= new Set()).add(e); burst(p.m.position, NATURE[p.s.nature].color, 6); } else { p.done = true; break; } } }
     if (p.t > 2.5 || p.m.position.y < 0) { p.done = true; burst(p.m.position, NATURE[p.s.nature].color, 6); }
     if (p.done && p.s.aoe) {
@@ -3444,7 +3695,9 @@ function updateProjectiles(dt) {
   for (let i = projectiles.length - 1; i >= 0; i--) if (projectiles[i].done) projectiles.splice(i, 1);
   for (const b of bursts) {
     b.t += dt;
-    if (b.ring) { b.m.scale.setScalar(1 + b.t * 12); b.m.material.opacity = Math.max(0, 1 - b.t * 3); if (b.t > .35) b.done = true; }
+    if (b.core) { b.m.scale.setScalar(1 + b.t * 9); b.m.material.opacity = Math.max(0, 1 - b.t * 9); if (b.t > .12) b.done = true; }
+    else if (b.wave) { b.m.scale.setScalar(1 + b.t * b.grow); b.m.material.opacity = Math.max(0, .85 - b.t * 1.7); if (b.t > .5) b.done = true; }
+    else if (b.ring) { b.m.scale.setScalar(1 + b.t * 12); b.m.material.opacity = Math.max(0, 1 - b.t * 3); if (b.t > .35) b.done = true; }
     else if (b.spark) { b.m.position.addScaledVector(b.v, dt); b.v.multiplyScalar(Math.max(0, 1 - 2.8 * dt)); b.v.y -= 26 * dt; b.m.material.opacity = Math.max(0, 1 - b.t * 3.4); if (b.t > .34) b.done = true; }
     else if (b.puff) { b.m.position.addScaledVector(b.v, dt); b.v.multiplyScalar(Math.max(0, 1 - 1.6 * dt)); b.m.scale.multiplyScalar(1 + 1.9 * dt); b.m.material.opacity = Math.max(0, .45 * (1 - b.t / .9)); if (b.t > .9) b.done = true; }
     else if (b.line) { b.m.material.opacity = 1 - b.t * 4; b.m.material.transparent = true; if (b.t > .25) b.done = true; }
@@ -3693,6 +3946,8 @@ function applyStyle(id, announce = true) {
   player.slots = st.slots.slice();
   const ars = arsenalOf(id);
   player.weapon = ars ? (ars.items[player.weapon] ? player.weapon : ars.order[0]) : null;
+  endFlight(); if (rasengan) { scene.remove(rasengan.m); rasengan = null; }
+  clearArmy();
   if (id !== 'gojo' && player.infinity) { player.infinity = false; if (shieldMesh) { scene.remove(shieldMesh); shieldMesh = null; } }
   player.maxSe = st.energy ?? 1000;
   player.se = player.maxSe;
@@ -3777,8 +4032,8 @@ function findAnchorCached() { if (now - anchorCache.t > .15) anchorCache = { t: 
 let locked = false, dragging = false, last = null;
 canvas.addEventListener('click', () => { if (!running) return; canvas.requestPointerLock?.(); });
 document.addEventListener('pointerlockchange', () => { locked = document.pointerLockElement === canvas; });
-canvas.addEventListener('mousedown', (e) => { if (!running) return; if (e.button === 0 && !locked) { dragging = true; last = [e.clientX, e.clientY]; } if (e.button === 0) strike(); if (e.button === 2) startSwing(); });
-addEventListener('mouseup', (e) => { if (e.button === 0) dragging = false; if (e.button === 2) releaseSwing(); });
+canvas.addEventListener('mousedown', (e) => { if (!running) return; if (e.button === 0 && !locked) { dragging = true; last = [e.clientX, e.clientY]; } if (e.button === 0) strike(); if (e.button === 2) startEAction(); });
+addEventListener('mouseup', (e) => { if (e.button === 0) dragging = false; if (e.button === 2) endEAction(); });
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 addEventListener('mousemove', (e) => {
   if (!running) return;
@@ -3816,7 +4071,7 @@ function tbPress(act, on) {
     if (act === 'strike') strike();
     else if (act === 'jump') tryJump();
     else if (act === 'dodge') dodge();
-    else if (act === 'swing') startSwing();
+    else if (act === 'swing') startEAction();
     else if (act === 'lock') toggleShiftLock();
     else if (act === 'ult') useUltimate();
     else if (act === 'charge') startCharge();
@@ -3825,7 +4080,7 @@ function tbPress(act, on) {
     else if (act === 'moves') openMoveSets('ingame');
     else if (act === 'map') openWorldMap();
   } else {
-    if (act === 'swing') releaseSwing();
+    if (act === 'swing') endEAction();
     else if (act === 'charge') releaseCharge();
   }
 }
@@ -3890,7 +4145,7 @@ addEventListener('keydown', (e) => {
   if (!running || player.dead) return;
   keys.add(e.code);
   if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) tryJump(); }
-  if (e.code === 'KeyE') startSwing();
+  if (e.code === 'KeyE' && !e.repeat) startEAction();
   if ((e.code === 'ShiftLeft' || e.code === 'ShiftRight') && !e.repeat) toggleShiftLock();
   if (e.code === 'KeyC' && !e.repeat) dodge();
   if (e.code === 'KeyF') strike();
@@ -3909,7 +4164,7 @@ addEventListener('keyup', (e) => {
   keys.delete(e.code);
   // Let go of Space early and the jump is cut short: you choose the height.
   if (e.code === 'Space' && player.jumpHeld) { player.jumpHeld = false; if (player.vel.y > 4) player.vel.y *= PHYS.cutJump; }
-  if (e.code === 'KeyE') releaseSwing();
+  if (e.code === 'KeyE') endEAction();
   if (e.code === 'KeyB') releaseCharge();
 });
 addEventListener('wheel', (e) => { if (running && player.swinging) { player.reelInput = Math.sign(e.deltaY) * 1.6; e.preventDefault(); } }, { passive: false });
@@ -3956,7 +4211,7 @@ function frame(t) {
     if (animState) { animState.t += playerDt; animState.k = animState.t / animState.dur; if (animState.k >= 1) animState = null; }
     poseRig(playerRig, {
       phase: animPhase, moving: walking, amp: Math.min(1, .3 + spd * .055),
-      air: !player.onGround && !player.swinging, swing: player.swinging, attack: animState,
+      air: !player.onGround && !player.swinging, swing: player.swinging || player.flying, attack: animState,
     });
   }
   if (player.swinging) { webLine.geometry.setFromPoints([player.pos.clone().add(new THREE.Vector3(0, 1.4, 0)), player.anchor]); }
@@ -3965,6 +4220,9 @@ function frame(t) {
   if (sukunaAura) { sukunaAura.rotation.z += real * 2.5; sukunaAura.material.opacity = .4 + .25 * Math.sin(now * 6); sukunaEmber += real; if (sukunaEmber > .12) { sukunaEmber = 0; const g = new THREE.Mesh(partGeo, new THREE.MeshBasicMaterial({ color: Math.random() < .5 ? 0xff2d55 : 0x120008 })); g.position.copy(player.pos).add(new THREE.Vector3((Math.random() - .5) * 1.6, .2, (Math.random() - .5) * 1.6)); scene.add(g); bursts.push({ m: g, v: new THREE.Vector3((Math.random() - .5) * 2, 4 + Math.random() * 3, (Math.random() - .5) * 2), t: 0, float: true }); } }
 
   updateCharge(playerDt);
+  updateFlight(playerDt);
+  updateRasengan(playerDt);
+  updateArmy(worldDt);
   updateDebris(worldDt);
   updateCollapses(worldDt);
   updateStreets(worldDt);
@@ -4375,7 +4633,8 @@ function useGate(to) {
 }
 buildMap('times_square');
 requestAnimationFrame(frame);
-window.__rift = { SKILLS, STYLES, ENEMIES, MAPS, MAP_IDS, NATURE, travelTo, buildMap, portals,
+window.__rift = { army, get rasengan() { return rasengan; }, spawnArmy, damageArmy,
+  SKILLS, STYLES, ENEMIES, MAPS, MAP_IDS, NATURE, travelTo, buildMap, portals,
   net, setMode, useGate, setSolo, setTier, TIERS, get tier() { return tierName; },
   get currentMap() { return currentMap; }, get nearPortal() { return nearPortal; }, eprojectiles, spawnEnemy, player, enemies, buildings, debris, cars, civilians, damageBuildings, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, startCharge, releaseCharge, hurtPlayer, castSkill, OUTPUT_TIERS, ARSENALS, cycleWeapon, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
 
