@@ -294,7 +294,7 @@
         <button class="ghost mode-btn" data-mode="vs">Versus</button>
         <button class="ghost solo-btn">Play solo</button>
         <button class="ghost" id="sound-btn">Sound</button>
-        <button class="ghost" id="voice-btn">Voice</button>
+        <button class="ghost" id="voice-btn" title="Synthesised shout, not the real voice actors">Voice (off)</button>
       </div>
       <div id="lobby" style="margin-top:6px"></div>
       <div class="setup-row quality-row"></div>
@@ -2247,7 +2247,7 @@ function endEAction() {
 // Every noise here is generated in the browser: oscillators and noise buffers
 // for the impacts, and the built-in speech voice for the shout. No recordings
 // from the shows are used or shipped.
-const audio = { ctx: null, on: localStorage.getItem('rift.sound') !== '0', voice: localStorage.getItem('rift.voice') !== '0', last: 0 };
+const audio = { ctx: null, on: localStorage.getItem('rift.sound') !== '0', voice: localStorage.getItem('rift.voice') === '1', last: 0 };
 function actx() {
   if (!audio.ctx) { const C = window.AudioContext || window.webkitAudioContext; if (C) audio.ctx = new C(); }
   if (audio.ctx?.state === 'suspended') audio.ctx.resume();
@@ -4962,7 +4962,8 @@ $('#net-name').oninput = (e) => {
 renderQualityButtons();
 const syncAudioBtns = () => {
   $('#sound-btn')?.classList.toggle('on', audio.on);
-  $('#voice-btn')?.classList.toggle('on', audio.voice);
+  const v = $('#voice-btn');
+  if (v) { v.classList.toggle('on', audio.voice); v.textContent = audio.voice ? 'Voice (on)' : 'Voice (off)'; }
 };
 $('#sound-btn').onclick = () => { audio.on = !audio.on; localStorage.setItem('rift.sound', audio.on ? '1' : '0'); if (audio.on) { actx(); sfx.hit(1); } syncAudioBtns(); };
 $('#voice-btn').onclick = () => { audio.voice = !audio.voice; localStorage.setItem('rift.voice', audio.voice ? '1' : '0'); if (audio.voice) shout('Rasengan'); syncAudioBtns(); };
