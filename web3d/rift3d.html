@@ -308,6 +308,12 @@
       </div>
       <div id="lobby" style="margin-top:6px"></div>
       <div class="setup-row quality-row"></div>
+      <div class="setup-row">
+        <span style="font-size:12px;opacity:.75">Look</span>
+        <button class="ghost look-btn" data-look="anime">Anime</button>
+        <button class="ghost look-btn" data-look="grounded">Grounded</button>
+        <span style="font-size:11px;opacity:.55">Grounded swaps cel shading and ink outlines for physically based materials, sky lighting and filmic tone mapping. Reloads the page.</span>
+      </div>
       <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
         <button id="open-movesets">Select your character</button>
         <span style="opacity:.7;font-size:12px">Thirty-four characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
@@ -993,23 +999,98 @@ let Q = TIERS[tierName];
 const qn = (n) => Math.max(n > 0 ? 1 : 0, Math.round(n * Q.density));
 const qfx = (n) => Math.max(n > 0 ? 2 : 0, Math.round(n * Q.fx));
 
+let RENDER_MODE = localStorage.getItem('rift.render') === 'grounded' ? 'grounded' : 'anime';
+const REAL = () => RENDER_MODE === 'grounded';
+// Ambient is the enemy of a photographic look. Enough sky light to lift the
+// shadows and no more; the contrast has to come from the key.
+const ENV_INTENSITY = .5;
+
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: Q.aa, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, Q.dpr));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.shadowMap.enabled = Q.shadows > 0;
-renderer.shadowMap.type = Q.shadows >= 2048 ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+renderer.shadowMap.type = (RENDER_MODE === 'grounded' || Q.shadows >= 2048) ? THREE.PCFSoftShadowMap : THREE.PCFShadowMap;
+if (RENDER_MODE === 'grounded') {
+  // Filmic response instead of a linear clamp: highlights roll off instead of
+  // clipping to white, which is most of why a real photograph looks real.
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = .82;
+}
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1b1030);
 scene.fog = new THREE.Fog(0x2a1848, 60, 260);
 const camera = new THREE.PerspectiveCamera(70, 1, .1, 600);
 
-// 3-band gradient map: the whole "cel" look in 4 bytes.
+// ---------------------------------------------------------------------------
+// Two looks, one scene graph.
+//
+// 'anime'    three-band toon shading with an inverted-hull ink outline.
+// 'grounded' physically based shading: real roughness and metalness, image-based
+//            lighting from a procedural sky, filmic tone mapping, no outlines.
+//
+// Everything is built through toon() and outlined(), so the switch is those two
+// functions and the light rig. It is not photoreal — there are no scanned
+// materials, no global illumination and the characters are still procedural
+// geometry — but it is lit and shaded by the same rules a real renderer uses,
+// which is most of the distance.
+// ---------------------------------------------------------------------------
 const gradient = new THREE.DataTexture(new Uint8Array([70, 70, 170, 170, 255, 255]), 3, 1, THREE.RedFormat);
 gradient.minFilter = gradient.magFilter = THREE.NearestFilter; gradient.needsUpdate = true;
-const toon = (color, extra = {}) => new THREE.MeshToonMaterial({ color, gradientMap: gradient, ...extra });
+
+/** Procedural surface detail. No external textures are reachable, so make our own. */
+function noiseTexture(size, fn) {
+  const c = document.createElement('canvas'); c.width = c.height = size;
+  const ctx = c.getContext('2d'), img = ctx.createImageData(size, size);
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const i = (y * size + x) * 4, v = fn(x, y);
+    img.data[i] = v[0]; img.data[i + 1] = v[1]; img.data[i + 2] = v[2]; img.data[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.NoColorSpace;
+  return t;
+}
+// Value noise at three octaves: the roughness variation that stops a flat colour
+// reading as plastic. Grazing light across it is what says "this is a surface".
+const rnd = (x, y) => { const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return n - Math.floor(n); };
+const vnoise = (x, y, s) => {
+  const xi = Math.floor(x / s), yi = Math.floor(y / s), xf = (x / s) - xi, yf = (y / s) - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const a = rnd(xi, yi), b = rnd(xi + 1, yi), c2 = rnd(xi, yi + 1), d = rnd(xi + 1, yi + 1);
+  return (a * (1 - u) + b * u) * (1 - v) + (c2 * (1 - u) + d * u) * v;
+};
+let detailRough = null, detailNormal = null;
+function ensureDetailMaps() {
+  if (detailRough) return;
+  detailRough = noiseTexture(128, (x, y) => {
+    const n = vnoise(x, y, 16) * .5 + vnoise(x, y, 6) * .32 + vnoise(x, y, 2) * .18;
+    const v = 150 + n * 90 | 0; return [v, v, v];
+  });
+  detailNormal = noiseTexture(128, (x, y) => {
+    // Central-difference the same field into a tangent-space normal.
+    const h = (a, b) => vnoise(a, b, 8) * .6 + vnoise(a, b, 3) * .4;
+    const dx = (h(x + 1, y) - h(x - 1, y)) * .5, dy = (h(x, y + 1) - h(x, y - 1)) * .5;
+    return [128 - dx * 340 | 0, 128 - dy * 340 | 0, 255];
+  });
+}
+
+const toon = (color, extra = {}) => {
+  const { roughness, metalness, detail, ...common } = extra;
+  if (!REAL()) return new THREE.MeshToonMaterial({ color, gradientMap: gradient, ...common });
+  const m = new THREE.MeshStandardMaterial({
+    color, roughness: roughness ?? .78, metalness: metalness ?? .04, envMapIntensity: ENV_INTENSITY, ...common,
+  });
+  if (detail) {   // large surfaces get the noise; a character's shirt does not need it
+    ensureDetailMaps();
+    m.roughnessMap = detailRough; m.normalMap = detailNormal;
+    m.normalScale = new THREE.Vector2(detail, detail);
+    m.roughnessMap.repeat.set(detail * 2, detail * 2);
+  }
+  return m;
+};
 const inkMat = new THREE.MeshBasicMaterial({ color: 0x08060f, side: THREE.BackSide });
 function outlined(mesh, thickness = .06) {
-  if (thickness <= 0) return mesh;
+  if (thickness <= 0 || REAL()) return mesh;   // an ink line is the cartoon tell
   const hull = new THREE.Mesh(mesh.geometry, inkMat);
   hull.scale.setScalar(1 + thickness);
   mesh.add(hull);
@@ -1186,7 +1267,12 @@ function addStructure(x, z, w, d, h, mat, opts = {}) {
   return b;
 }
 function addGround(color, texture, size = 760) {
-  const mat = texture ? new THREE.MeshLambertMaterial({ map: texture, color }) : toon(color);
+  const mat = texture
+    ? (REAL()
+        ? Object.assign(new THREE.MeshStandardMaterial({ map: texture, color, roughness: .93, metalness: .01 }),
+                        (ensureDetailMaps(), { normalMap: detailNormal, normalScale: new THREE.Vector2(.55, .55) }))
+        : new THREE.MeshLambertMaterial({ map: texture, color }))
+    : toon(color, { roughness: .95, detail: .6 });
   const g = new THREE.Mesh(new THREE.PlaneGeometry(size, size), mat);
   g.rotation.x = -Math.PI / 2; g.receiveShadow = true;
   return add(g);
@@ -1291,7 +1377,7 @@ const BLOCK = 28, ROAD = 11, SLAB = BLOCK - ROAD;
 function tower(x, z, w, d, h, color, opts = {}) {
   const b = addStructure(x, z, w, d, h, windowMat(color, w, h), { color });
   const shell = b.mesh;
-  const parapet = new THREE.Mesh(new THREE.BoxGeometry(w + .7, 1.3, d + .7), toon(0x2c2a3a));
+  const parapet = new THREE.Mesh(new THREE.BoxGeometry(w + .7, 1.3, d + .7), toon(0x2c2a3a, { roughness: .9, detail: .4 }));
   parapet.position.y = h / 2 - .3; shell.add(parapet);
   const cap = new THREE.Mesh(new THREE.BoxGeometry(w + .04, .3, d + .04), toon(0x343048));
   cap.position.y = h / 2 + .18; shell.add(cap);
@@ -1889,12 +1975,67 @@ function renderQualityButtons() {
     }
   }
 }
+// A PBR material with no environment to reflect looks like painted plastic, and
+// there is no HDRI to load, so build one: a gradient dome with a sun disc,
+// pre-filtered through PMREM into a real irradiance and reflection probe.
+let pmrem = null, envRT = null;
+function buildEnvironment(M) {
+  if (!REAL()) return;
+  pmrem ??= new THREE.PMREMGenerator(renderer);
+  const sky = new THREE.Scene();
+  const geo = new THREE.SphereGeometry(50, 32, 24);
+  const mat = new THREE.ShaderMaterial({
+    side: THREE.BackSide,
+    uniforms: {
+      top:   { value: new THREE.Color(M.hemiSky ?? 0x9ec4e8).lerp(new THREE.Color(.62, .68, .78), .6) },
+      bot:   { value: new THREE.Color(M.hemiGround ?? 0x3b3a36).lerp(new THREE.Color(.2, .19, .18), .6) },
+      sunC:  { value: new THREE.Color(M.sunColor ?? 0xfff1d6) },
+      sunD:  { value: sun.position.clone().normalize() },
+      power: { value: (M.sunLevel ?? 2.6) },
+    },
+    vertexShader: 'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: `
+      varying vec3 vD; uniform vec3 top, bot, sunC, sunD; uniform float power;
+      void main(){
+        float h = clamp(vD.y * .5 + .5, 0.0, 1.0);
+        vec3 c = mix(bot, top, pow(h, .55));
+        // Horizon haze, then the sun itself: a tight disc inside a broad glow.
+        c = mix(c, mix(bot, top, .5) * 1.25, exp(-abs(vD.y) * 9.0) * .6);
+        float d = max(dot(vD, normalize(sunD)), 0.0);
+        c += sunC * (pow(d, 900.0) * 22.0 + pow(d, 12.0) * .35) * power * .4;
+        gl_FragColor = vec4(c, 1.0);
+      }`,
+  });
+  const dome = new THREE.Mesh(geo, mat); sky.add(dome);
+  envRT?.dispose();
+  envRT = pmrem.fromScene(sky, .04);
+  scene.environment = envRT.texture;
+  geo.dispose(); mat.dispose();
+}
 function applyTheme(M) {
   scene.background.set(M.sky);
   scene.fog.color.set(M.fogColor ?? M.sky);
   scene.fog.near = (M.fogNear ?? 60) * Q.fog; scene.fog.far = (M.fogFar ?? 260) * Q.fog;
   sun.color.set(M.sunColor ?? 0xfff1d6); sun.intensity = M.sunLevel ?? 2.6;
   hemi.color.set(M.hemiSky ?? 0x8a6cff); hemi.groundColor.set(M.hemiGround ?? 0x2b1d44); hemi.intensity = M.hemiLevel ?? 1.1;
+  if (REAL()) {
+    // Drop the stylised coloured rims and let the sky do the ambient work: two
+    // saturated fill lights from opposite sides is a lighting-for-cel trick and
+    // it is the second thing after the outline that reads as cartoon.
+    rimLight.intensity = .12; fillLight.intensity = .08;
+    rimLight.color.set(0xbfd4e8); fillLight.color.set(0xe8d8c8);
+    // These palettes were picked for neon cel shading. At full saturation the
+    // sky floods every surface with its own hue and the frame goes violet, so
+    // pull the ambient most of the way to neutral and leave the saturated
+    // colour where it belongs: the background and the fog.
+    const grey = (hex, k) => { const c = new THREE.Color(hex); const l = c.r * .299 + c.g * .587 + c.b * .114; return c.lerp(new THREE.Color(l, l, l), k); };
+    hemi.color.copy(grey(M.hemiSky ?? 0x8a6cff, .72));
+    hemi.groundColor.copy(grey(M.hemiGround ?? 0x2b1d44, .6));
+    hemi.intensity = (M.hemiLevel ?? 1.1) * .3;
+    sun.color.copy(grey(M.sunColor ?? 0xfff1d6, .35));
+    sun.intensity = (M.sunLevel ?? 2.6) * 1.45;
+    buildEnvironment(M);
+  }
 }
 function buildMap(id) {
   clearWorld();
@@ -5909,6 +6050,15 @@ syncAudioBtns();
 $('#open-movesets').onclick = () => openMoveSets('start');
 $('#ms-confirm').onclick = confirmMoveSet;
 $('#ms-close').onclick = () => { previewStop(); $('#movesets').hidden = true; canvas.requestPointerLock?.(); };
+// The look is chosen before anything is built, so switching it rebuilds the page.
+for (const b of document.querySelectorAll('.look-btn')) {
+  b.classList.toggle('on', b.dataset.look === RENDER_MODE);
+  b.onclick = () => {
+    if (b.dataset.look === RENDER_MODE) return;
+    try { localStorage.setItem('rift.render', b.dataset.look); } catch (err) {}
+    location.reload();
+  };
+}
 $('#retry').onclick = () => {
   for (const e of enemies) { if (!e.dead) { scene.remove(e.mesh); e.bar.remove(); } }
   enemies.length = 0; wave = 0; player.hp = player.maxHp; player.se = player.maxSe; player.dead = false; player.pos.copy(MAPS[currentMap].spawn); player.vel.set(0, 0, 0);
