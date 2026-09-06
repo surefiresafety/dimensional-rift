@@ -464,7 +464,7 @@ const SKILLS = {
 
   // --- Naruto: Uzumaki ---
   rasengan_n:      { name: 'Rasengan', origin: 'Naruto', nature: 'wind', cost: 10, cd: 3, type: 'melee', range: 3.4, power: 75, knock: 18, desc: 'Spiralling chakra slammed into the enemy.' },
-  multi_clone:     { name: 'Multi Shadow Clone', origin: 'Naruto', nature: 'physical', cost: 14, cd: 10, type: 'clones', army: true, count: 5, duration: 18, power: 14, desc: 'Charge it with B first: a tap makes 5 clones, Medium makes 500, Maximum makes 1000. Ten HP each.' },
+  multi_clone:     { name: 'Multi Shadow Clone', origin: 'Naruto', nature: 'physical', cost: 14, cd: 10, type: 'clones', army: true, count: 1000, duration: 18, power: 14, desc: 'Charge it with B first: a tap makes 1,000 clones, Medium 5,000, Maximum 10,000. Ten HP each, and they throw their own Rasengan and Rasenshuriken.' },
   rasenshuriken:   { name: 'Rasenshuriken', origin: 'Naruto', nature: 'wind', cost: 26, cd: 9, type: 'projectile', speed: 26, radius: 1.4, power: 110, aoe: 6, spin: true, desc: 'A blade of wind. Explodes into a storm on impact.' },
   sage_mode:       { name: 'Sage Mode', origin: 'Naruto', nature: 'physical', cost: 20, cd: 25, type: 'buff', duration: 10, dmgMul: 1.6, speedMul: 1.35, desc: 'Nature energy. Every hit is heavier, you move faster, chakra returns.' },
   tailed_beast_bomb: { name: 'Tailed Beast Bomb', origin: 'Naruto', nature: 'fire', cost: 34, cd: 14, type: 'projectile', speed: 22, radius: 2.2, power: 150, aoe: 8, onHit: { burn: 5 }, desc: "Kurama's chakra, compressed and fired." },
@@ -586,6 +586,14 @@ const SKILLS = {
   switch_gun:      { name: 'Switch Weapon', origin: 'Top Hat', nature: 'physical', cost: 0, cd: 0, type: 'switch', desc: 'Rack the next one: pistol, rifle, sniper, RPG, knife. It changes your basic attack and every move.' },
   bullet_time:     { name: 'Bullet Time', origin: 'Top Hat', nature: 'physical', cost: 34, cd: 30, type: 'freeze', duration: 7, power: 40, desc: 'The panel holds. He keeps moving; nothing else does.' },
 
+  // --- Kakashi Hatake: Copy Ninja ---
+  raikiri:         { name: 'Lightning Blade', origin: 'Kakashi', nature: 'lightning', cost: 14, cd: 3, type: 'dash', range: 14, power: 130, onHit: { paralyze: 2.5, knock: 14 }, desc: 'Chidori refined until it cuts. He runs it straight through.' },
+  water_dragon_k:  { name: 'Water Dragon Jutsu', origin: 'Kakashi', nature: 'water', cost: 16, cd: 4, type: 'projectile', speed: 34, radius: 1.4, power: 105, aoe: 6, onHit: { knock: 18 }, desc: 'A dragon of water rises out of nothing and comes down on them.' },
+  mud_wall_k:      { name: 'Earth Style: Mud Wall', origin: 'Kakashi', nature: 'earth', cost: 12, cd: 8, type: 'shield', charges: 3, duration: 12, color: 0xc9a068, desc: 'A wall of packed earth takes the next three hits for him.' },
+  ninja_hounds_k:  { name: 'Summoning: Ninja Hounds', origin: 'Kakashi', nature: 'earth', cost: 16, cd: 12, type: 'clones', mesh: 'dog', count: 3, duration: 16, power: 26, speed: 12, desc: 'The pack comes up out of the ground and pins whatever it catches.' },
+  kamui:           { name: 'Kamui', origin: 'Kakashi', nature: 'cursed', cost: 12, cd: 6, type: 'teleport', range: 26, power: 60, desc: 'Sends part of the world somewhere else, himself included.' },
+  kamui_raikiri:   { name: 'Kamui Lightning Blade', origin: 'Kakashi', nature: 'lightning', cost: 38, cd: 30, type: 'beam', range: 48, radius: 3.6, power: 240, color: 0x9fe0ff, desc: 'The blade phases through whatever is in the way and lands anyway.' },
+
   // --- Kashimo Hajime: Mythical Beast Amber ---
   kashimo_amber:   { name: 'Mythical Beast Amber', origin: 'Kashimo', nature: 'lightning', cost: 12, cd: 3, type: 'projectile', speed: 46, radius: .9, power: 78, aoe: 4, onHit: { paralyze: 2.5 }, desc: 'His cursed technique: stored electricity thrown out in a bolt that bursts on impact.' },
   lightning_guard: { name: 'Lightning Guard', origin: 'Kashimo', nature: 'lightning', cost: 14, cd: 12, type: 'shield', charges: 3, duration: 10, reflect: 60, color: 0xffe45c, desc: 'A shell of electricity. It eats the next three hits and shocks whoever threw them.' },
@@ -681,6 +689,10 @@ const STYLES = {
     passives: ['Key 5 racks the next weapon: pistol, rifle, sniper, RPG, knife.', 'Drawn in monochrome; only his muzzle flash has colour.'],
     pool: ['gun_shot', 'quick_draw', 'grenade', 'execute_shot', 'switch_gun'], slots: ['gun_shot', 'quick_draw', 'grenade', 'execute_shot', 'switch_gun'],
     ultimate: { skill: 'bullet_time', name: 'Bullet Time', cost: 34, cd: 30, duration: 7 } },
+  kakashi: { name: 'Kakashi: Copy Ninja', blurb: 'One eye, a thousand jutsu, and a book he would rather be reading.',
+    passives: ['Lightning Blade paralyses whatever it passes through.', 'Mud Wall eats three hits outright.'],
+    pool: ['raikiri', 'water_dragon_k', 'mud_wall_k', 'ninja_hounds_k', 'kamui'], slots: ['raikiri', 'water_dragon_k', 'mud_wall_k', 'ninja_hounds_k', 'kamui'],
+    ultimate: { skill: 'kamui_raikiri', name: 'Kamui Lightning Blade', cost: 38, cd: 30, duration: 1 } },
   sasuke: { name: 'Sasuke: Rinnegan', blurb: 'Space and time bend around him. Teleport, stop the clock, take it back.',
     passives: ['Work in progress: more Rinnegan techniques to come.'],
     pool: ['amenotejikara', 'time_freeze', 'frozen_world', 'reverse_time', 'amaterasu'], slots: ['amenotejikara', 'time_freeze', 'frozen_world', 'reverse_time', 'amaterasu'],
@@ -1853,11 +1865,12 @@ const CHARACTERS = {
   naruto:    { pouch: true, buckle: 0x363641, sig: 0xf66c2d, skin: 0xf3c9a0, hair: 0xe7e419, hairStyle: 'naruto',  top: 0xf66c2d, bottom: 0xf66c2d, sleeves: 0xf66c2d, shoulders: 0x363641, eye: 0x4691cc, headband: 0x082c8c, whiskers: true, sandals: 0x082c8c, belt: 0x363641, hairLen: 1.05 },
   // Sasuke: Sport Black and Vintage Dark Blue, Authentic Silver, Uchiha red eye.
   sasuke:    { sword: true, sharingan: true, browAngle: .3, sig: 0x9b6cff, skin: 0xf7dcc0, hair: 0x151313, hairStyle: 'sasuke',  top: 0x293241, bottom: 0xa7a7a9, sleeves: 0x293241, eye: 0xe10000, rinnegan: true, collar: 0x151313, sash: 0x13386c, cape: 0x151313 },
-  gojo:      { brow: 0xd8d8e8, sig: 0x5ad4ff, skin: 0xf7dcc0, hair: 0xf4f4ff, hairStyle: 'gojo',  top: 0x101018, bottom: 0x101018, sleeves: 0x101018, eye: 0x5ad4ff, blindfold: 0x191922, collar: 0x1e1e2a, belt: 0x1e1e2a, hairLen: 1.1 },
+  gojo:      { height: 1.12, brow: 0xd8d8e8, sig: 0x5ad4ff, skin: 0xf7dcc0, hair: 0xf4f4ff, hairStyle: 'gojo',  top: 0x101018, bottom: 0x101018, sleeves: 0x101018, eye: 0x5ad4ff, blindfold: 0x191922, collar: 0x1e1e2a, belt: 0x1e1e2a, hairLen: 1.1 },
   sukuna:    { tie: 0x6a0c14, brow: 0xe0a8a8, browAngle: .34, sig: 0xff2d55, skin: 0xf2d6c6, hair: 0xf7c6c6, hairStyle: 'sukuna',  top: 0x180508, bottom: 0x180508, sleeves: 0xf2d6c6, eye: 0xff2d55, markings: true, fourArms: true, sash: 0x6a0c14 },
   yuji:      { sig: 0xff8f9c, skin: 0xf3c9a0, hair: 0xff8f9c, hairStyle: 'crop',  top: 0x22222a, bottom: 0x22222a, sleeves: 0x22222a, eye: 0x8a4a2a, hood: 0x2c2c36, collar: 0x2c2c36 },
   megumi:    { pouch: true, sig: 0x2f6f6a, skin: 0xf7dcc0, hair: 0x101430, hairStyle: 'megumi',  top: 0x13163a, bottom: 0x13163a, sleeves: 0x13163a, eye: 0x2f6f6a, collar: 0x0d1028, hairLen: 1.25 },
   toji:      { browAngle: .3, sig: 0x9fe870, skin: 0xe8c8a0, hair: 0x141418, hairStyle: 'crop',  top: 0x16161c, bottom: 0x141418, eye: 0x35502f, scar: true, bare: true, belt: 0x2a2a30 },
+  kakashi:   { sig: 0x5f6b7a, height: 1.04, skin: 0xf3d6b8, hair: 0xc8ccd4, hairStyle: 'kakashi', top: 0x2a3550, bottom: 0x1f2740, sleeves: 0x2a3550, eye: 0x3a4a5a, maskLower: 0x1a1f2e, headband: 0x2a4a8a, eyePatch: true, vest: 0x3f5a3a, pouch: true, brow: 0xc8ccd4 },
   kashimo:   { tie: 0xffd54a, sig: 0xffe45c, skin: 0xf3d6b8, hair: 0xf5e6a0, hairStyle: 'long',   top: 0x2a2340, bottom: 0x2a2340, sleeves: 0x2a2340, eye: 0xffe45c, sash: 0xffd54a },
   spiderman: { sig: 0xd8323c, skin: 0xd8323c, hair: 0xd8323c, hairStyle: 'none',   top: 0xd8323c, bottom: 0x1f2f8f, sleeves: 0xd8323c, eye: 0xffffff, mask: true, webs: true },
   geto:      { tie: 0x3a2c44, sig: 0x4a3a8a, skin: 0xf3d6b8, hair: 0x14141c, hairStyle: 'bun',   top: 0x2a2030, bottom: 0x1a1622, sleeves: 0x2a2030, eye: 0x6a4a7a, collar: 0x3a2c44 },
@@ -1916,6 +1929,11 @@ function buildCharacter(L) {
     const buckle = new THREE.Mesh(new THREE.BoxGeometry(.11, .07, .03), toon(L.buckle ?? 0x8a8a96));
     buckle.position.set(0, .04, .17); chest.add(buckle);
   }
+  if (L.vest) {
+    const vest = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.285, .34, 5, 14), toon(L.vest)), .07);
+    vest.scale.set(1.06, 1, .92); vest.position.y = .3; chest.add(vest);
+    for (const sx of [-1, 1]) { const pk = new THREE.Mesh(new THREE.BoxGeometry(.13, .14, .06), toon(L.vest)); pk.position.set(sx * .17, .34, .22); chest.add(pk); }
+  }
   if (L.sword) {                     // Sasuke carries the Kusanagi on his back
     const sheath = outlined(new THREE.Mesh(new THREE.CylinderGeometry(.045, .045, 1.15, 8), toon(0x14141c)), .07);
     sheath.position.set(-.16, .3, -.26); sheath.rotation.set(.2, 0, .5); chest.add(sheath);
@@ -1948,7 +1966,7 @@ function buildCharacter(L) {
   const neckCol = new THREE.Mesh(new THREE.CylinderGeometry(.1, .12, .16, 10), toon(L.skin));
   neckCol.position.y = -.24; neck.add(neckCol);
 
-  if (!L.mask) {
+  if (!L.mask && !L.blindfold) {
     // Anime eyes are large and layered: white, iris, pupil, highlight.
     const white = new THREE.MeshBasicMaterial({ color: 0xfdfdff });
     const irisMat = new THREE.MeshBasicMaterial({ color: L.eye });
@@ -2003,7 +2021,29 @@ function buildCharacter(L) {
     const m3 = new THREE.Mesh(new THREE.BoxGeometry(.09, .022, .02), ink); m3.position.set(sx * .09, .13, .19); m3.rotation.z = -sx * .5; neck.add(m3);
     const ex = new THREE.Mesh(new THREE.SphereGeometry(.03, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff2d55 })); ex.position.set(sx * .085, -.03, .215); neck.add(ex);
   }
-  if (L.blindfold) { const bf = new THREE.Mesh(new THREE.BoxGeometry(.5, .13, .48), toon(L.blindfold)); bf.position.set(0, .04, .02); neck.add(bf); }
+  if (L.blindfold) {
+    // A band that actually wraps the head, sitting just under the fringe.
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(.263, .263, .155, 22, 1, true), toon(L.blindfold));
+    band.position.set(0, .035, 0); band.rotation.x = .06; neck.add(band);
+    const front = new THREE.Mesh(new THREE.SphereGeometry(.246, 16, 12, 0, Math.PI, Math.PI * .34, Math.PI * .3), toon(L.blindfold));
+    front.rotation.y = -Math.PI / 2; front.position.set(0, .035, .012); neck.add(front);
+    const knot = new THREE.Mesh(new THREE.BoxGeometry(.09, .1, .07), toon(L.blindfold));
+    knot.position.set(0, .03, -.25); neck.add(knot);
+    for (const sx of [-1, 1]) {
+      const tail = new THREE.Mesh(new THREE.BoxGeometry(.05, .3, .03), toon(L.blindfold));
+      tail.position.set(sx * .05, -.1, -.26); tail.rotation.z = sx * .18; neck.add(tail);
+    }
+  }
+  if (L.maskLower) {                                // Kakashi's face covering
+    const mk = new THREE.Mesh(new THREE.SphereGeometry(.239, 16, 12, 0, Math.PI * 2, Math.PI * .42, Math.PI * .4), toon(L.maskLower));
+    mk.scale.set(1.02, 1.16, .99); neck.add(mk);
+    const collarM = new THREE.Mesh(new THREE.CylinderGeometry(.14, .16, .2, 12, 1, true), toon(L.maskLower));
+    collarM.position.y = -.26; neck.add(collarM);
+  }
+  if (L.eyePatch) {                                 // headband pulled over one eye
+    const p2 = new THREE.Mesh(new THREE.BoxGeometry(.17, .17, .06), toon(L.headband ?? 0x2a4a8a));
+    p2.position.set(-.1, .055, .2); p2.rotation.z = .12; neck.add(p2);
+  }
   if (L.headband) {
     const hb = new THREE.Mesh(new THREE.BoxGeometry(.5, .1, .47), toon(L.headband)); hb.position.set(0, .17, 0); neck.add(hb);
     const plate = new THREE.Mesh(new THREE.BoxGeometry(.22, .085, .04), new THREE.MeshBasicMaterial({ color: 0xb8c0cc })); plate.position.set(0, .17, .215); neck.add(plate);
@@ -2051,6 +2091,13 @@ function buildCharacter(L) {
       const a = (i / 12) * Math.PI * 2;
       spike(Math.cos(a) * .13, .2, Math.sin(a) * .12 - .04, .32, .062, -1.9 + Math.sin(a) * .3, -Math.cos(a) * .3);
     }
+  } else if (style === 'kakashi') {
+    skullCap(.03, .54);
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      spike(Math.cos(a) * .13 - .04, .24, Math.sin(a) * .12, .3 + (i % 3) * .06, .062, .3 + Math.sin(a) * .5, -.75 - Math.cos(a) * .3);
+    }
+    for (let i = 0; i < 4; i++) spike((i - 1.5) * .08 - .04, .18, .17, .22, .05, 2.5, -.5 + (i - 1.5) * .12);
   } else if (style === 'crop') {
     skullCap(.025, .6);
     for (let i = 0; i < 6; i++) spike((i - 2.5) * .08, .16, .18, .16, .05, 2.7, (i - 2.5) * .1);
@@ -2119,6 +2166,7 @@ function buildCharacter(L) {
     foot.position.set(0, -.46, .05); knee.add(foot);
     legs[side < 0 ? 'l' : 'r'] = { hip, knee, foot };
   }
+  if (L.height) root.scale.setScalar(L.height);
   return { root, pelvis, chest, neck, arms, legs, look: L, baseY: .98 };
 }
 
@@ -2417,8 +2465,13 @@ function speedLines(ms = 200) {
 // InstancedMeshes and a flat array: one draw call for every torso, one for every
 // head, no per-clone Object3D at all. Damage is aggregated per enemy rather than
 // reported per clone, so a thousand fists still arrive as one number.
-const ARMY_TIERS = [5, 500, 1000];        // tap, Medium output, Maximum output
-const army = { bodies: null, heads: null, list: [], until: 0, power: 14, tick: 0, retarget: 0, slices: 1, slice: 0 };
+const ARMY_TIERS = [1000, 5000, 10000];   // tap, Medium output, Maximum output
+// The clones do not just punch: every so often one winds up a jutsu of its own.
+const ARMY_JUTSU = [
+  { name: 'Rasengan', nature: 'wind', speed: 34, radius: .7, power: 58, cost: 0, cd: 0, color: 0x5aa9ff },
+  { name: 'Rasenshuriken', nature: 'wind', speed: 30, radius: 1, power: 105, aoe: 5, spin: true, cost: 0, cd: 0, color: 0x9fd6ff },
+];
+const army = { bodies: null, heads: null, list: [], until: 0, power: 14, tick: 0, retarget: 0, slices: 1, slice: 0, cast: 0, shots: 0, fpsAcc: 0, fpsN: 0, thinAt: 0, cullR: 999 };
 const _am = new THREE.Matrix4(), _aq = new THREE.Quaternion(), _av = new THREE.Vector3(), _as = new THREE.Vector3(1, 1, 1);
 const _ay = new THREE.Vector3(0, 1, 0);
 const ARMY_HIDDEN = new THREE.Matrix4().makeScale(0, 0, 0);
@@ -2434,23 +2487,28 @@ function spawnArmy(count, duration, power, look) {
   // A crowd of a thousand only ever reads as a crowd, so the bodies get cheaper
   // the more of them there are: fewer segments, and the work is spread over
   // several frames instead of all landing on one.
-  const big = cap > 200;
-  army.slices = big ? 3 : 1;
+  // The bigger the crowd, the cheaper each body: fewer segments, no separate
+  // heads past a couple of thousand, and the work spread over more frames.
+  // Ten thousand of them still comes to one or two draw calls.
+  const big = cap > 200, huge = cap > 2000;
+  army.slices = cap > 4000 ? 8 : cap > 1000 ? 4 : big ? 3 : 1;
   army.slice = 0;
-  army.bodies = new THREE.InstancedMesh(new THREE.CapsuleGeometry(.28, .8, big ? 2 : 4, big ? 5 : 6), toon(look.top), cap);
-  army.heads = new THREE.InstancedMesh(new THREE.SphereGeometry(.22, big ? 5 : 8, big ? 4 : 6), toon(look.skin), cap);
+  army.bodies = new THREE.InstancedMesh(new THREE.CapsuleGeometry(.28, .8, huge ? 1 : big ? 2 : 4, huge ? 4 : big ? 5 : 6), toon(look.top), cap);
+  army.heads = huge ? null : new THREE.InstancedMesh(new THREE.SphereGeometry(.22, big ? 5 : 8, big ? 4 : 6), toon(look.skin), cap);
   for (const im of [army.bodies, army.heads]) {
+    if (!im) continue;
     im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
     im.frustumCulled = false; im.castShadow = false;
     scene.add(im);
   }
-  const spread = Math.sqrt(cap) * 1.15;
+  const spread = Math.min(48, Math.sqrt(cap) * 1.15);
   for (let i = 0; i < cap; i++) {
     const a = i * 2.399963;                       // golden angle spreads them evenly
     const r = 2 + spread * Math.sqrt(i / cap);
     army.list.push({ x: player.pos.x + Math.cos(a) * r, z: player.pos.z + Math.sin(a) * r, yaw: a, hp: 10, dead: false, tgt: 0, bob: Math.random() * 6 });
   }
-  army.until = now + duration; army.power = power; army.tick = 0; army.retarget = 0;
+  army.until = now + duration; army.power = power; army.tick = 0; army.retarget = 0; army.cast = 0; army.shots = 0;
+  army.fpsAcc = wallNow(); army.fpsN = 0; army.thinAt = wallNow() + 2.5; army.cullR = spread + 12;
   shout('Shadow Clone Jutsu'); log(`Shadow Clone Jutsu: ${cap.toLocaleString()} clones, 10 HP each.`, true);
   center(cap >= 500 ? `${cap.toLocaleString()} SHADOW CLONES` : 'SHADOW CLONES', 1600);
   burst(player.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 0xffffff, cap >= 500 ? 30 : 16);
@@ -2474,6 +2532,27 @@ function updateArmy(dt) {
   if (!army.list.length) return;
   if (now > army.until) { clearArmy(); log('The clones pop out of existence.'); return; }
 
+  // If the crowd is actually costing frames on this machine, thin it out from
+  // the outside in. Better a smaller army than a slideshow.
+  // Measured on the wall clock: the game clock barely advances when the frame
+  // rate is the thing in trouble, so it cannot be used to detect trouble.
+  const wn = wallNow();
+  army.fpsN++;
+  if (wn - army.fpsAcc >= 1) {
+    const avg = army.fpsN / (wn - army.fpsAcc);
+    army.fpsAcc = wn; army.fpsN = 0;
+    if (avg < 28 && wn > army.thinAt && (army.aliveLast ?? army.list.length) > 300) {
+      army.thinAt = wn + 1.5;
+      army.cullR *= .72;
+      let culled = 0;
+      for (const c of army.list) {
+        if (c.dead) continue;
+        if (Math.hypot(c.x - player.pos.x, c.z - player.pos.z) > army.cullR) { c.dead = true; culled++; }
+      }
+      if (culled) log(`${culled.toLocaleString()} clones dismissed to keep the frame rate up.`);
+    }
+  }
+
   const live = enemies.filter((e) => !e.dead);
   army.retarget -= dt;
   const pickTargets = army.retarget <= 0;
@@ -2492,7 +2571,7 @@ function updateArmy(dt) {
   let alive = 0;
   for (let i = 0; i < army.list.length; i++) {
     const c = army.list[i];
-    if (c.dead) { if (!c.hidden) { c.hidden = true; army.bodies.setMatrixAt(i, ARMY_HIDDEN); army.heads.setMatrixAt(i, ARMY_HIDDEN); } continue; }
+    if (c.dead) { if (!c.hidden) { c.hidden = true; army.bodies.setMatrixAt(i, ARMY_HIDDEN); army.heads?.setMatrixAt(i, ARMY_HIDDEN); } continue; }
     alive++;
     if (i % slices !== start) continue;
     if (pickTargets && live.length) c.tgt = (i + (now | 0)) % live.length;
@@ -2508,10 +2587,29 @@ function updateArmy(dt) {
     const hop = Math.abs(Math.sin(c.bob)) * .08;
     _aq.setFromAxisAngle(_ay, c.yaw);
     _av.set(c.x, .78 + hop, c.z); _am.compose(_av, _aq, _as); army.bodies.setMatrixAt(i, _am);
-    _av.set(c.x, 1.48 + hop, c.z); _am.compose(_av, _aq, _as); army.heads.setMatrixAt(i, _am);
+    if (army.heads) { _av.set(c.x, 1.48 + hop, c.z); _am.compose(_av, _aq, _as); army.heads.setMatrixAt(i, _am); }
   }
   army.bodies.instanceMatrix.needsUpdate = true;
-  army.heads.instanceMatrix.needsUpdate = true;
+  if (army.heads) army.heads.instanceMatrix.needsUpdate = true;
+
+  // One clone at a time winds up a jutsu, so the sky fills without the frame
+  // rate paying for ten thousand projectiles.
+  army.cast -= dt;
+  if (army.cast <= 0 && live.length && army.shots < 8) {
+    army.cast = .45;
+    const c = army.list[(Math.random() * army.list.length) | 0];
+    if (c && !c.dead) {
+      const t = live[c.tgt] ?? live[0];
+      const from = new THREE.Vector3(c.x, 1.3, c.z);
+      const to = t.pos.clone().add(new THREE.Vector3(0, 1, 0));
+      const j = ARMY_JUTSU[Math.random() < .3 ? 1 : 0];
+      const m = new THREE.Mesh(new THREE.SphereGeometry(j.radius, 10, 8), addMat(j.color, .95));
+      if (j.spin) { const bl = new THREE.Mesh(new THREE.TorusGeometry(j.radius * 2.1, .12, 6, 4), addMat(0xffffff, 1)); bl.rotation.x = Math.PI / 2; m.add(bl); m.userData.spin = true; }
+      m.position.copy(from); scene.add(m);
+      army.shots++;
+      projectiles.push({ m, v: to.sub(from).normalize().multiplyScalar(j.speed), s: j, t: 0, trail: [], boost: 1, fromArmy: true });
+    }
+  }
 
   if (doDamage) for (const c of army.list) {
     if (c.dead) continue;
@@ -2525,6 +2623,7 @@ function updateArmy(dt) {
     if (e.dead) continue;
     enemyTakeHit(e, army.power * Math.min(hits, 40), 'physical', player.pos, { knock: 2 });
   }
+  army.aliveLast = alive;
   if (alive === 0) clearArmy();
 }
 
@@ -3980,7 +4079,7 @@ function updateProjectiles(dt) {
       damageBuildings(p.m.position, p.s.aoe + 3, p.s.power * 1.6);
       for (const e of enemies) { if (e.dead) continue; if (e.pos.distanceTo(p.m.position) < p.s.aoe + e.t.size) enemyTakeHit(e, p.s.power * .6 * (p.boost ?? 1), p.s.nature, p.m.position, { ...p.s.onHit, knock: 20 }); }
     }
-    if (p.done) scene.remove(p.m);
+    if (p.done) { scene.remove(p.m); if (p.fromArmy) army.shots = Math.max(0, army.shots - 1); }
   }
   for (let i = projectiles.length - 1; i >= 0; i--) if (projectiles[i].done) projectiles.splice(i, 1);
   for (const b of bursts) {
