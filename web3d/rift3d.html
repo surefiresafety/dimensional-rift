@@ -301,7 +301,7 @@
       <div class="setup-row quality-row"></div>
       <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
         <button id="open-movesets">Choose your move set</button>
-        <span style="opacity:.7;font-size:12px">Twenty characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
+        <span style="opacity:.7;font-size:12px">Twenty-five characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
       </div>
     </div>
   </div>
@@ -605,6 +605,36 @@ const SKILLS = {
   discharge:       { name: 'Full Discharge', origin: 'Kashimo', nature: 'lightning', cost: 20, cd: 7, type: 'trap', range: 0, radius: 9.5, power: 88, color: 0xffe45c, onHit: { paralyze: 2, knock: 16 }, desc: 'Dumps everything he is holding at once: a nova of lightning centred on himself.' },
   amber_maximum:   { name: 'Amber: Maximum', origin: 'Kashimo', nature: 'lightning', cost: 38, cd: 34, type: 'buff', duration: 22, dmgMul: 2.1, speedMul: 1.45, costMul: .6, regen: 10, chain: { power: 48, radius: 17, every: .7 }, color: 0xffe45c, desc: 'His whole body becomes the discharge: everything hits harder and lightning keeps arcing to anything near him.' },
 
+  // --- Naoya Zen'in: Projection Sorcery ---
+  projection_dash: { name: 'Projection Sorcery', origin: "Naoya", nature: 'physical', cost: 10, cd: 2.2, type: 'dash', range: 22, power: 96, onHit: { root: 1, knock: 10 }, desc: 'Twenty-four frames a second. Anything he runs through misses its frame and freezes for a second.' },
+  frame_kick:      { name: '24 Frame Kick', origin: "Naoya", nature: 'physical', cost: 6, cd: .9, type: 'melee', range: 4.4, arc: .2, power: 68, knock: 16, desc: 'The kick lands before the frame it was thrown in has finished.' },
+  frame_lock:      { name: 'Frame Lock', origin: "Naoya", nature: 'physical', cost: 12, cd: 6, type: 'trap', range: 5, radius: 8.5, power: 44, color: 0x9aa4b8, onHit: { root: 2.5 }, desc: 'Everyone around him drops a frame and stands there for it.' },
+  heel_drop:       { name: 'Heel Drop', origin: "Naoya", nature: 'physical', cost: 9, cd: 3, type: 'trap', range: 3, radius: 5.5, power: 88, color: 0x9aa4b8, onHit: { knock: 22 }, desc: 'Straight down through the collarbone, and the pavement after it.' },
+  speed_of_sound:  { name: 'Speed of Sound', origin: "Naoya", nature: 'physical', cost: 14, cd: 16, type: 'buff', duration: 12, speedMul: 1.75, dmgMul: 1.3, costMul: .7, color: 0x9aa4b8, desc: 'He stops pretending to move at a speed you can follow.' },
+  projection_24:   { name: 'Projection Sorcery: 24 Frames', origin: "Naoya", nature: 'physical', cost: 36, cd: 30, type: 'buff', duration: 16, dmgMul: 2, speedMul: 2, costMul: .4, regen: 6, color: 0x9aa4b8, desc: 'Every frame of the next sixteen seconds belongs to him.' },
+
+  // --- Yuta Okkotsu: Rika ---
+  rika_manifest:   { name: 'Rika: Manifest', origin: 'Yuta', nature: 'cursed', cost: 20, cd: 14, type: 'clones', mesh: 'rika', count: 1, duration: 18, power: 62, speed: 13, desc: 'The Queen of Curses comes out and picks her own targets.' },
+  pure_love:       { name: 'Pure Love', origin: 'Yuta', nature: 'cursed', cost: 16, cd: 3, type: 'melee', range: 6.5, arc: .3, power: 132, knock: 26, color: 0x9fd6ff, desc: "Rika's strength poured into one swing of the katana." },
+  cursed_speech_y: { name: 'Cursed Speech: Blast Away', origin: 'Yuta', nature: 'cursed', cost: 12, cd: 4, type: 'projectile', speed: 52, radius: 1.2, power: 88, aoe: 5, color: 0xdcd8ce, onHit: { paralyze: 2 }, desc: 'A word borrowed from Inumaki. Saying it costs him his throat.' },
+  rika_guard:      { name: "Rika's Guard", origin: 'Yuta', nature: 'cursed', cost: 14, cd: 12, type: 'shield', charges: 3, duration: 12, reflect: 80, color: 0x9fd6ff, desc: 'She puts herself in front of him and bites back.' },
+  authentic_love:  { name: 'Domain: Authentic Mutual Love', origin: 'Yuta', nature: 'cursed', cost: 42, cd: 34, type: 'domain', duration: 6, radius: 34, power: 54, tick: .35, color: 0x1a1430, floor: 0x2e2a5a, edge: 0x9fd6ff, sky: 0x0a0818, sunColor: 0xbfe0ff, title: 'AUTHENTIC MUTUAL LOVE', desc: 'The barrier is the curse she put on him, and it does not miss.' },
+
+  // --- Ryu Ishigori: Granite Blast ---
+  granite_blast:   { name: 'Granite Blast', origin: 'Ishigori', nature: 'cursed', cost: 22, cd: 6, type: 'beam', range: 42, radius: 3.4, power: 205, color: 0xffd54a, desc: 'No technique worth the name. Just more cursed energy than anyone else can put in a straight line.' },
+  granite_shot:    { name: 'Granite Shot', origin: 'Ishigori', nature: 'cursed', cost: 9, cd: 1.2, type: 'projectile', speed: 44, radius: 1, power: 76, aoe: 3.5, color: 0xffd54a, desc: 'A fistful of the same, thrown underarm.' },
+  granite_slam:    { name: 'Granite Slam', origin: 'Ishigori', nature: 'cursed', cost: 14, cd: 4, type: 'trap', range: 4, radius: 8, power: 98, color: 0xffb340, onHit: { knock: 24 }, desc: 'Both fists into the ground. The ground loses.' },
+  raw_output:      { name: 'Raw Output', origin: 'Ishigori', nature: 'cursed', cost: 16, cd: 15, type: 'buff', duration: 14, dmgMul: 1.9, costMul: .6, speedMul: 1.1, color: 0xffd54a, desc: 'He stops rationing it.' },
+  granite_maximum: { name: 'Granite Blast: Maximum', origin: 'Ishigori', nature: 'cursed', cost: 40, cd: 26, type: 'beam', range: 60, radius: 6, power: 420, color: 0xffe45c, desc: 'Everything he has, all at once, in one direction.' },
+
+  // --- Uro Takako: Sky Manipulation ---
+  sky_manipulation:{ name: 'Sky Manipulation', origin: 'Uro', nature: 'wind', cost: 12, cd: 2.4, type: 'projectile', speed: 40, radius: 1.6, power: 94, aoe: 6, color: 0x9fd6ff, desc: 'She takes hold of the surface of the sky and throws a slab of it at you.' },
+  thin_ice:        { name: 'Thin Ice Breaker', origin: 'Uro', nature: 'wind', cost: 20, cd: 8, type: 'trap', range: 8, radius: 10, power: 132, color: 0xbfe0ff, onHit: { knock: 24 }, desc: 'The sky cracks like a frozen pond and comes down in sheets.' },
+  falling_sky:     { name: 'Falling Sky', origin: 'Uro', nature: 'wind', cost: 15, cd: 5, type: 'trap', range: 16, radius: 7, power: 106, color: 0x9fd6ff, onHit: { root: 1.5 }, desc: 'She drops a piece of it somewhere out in front of her.' },
+  sky_guard:       { name: 'Sky Guard', origin: 'Uro', nature: 'wind', cost: 14, cd: 12, type: 'shield', charges: 3, duration: 12, reflect: 70, color: 0x9fd6ff, desc: 'The sky between you and her, held flat. Whatever hits it comes straight back.' },
+  sky_skate:       { name: 'Sky Skate', origin: 'Uro', nature: 'wind', cost: 10, cd: 12, type: 'evade', duration: 3, speedMul: 1.7, desc: 'She stands on the air and pushes off it.' },
+  sky_maximum:     { name: 'Thin Ice Breaker: Maximum', origin: 'Uro', nature: 'wind', cost: 38, cd: 30, type: 'trap', range: 6, radius: 24, power: 320, color: 0xbfe0ff, onHit: { knock: 34, root: 2 }, desc: 'She breaks the whole thing at once and stands underneath it.' },
+
   kurama_cloak:    { name: 'Kurama Chakra Mode', origin: 'Naruto', nature: 'fire', cost: 35, cd: 32, type: 'buff', duration: 25, dmgMul: 2.2, speedMul: 1.5, costMul: .5, regen: 12, color: 0xffb340, desc: "Kurama's chakra floods every jutsu: far more damage, faster, half price, chakra pouring back." },
   spider_verse:    { name: 'Spider-Verse Assist', origin: 'Spider-Man', nature: 'physical', cost: 32, cd: 30, type: 'clones', mesh: 'spider', count: 3, duration: 20, power: 30, speed: 12, desc: 'Three spiders from other dimensions drop in and fight beside you.' },
 
@@ -697,6 +727,22 @@ const STYLES = {
     passives: ['Chidori paralyses whatever it passes through.', 'He copied Rasengan and the Shadow Clone Jutsu. Uncharged it is three to five clones; charge B first for a thousand or more.', 'Lightning Blade, Water Dragon and Mud Wall are in his pool: swap them in with Tab.'],
     pool: ['chidori_k', 'rasengan_k', 'multi_clone', 'ninja_hounds_k', 'kamui', 'raikiri', 'water_dragon_k', 'mud_wall_k'], slots: ['chidori_k', 'rasengan_k', 'multi_clone', 'ninja_hounds_k', 'kamui'],
     ultimate: { skill: 'kamui_raikiri', name: 'Kamui Lightning Blade', cost: 38, cd: 30, duration: 1 } },
+  naoya: { name: "Naoya Zen'in: Projection Sorcery", blurb: 'Twenty-four frames a second, and he is insufferable about all of them.',
+    passives: ['Projection Sorcery freezes whatever it passes through for a second.', 'Nothing he does has a long cooldown; he is built to never stop moving.'],
+    pool: ['projection_dash', 'frame_kick', 'frame_lock', 'heel_drop', 'speed_of_sound'], slots: ['projection_dash', 'frame_kick', 'frame_lock', 'heel_drop', 'speed_of_sound'],
+    ultimate: { skill: 'projection_24', name: 'Projection Sorcery: 24 Frames', cost: 36, cd: 30, duration: 16 } },
+  yuta: { name: 'Yuta Okkotsu: Rika', blurb: 'A special grade by accident. The girl he loved never left, and she does the hitting.',
+    passives: ['Rika fights on her own once manifested.', "Rika's Guard eats three hits and bites whoever threw them."],
+    pool: ['pure_love', 'rika_manifest', 'cursed_speech_y', 'rika_guard', 'rct_heal'], slots: ['pure_love', 'rika_manifest', 'cursed_speech_y', 'rika_guard', 'rct_heal'],
+    ultimate: { skill: 'authentic_love', name: 'Domain: Authentic Mutual Love', cost: 42, cd: 34, duration: 6 } },
+  ishigori: { name: 'Ryu Ishigori: Granite Blast', blurb: 'No clever technique. More cursed energy than the room can hold, pointed at you.',
+    passives: ['Every attack is the same attack at a different size.', 'Raw Output nearly doubles all of it for fourteen seconds.'],
+    pool: ['granite_blast', 'granite_shot', 'granite_slam', 'raw_output', 'rct_heal'], slots: ['granite_blast', 'granite_shot', 'granite_slam', 'raw_output', 'rct_heal'],
+    ultimate: { skill: 'granite_maximum', name: 'Granite Blast: Maximum', cost: 40, cd: 26, duration: 1 } },
+  uro: { name: 'Uro Takako: Sky Manipulation', blurb: 'A thousand years old and still the best in the air. The sky is a surface and she owns it.',
+    passives: ['Sky Guard reflects the next three hits.', 'Sky Skate makes her untouchable for three seconds.'],
+    pool: ['sky_manipulation', 'thin_ice', 'falling_sky', 'sky_guard', 'sky_skate'], slots: ['sky_manipulation', 'thin_ice', 'falling_sky', 'sky_guard', 'sky_skate'],
+    ultimate: { skill: 'sky_maximum', name: 'Thin Ice Breaker: Maximum', cost: 38, cd: 30, duration: 1 } },
   sasuke: { name: 'Sasuke: Rinnegan', blurb: 'Space and time bend around him. Teleport, stop the clock, take it back.',
     passives: ['Work in progress: more Rinnegan techniques to come.'],
     pool: ['amenotejikara', 'time_freeze', 'frozen_world', 'reverse_time', 'amaterasu'], slots: ['amenotejikara', 'time_freeze', 'frozen_world', 'reverse_time', 'amaterasu'],
@@ -1888,6 +1934,14 @@ const CHARACTERS = {
   eleven:    { sig: 0xc0392b, skin: 0xf3d6c0, hair: 0x6a4a2a, hairStyle: 'crop',  top: 0xf0e0d0, bottom: 0x2a3a5a, sleeves: 0xf0e0d0, eye: 0x4a3a2a, nosebleed: true },
   jean:      { sig: 0xd94f1a, skin: 0xf7dcc0, hair: 0xd94f1a, hairStyle: 'long',   top: 0x1f7a3a, bottom: 0xd4302a, sleeves: 0x1f7a3a, eye: 0x3f8f5f, sash: 0xffd54a },
   ironman:   { buckle: 0xffc83d, sig: 0xffc83d, skin: 0xd4302a, hair: 0xd4302a, hairStyle: 'none',   top: 0xd4302a, bottom: 0xd4302a, sleeves: 0xffc83d, eye: 0x9fe0ff, mask: true, reactor: true, shoulders: 0xffc83d },
+  // Naoya: Zen'in black kimono, flat black hair, and a permanent sneer.
+  naoya:     { sig: 0x9aa4b8, skin: 0xf3d6b8, hair: 0x14161c, hairStyle: 'naoya', top: 0x1a1a24, bottom: 0x14141c, sleeves: 0x1a1a24, eye: 0x8a94a8, sash: 0x6a1a2a, collar: 0xe8e4dc, tie: 0x6a1a2a, brow: 0x14161c, browAngle: .36, hairLen: 1.1 },
+  // Yuta: Jujutsu High black uniform, black hair over the eyes, katana on the hip.
+  yuta:      { sig: 0x9fd6ff, skin: 0xf3d6b8, hair: 0x14141a, hairStyle: 'yuta', top: 0x1b1f2e, bottom: 0x161a26, sleeves: 0x1b1f2e, eye: 0x2a2a34, sword: true, collar: 0x22283a, hairLen: 1.12 },
+  // Ishigori: enormous, bare-chested, sun-bleached hair swept back.
+  ishigori:  { height: 1.2, sig: 0xffd54a, skin: 0xe0b088, hair: 0xf0e08a, hairStyle: 'spiky', top: 0x2a2a30, bottom: 0x2a2a30, sleeves: 0xe0b088, eye: 0xffd54a, bare: true, belt: 0x3a3a44, brow: 0xf0e08a, browAngle: .42 },
+  // Uro: pale kimono top over dark hakama, black hair in a long tail.
+  uro:       { sig: 0x9fd6ff, skin: 0xf3d6b8, hair: 0x1a1a24, hairStyle: 'ponytail', top: 0xdcd8ce, bottom: 0x2a3550, sleeves: 0xdcd8ce, eye: 0x5aa9ff, sash: 0x8fa8c8, collar: 0xdcd8ce, hairLen: 1.2 },
   tophat:    { buckle: 0xf0f0f0, brow: 0x101010, sig: 0xf0f0f0, skin: 0xf0f0f0, hair: 0x101010, hairStyle: 'none',   top: 0x181818, bottom: 0x101010, sleeves: 0xf0f0f0, eye: 0x101010, tophat: true, collar: 0xf0f0f0 },
 };
 CHARACTERS.jogo = CHARACTERS.jogoC; CHARACTERS.hanami = CHARACTERS.hanamiC; CHARACTERS.dagon = CHARACTERS.dagonC;
@@ -2102,6 +2156,32 @@ function buildCharacter(L) {
       spike(Math.cos(a) * .13 - .04, .24, Math.sin(a) * .12, .3 + (i % 3) * .06, .062, .3 + Math.sin(a) * .5, -.75 - Math.cos(a) * .3);
     }
     for (let i = 0; i < 4; i++) spike((i - 1.5) * .08 - .04, .18, .17, .22, .05, 2.5, -.5 + (i - 1.5) * .12);
+  } else if (style === 'naoya') {
+    // Flat, heavy, parted in the middle: nothing spiky about him.
+    skullCap(.02, .62);
+    for (let i = 0; i < 7; i++) { const t = (i - 3) / 3; spike(t * .2, .15 - Math.abs(t) * .03, .17, .26, .06, 2.75, t * .22); }
+    for (const sx of [-1, 1]) {
+      const side = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.075, .26, 4, 8), hairMat), .07);
+      side.position.set(sx * .215, -.06, .05); neck.add(side);
+    }
+    const back = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.13, .2, 4, 10), hairMat), .07);
+    back.position.set(0, -.1, -.16); neck.add(back);
+  } else if (style === 'yuta') {
+    // Long fringe hanging over the eyes, everything else soft and untidy.
+    skullCap(.03, .6);
+    for (let i = 0; i < 9; i++) { const t = (i - 4) / 4; spike(t * .21, .14 - Math.abs(t) * .02, .175, .3 + (i % 2) * .05, .055, 2.85, t * .3); }
+    for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; spike(Math.cos(a) * .14, .17, Math.sin(a) * .13 - .06, .2, .055, -1.4 + Math.sin(a) * .5, -Math.cos(a) * .5); }
+    for (const sx of [-1, 1]) {
+      const side = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.07, .3, 4, 8), hairMat), .07);
+      side.position.set(sx * .21, -.08, .03); neck.add(side);
+    }
+  } else if (style === 'ponytail') {
+    skullCap(.03, .6);
+    for (let i = 0; i < 6; i++) spike((i - 2.5) * .085, .15, .18, .2, .05, 2.75, (i - 2.5) * .14);
+    const tie = outlined(new THREE.Mesh(new THREE.SphereGeometry(.1, 10, 8), hairMat), .07);
+    tie.position.set(0, .16, -.24); neck.add(tie);
+    const tail = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.09, 1.05, 4, 10), hairMat), .07);
+    tail.position.set(0, -.36, -.34); tail.rotation.x = -.34; neck.add(tail);
   } else if (style === 'crop') {
     skullCap(.025, .6);
     for (let i = 0; i < 6; i++) spike((i - 2.5) * .08, .16, .18, .16, .05, 2.7, (i - 2.5) * .1);
@@ -3784,13 +3864,30 @@ function castSkill(id, opts = {}) {
         for (const sx of [-1, 1]) { const ey = new THREE.Mesh(new THREE.SphereGeometry(.14, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffe45c })); ey.position.set(sx * .3, 1.05, .62); m.add(ey); }
         if (s.mesh === 'fish') { const tail = new THREE.Mesh(new THREE.ConeGeometry(.4, .8, 5), toon(col)); tail.rotation.x = Math.PI / 2; tail.position.set(0, .9, -1.2); m.add(tail); }
       }
+      else if (s.mesh === 'rika') {
+        // The Queen of Curses: pale, oversized, horned, and grinning.
+        m = new THREE.Group();
+        const body = outlined(new THREE.Mesh(new THREE.SphereGeometry(1.05, 16, 12), toon(0xe8e2ea)), .09);
+        body.position.y = 1.35; body.scale.set(1, 1.25, .95); m.add(body);
+        for (const sx of [-1, 1]) {
+          const horn = outlined(new THREE.Mesh(new THREE.ConeGeometry(.16, .72, 6), toon(0xd8ccd6)), .07);
+          horn.position.set(sx * .42, 2.5, -.1); horn.rotation.z = sx * .3; m.add(horn);
+          const eye = new THREE.Mesh(new THREE.SphereGeometry(.17, 10, 8), new THREE.MeshBasicMaterial({ color: 0x9fd6ff }));
+          eye.position.set(sx * .36, 1.75, .82); m.add(eye);
+          const arm = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.2, 1.3, 5, 10), toon(0xe8e2ea)), .08);
+          arm.position.set(sx * 1.1, 1.15, .1); arm.rotation.z = sx * .5; m.add(arm);
+        }
+        const mouth = new THREE.Mesh(new THREE.BoxGeometry(1.1, .3, .12), new THREE.MeshBasicMaterial({ color: 0x2a1020 }));
+        mouth.position.set(0, 1.25, .92); m.add(mouth);
+      }
       else if (s.mesh === 'suit') m = buildCharacter({ ...CHARACTERS.ironman, top: [0xd4302a, 0x8a8a96, 0xe06010, 0x5ad4ff][i % 4] }).root;
       else if (s.mesh === 'spider') m = buildCharacter({ ...CHARACTERS.spiderman, top: [0xd8323c, 0x111122, 0x1f2f8f][i % 3], bottom: [0x1f2f8f, 0x2a2a2a, 0xd8323c][i % 3] }).root;
       else m = buildCharacter({ ...(CHARACTERS[player.style] ?? CHARACTERS.default), top: 0x8a8a96, bottom: 0x6a6a76 }).root;
       const a = (i / s.count) * Math.PI * 2; m.position.copy(player.pos).add(new THREE.Vector3(Math.sin(a) * 1.6, 0, Math.cos(a) * 1.6)); scene.add(m);
       fighterClones.push({ m, until: now + s.duration, next: now + .4 + i * .25, power: s.power * B, speed: s.speed ?? 8, nature: s.mesh === 'dog' ? s.nature : 'physical' });
     }
-    if (s.mesh === 'spirit' || s.mesh === 'fish') { player.decoy = false; burst(origin, 0x8a4fd8, 16); center(s.name.toUpperCase(), 900); }
+    if (s.mesh === 'rika') { player.decoy = false; burst(origin, 0xe8e2ea, 24); log('Rika is out.', true); center('RIKA', 1100); }
+    else if (s.mesh === 'spirit' || s.mesh === 'fish') { player.decoy = false; burst(origin, 0x8a4fd8, 16); center(s.name.toUpperCase(), 900); }
     else if (s.mesh === 'spider') { player.decoy = false; burst(origin, 0xd8323c, 20); log('Spider-Verse: three of them dropped in.', true); center('SPIDER-VERSE', 1200); }
     else if (s.mesh === 'dog') { player.decoy = false; burst(origin, 0x222222, 12); log('Divine Dogs: Totality!', true); center('DIVINE DOGS', 700); }
     else { burst(origin, 0xffffff, 16); log('Multi Shadow Clone Jutsu!', true); center('SHADOW CLONES', 700); }
@@ -5033,7 +5130,7 @@ function useGate(to) {
 }
 buildMap('times_square');
 requestAnimationFrame(frame);
-window.__rift = { army, get rasengan() { return rasengan; }, get chidori() { return chidori; }, spawnArmy, damageArmy, arcBolt, slashArc,
+window.__rift = { army, camera, scene, buildCharacter, CHARACTERS, get rasengan() { return rasengan; }, get chidori() { return chidori; }, spawnArmy, damageArmy, arcBolt, slashArc,
   SKILLS, STYLES, ENEMIES, MAPS, MAP_IDS, NATURE, travelTo, buildMap, portals,
   net, setMode, useGate, setSolo, setTier, TIERS, get tier() { return tierName; },
   get currentMap() { return currentMap; }, get nearPortal() { return nearPortal; }, eprojectiles, spawnEnemy, player, enemies, buildings, debris, cars, civilians, damageBuildings, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, startCharge, releaseCharge, hurtPlayer, castSkill, OUTPUT_TIERS, ARSENALS, cycleWeapon, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
