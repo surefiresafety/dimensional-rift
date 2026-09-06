@@ -310,7 +310,7 @@
       <div class="setup-row quality-row"></div>
       <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
         <button id="open-movesets">Select your character</button>
-        <span style="opacity:.7;font-size:12px">Twenty-eight characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
+        <span style="opacity:.7;font-size:12px">Twenty-nine characters, five techniques each, plus a G ultimate. Swap any time with M.</span>
       </div>
     </div>
   </div>
@@ -670,6 +670,14 @@ const SKILLS = {
   antibody_shell:  { name: 'Antibody Shell', origin: 'Anti-Venom', nature: 'physical', cost: 14, cd: 12, type: 'shield', charges: 4, duration: 14, reflect: 70, color: 0xeef2f6, desc: 'A white shell around him. It eats the next four hits and burns whoever threw them.' },
   total_cure:      { name: 'TOTAL CURE', origin: 'Anti-Venom', nature: 'physical', cost: 38, cd: 26, type: 'trap', range: 0, radius: 24, power: 290, color: 0xffffff, onHit: { knock: 34, leech: .5, root: 2 }, desc: 'He empties the whole suit outward. Everything caught in it burns, and half of that comes straight back to him.' },
 
+  // --- Doctor Octopus: four arms that never get tired ----------------------
+  actuator_sweep:  { name: 'Actuator Sweep', origin: 'Doc Ock', nature: 'physical', cost: 7, cd: 1, type: 'melee', range: 9, arc: .55, power: 98, knock: 30, color: 0xa8b2be, desc: 'All four arms through the same arc at once. Nothing at that range stays standing.' },
+  tentacle_grab:   { name: 'Tentacle Grab', origin: 'Doc Ock', nature: 'physical', cost: 8, cd: 2.6, type: 'yank', range: 30, power: 58, desc: 'One arm out to full extension, closes, and drags them back to him.' },
+  debris_hurl:     { name: 'Debris Hurl', origin: 'Doc Ock', nature: 'earth', cost: 12, cd: 2.4, type: 'projectile', speed: 34, radius: 1.5, power: 112, aoe: 6, arc: true, color: 0x8f7f6a, onHit: { knock: 22 }, desc: 'Whatever the arms can reach — a car, a slab of road — goes overhead and lands on them.' },
+  pin_down:        { name: 'Pin Down', origin: 'Doc Ock', nature: 'physical', cost: 14, cd: 6, type: 'trap', range: 4, radius: 11, power: 86, color: 0xa8b2be, onHit: { root: 4, defDown: .35 }, desc: 'Four arms into the ground around him. Everything inside is pinned and easier to hit.' },
+  actuator_guard:  { name: 'Actuator Guard', origin: 'Doc Ock', nature: 'physical', cost: 13, cd: 11, type: 'shield', charges: 4, duration: 13, reflect: 55, color: 0xa8b2be, desc: 'The arms come round in front of him. They take the next four hits and swat the attacker.' },
+  fusion_flare:    { name: 'Fusion Flare', origin: 'Doc Ock', nature: 'fire', cost: 38, cd: 27, type: 'beam', range: 48, radius: 4.2, power: 360, color: 0xffd54a, onHit: { burn: 5 }, desc: 'He lets the reactor run away with itself and points the result down the street.' },
+
   spider_verse:    { name: 'Spider-Verse Assist', origin: 'Spider-Man', nature: 'physical', cost: 32, cd: 30, type: 'clones', mesh: 'spider', count: 3, duration: 20, power: 30, speed: 12, desc: 'Three spiders from other dimensions drop in and fight beside you.' },
 
   // --- Megumi Fushiguro: Ten Shadows ---
@@ -698,6 +706,11 @@ const STYLES = {
     ultimate: { kind: 'transform', into: 'venom', name: 'Symbiote: Venom', cost: 34, cd: 44, duration: 40,
       title: 'WE ARE VENOM', color: 0xf0f0f0,
       log: 'The suit crawls up over him and takes the mouth off the mask. Forty seconds as Venom, then Peter gets the body back.' } },
+  docock: { name: 'Doctor Octopus', blurb: 'Otto Octavius and four arms that answer faster than his own. He does not need to get close, and he does anyway.',
+    passives: ['The arms give him reach: bare hands hit for 26 from two metres further out than anyone else.', 'Actuator Sweep covers a nine-metre arc — the widest basic technique in the game.', 'Pin Down roots for four seconds and softens everything it holds.'],
+    m1: 26, m1Range: 2,
+    pool: ['actuator_sweep', 'tentacle_grab', 'debris_hurl', 'pin_down', 'actuator_guard'], slots: ['actuator_sweep', 'tentacle_grab', 'debris_hurl', 'pin_down', 'actuator_guard'],
+    ultimate: { skill: 'fusion_flare', name: 'Fusion Flare', cost: 38, cd: 27, duration: 1 } },
   carnage: { name: 'Carnage', blurb: 'Cletus Kasady wearing the red one. Venom has a code it mostly keeps. This has none.',
     passives: ['Blades, webbing and Impale all feed him: a fifth to a third of the damage comes back as health.', 'Bare hands hit for 30 with blades on the ends of them.', 'He spins his own webbing: hold E to swing on a red line. Tendril Spear is in his pool.'],
     m1: 30, m1Range: 1.2,
@@ -2064,6 +2077,10 @@ const CHARACTERS = {
   antivenom: { height: 1.16, sig: 0xeef2f6, skin: 0xe8eef4, hair: 0xe8eef4, hairStyle: 'none', top: 0xe8eef4, bottom: 0xdae2ea,
                sleeves: 0xe8eef4, eye: 0xdfe8f4, mask: true, venomEyes: true, fangs: true, streaks: 0x8fa0b0,
                spider: 0x2a3038, shoulders: 0xdae2ea, sandals: 0xdae2ea },
+  // Doc Ock: green coat, bowl cut, round tinted lenses, four actuators.
+  docock:    { height: 1.06, sig: 0x5a8f3a, skin: 0xe8c8a0, hair: 0x6a4a2a, hairStyle: 'bowl', top: 0x3f6a34, bottom: 0x2a3a28,
+               sleeves: 0x3f6a34, eye: 0x4a6a3a, goggles: 0x9aa4b0, lens: 0x1a2a1e, tentacles: 0xa8b2be,
+               belt: 0x3a3a42, collar: 0x2f5028, brow: 0x6a4a2a, browAngle: .3 },
   tophat:    { buckle: 0xf0f0f0, brow: 0x101010, sig: 0xf0f0f0, skin: 0xf0f0f0, hair: 0x101010, hairStyle: 'none',   top: 0x181818, bottom: 0x101010, sleeves: 0xf0f0f0, eye: 0x101010, tophat: true, collar: 0xf0f0f0 },
 };
 CHARACTERS.jogo = CHARACTERS.jogoC; CHARACTERS.hanami = CHARACTERS.hanamiC; CHARACTERS.dagon = CHARACTERS.dagonC;
@@ -2172,6 +2189,39 @@ function buildCharacter(L) {
       const v = new THREE.Mesh(new THREE.BoxGeometry(.03, .18 + (i % 3) * .1, .03), sm);
       v.position.set(Math.sin(a) * .25, h + .1, Math.cos(a) * .21);
       v.rotation.set(0, -a, (i % 2 ? 1 : -1) * (.4 + (i % 3) * .25)); chest.add(v);
+    }
+  }
+  if (L.tentacles) {
+    // The actuators: four segmented arms off the harness, arcing up and out
+    // over his shoulders, each finishing in a three-jaw claw.
+    const metal = toon(L.tentacles), dark = toon(0x3a4048);
+    const rig2 = outlined(new THREE.Mesh(new THREE.BoxGeometry(.5, .3, .22), dark), .05);
+    rig2.position.set(0, .34, -.26); chest.add(rig2);
+    for (let i = 0; i < 4; i++) {
+      const sx = i < 2 ? -1 : 1, k = i % 2;
+      const base = new THREE.Group();
+      base.position.set(sx * (.16 + k * .1), .34 + k * .08, -.3);
+      base.rotation.set(-.5 - k * .3, 0, sx * (.35 + k * .35));
+      chest.add(base);
+      let parent = base;
+      for (let seg = 0; seg < 4; seg++) {         // tapering segments, each bending on
+        const g = new THREE.Group(); g.position.y = seg === 0 ? 0 : .46;
+        g.rotation.x = seg === 0 ? 0 : .34 + k * .06;
+        parent.add(g);
+        const m = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.075 - seg * .009, .38, 4, 8), metal), .07);
+        m.position.y = .25; g.add(m);
+        const joint = new THREE.Mesh(new THREE.SphereGeometry(.085 - seg * .008, 8, 6), dark);
+        joint.position.y = .03; g.add(joint);
+        parent = g;
+      }
+      const eye2 = new THREE.Mesh(new THREE.SphereGeometry(.055, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff3b3b }));
+      eye2.position.set(0, .5, .07); parent.add(eye2);
+      for (let j = 0; j < 3; j++) {               // the claw
+        const jaw2 = outlined(new THREE.Mesh(new THREE.ConeGeometry(.035, .22, 4), metal), .06);
+        const a = (j / 3) * Math.PI * 2;
+        jaw2.position.set(Math.cos(a) * .07, .58, Math.sin(a) * .07);
+        jaw2.rotation.set(Math.sin(a) * .5, 0, -Math.cos(a) * .5); parent.add(jaw2);
+      }
     }
   }
   if (L.tendrils) for (let i = 0; i < 6; i++) {   // live tendrils off the back
@@ -2379,6 +2429,14 @@ function buildCharacter(L) {
     tie.position.set(0, .16, -.24); neck.add(tie);
     const tail = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.09, 1.05, 4, 10), hairMat), .07);
     tail.position.set(0, -.36, -.34); tail.rotation.x = -.34; neck.add(tail);
+  } else if (style === 'bowl') {
+    // A flat bowl cut: one cap and an even fringe the whole way round.
+    skullCap(.03, .66);
+    for (let i = 0; i < 16; i++) {
+      const a = (i / 16) * Math.PI * 2;
+      spike(Math.cos(a) * .175, .04, Math.sin(a) * .16, .16, .06, Math.sin(a) * .25, -Math.cos(a) * .25);
+    }
+    for (let i = 0; i < 7; i++) { const t = (i - 3) / 3; spike(t * .19, .11, .175, .14, .055, 2.9, t * .18); }
   } else if (style === 'crop') {
     skullCap(.025, .6);
     for (let i = 0; i < 6; i++) spike((i - 2.5) * .08, .16, .18, .16, .05, 2.7, (i - 2.5) * .1);
@@ -2407,6 +2465,20 @@ function buildCharacter(L) {
     for (let i = 0; i < 5; i++) spike((i - 2) * .085, .16, .18, .18, .05, 2.6, (i - 2) * .12);
   }
 
+  if (L.goggles) {
+    // Round tinted lenses on a bar across the bridge of the nose.
+    const rimM = toon(L.goggles), lens = new THREE.MeshBasicMaterial({ color: L.lens ?? 0x1a2a1e });
+    for (const sx of [-1, 1]) {
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(.078, .018, 6, 18), rimM);
+      ring.position.set(sx * .105, .03, .218); neck.add(ring);
+      const gl = new THREE.Mesh(new THREE.CircleGeometry(.072, 16), lens);
+      gl.position.set(sx * .105, .03, .219); neck.add(gl);
+      const arm2 = new THREE.Mesh(new THREE.BoxGeometry(.09, .016, .016), rimM);
+      arm2.position.set(sx * .19, .04, .17); arm2.rotation.y = sx * .7; neck.add(arm2);
+    }
+    const bridge = new THREE.Mesh(new THREE.BoxGeometry(.06, .016, .016), rimM);
+    bridge.position.set(0, .03, .222); neck.add(bridge);
+  }
   if (L.tophat) {
     const brim = outlined(new THREE.Mesh(new THREE.CylinderGeometry(.42, .42, .04, 18), toon(0x101010)), .05);
     brim.position.y = .22; neck.add(brim);
