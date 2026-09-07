@@ -754,7 +754,12 @@ const STYLES = {
     pool: ['dismantle_s', 'cleave', 'fuga', 'world_slash', 'incomplete_shrine'], slots: ['dismantle_s', 'cleave', 'fuga', 'world_slash', 'incomplete_shrine'],
     ultimate: { skill: 'malevolent_shrine', name: 'Domain: Malevolent Shrine', cost: 45, cd: 38, duration: 6 } },
   spiderman: { name: 'Spider-Man: Neighborhood', blurb: 'Webs, kicks, Spider-Sense. Control the fight, then punish.',
-    passives: ['Webbed enemies move at 40% speed and take 25% more damage.'],
+    passives: ['Webbed enemies move at 40% speed and take 25% more damage.',
+      'The symbiote rides on him: two black tendrils strike on their own inside seven metres, no input needed.',
+      'It armours him too — it eats 30% of every hit that lands.',
+      'Below 35% health it stops asking. The suit takes over on its own, and G is not needed for it.'],
+    autoLimbs: { count: 2, reach: 7, power: 18, cd: 1.8, color: 0x2a2a34, knock: 4 },
+    symbiote: { absorb: .3, panicAt: .35, panicFor: 20, panicCd: 45 },
     pool: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'healing_factor', 'web_trap'], slots: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'healing_factor'],
     ultimate: { kind: 'transform', into: 'venom', name: 'Symbiote: Venom', cost: 34, cd: 44, duration: 40,
       title: 'WE ARE VENOM', color: 0xf0f0f0,
@@ -4197,6 +4202,33 @@ function warnPlayer(attacker, timeToImpact) {
   timeScale = .35; $('#sense').classList.add('on');
 }
 function closeSense() { if (!player.sense.active) return; player.sense.active = false; timeScale = 1; $('#sense').classList.remove('on'); }
+/** A black shell snaps over him for an instant wherever the hit landed. */
+function symbioteFlare() {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(1.15, 16, 12),
+    new THREE.MeshBasicMaterial({ color: 0x1a1a24, transparent: true, opacity: .8, wireframe: true }));
+  m.position.copy(player.pos).add(new THREE.Vector3(0, 1.2, 0));
+  scene.add(m);
+  effects.push({ kind: 'beam', m, t: 0, life: .22 });
+  for (let i = 0; i < 3; i++) {   // tendrils whipping up around the impact
+    const t = new THREE.Mesh(new THREE.ConeGeometry(.06, 1.1, 5), new THREE.MeshBasicMaterial({ color: 0x2a2a34 }));
+    const a = Math.random() * Math.PI * 2;
+    t.position.copy(player.pos).add(new THREE.Vector3(Math.cos(a) * .5, 1.4, Math.sin(a) * .5));
+    t.rotation.set(Math.random() * .8 - .4, a, Math.random() * .8 - .4);
+    scene.add(t); effects.push({ kind: 'beam', m: t, t: 0, life: .25 });
+  }
+}
+/** Peter to Venom, on the suit's own initiative rather than the player's. */
+function symbioteTakeover(duration) {
+  const u = STYLES.spiderman.ultimate;
+  player.transform = { from: 'spiderman', until: now + duration };
+  applyStyle('venom', false);
+  player.cooldowns = {};
+  hitStop = .3; screenFlash(1); shake = 1.2; camDist = 3.5;
+  center('THE SUIT TAKES OVER', 2000);
+  log('It did not wait to be asked. The symbiote covers him and starts hitting back.', true);
+  burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), 0xf0f0f0, 40);
+  for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() < 12) { e.pos.addScaledVector(to.normalize(), 4); e.status.stun = 1.2; } }
+}
 function hurtPlayer(atk, nature, from) {
   if (player.dead) return;
   if (player.infinity) { floatText(player.pos, 'INFINITY', 'heal'); return; }
@@ -4207,8 +4239,24 @@ function hurtPlayer(atk, nature, from) {
     return; }
   if (player.decoy) { player.decoy = false; if (cloneMesh) { scene.remove(cloneMesh); cloneMesh = null; } floatText(player.pos, 'CLONE!', 'heal'); log('Your Shadow Clone took the hit and vanished!'); return; }
   const eff = effectiveness(nature, player.nature);
-  const dmg = Math.round(atk * eff * (0.9 + Math.random() * .2));
+  const sym = player.style ? STYLES[player.style].symbiote : null;
+  let dmg = Math.round(atk * eff * (0.9 + Math.random() * .2));
+  if (sym) {
+    // The suit takes the hit before he does. It is not a shield with charges —
+    // it is always there, and it always takes its share.
+    const eaten = Math.round(dmg * sym.absorb);
+    if (eaten > 0) {
+      dmg -= eaten;
+      floatText(player.pos.clone().add(new THREE.Vector3(.6, .4, 0)), '-' + eaten, 'heal');
+      symbioteFlare();
+    }
+  }
   player.hp -= dmg; floatText(player.pos, dmg, 'hurt'); shake = .5; screenFlash(.25);
+  // Below the line it stops waiting to be asked.
+  if (sym && player.hp > 0 && player.hp < player.maxHp * sym.panicAt && now >= (player.symbioteCd ?? 0) && !player.transform) {
+    player.symbioteCd = now + sym.panicCd;
+    symbioteTakeover(sym.panicFor);
+  }
   hurtVignette(Math.min(.95, .35 + dmg / player.maxHp * 3));
   sparks(player.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 0xff6b6b, 8, 13);
   hitStop = Math.max(hitStop, .05);
