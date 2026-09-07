@@ -6114,6 +6114,10 @@ function drawPreview(c) {
   preview.scene.add(rig.root);
   preview.r.render(preview.scene, preview.cam);
   preview.scene.remove(rig.root);
+  // The WebGL canvas is alpha:true, so its transparent background does not
+  // overwrite anything. Without this the card keeps every frame it has ever
+  // drawn and the character smears their own colours around behind them.
+  c.ctx.clearRect(0, 0, PREVIEW_W, PREVIEW_H);
   c.ctx.drawImage(preview.r.domElement, 0, 0, PREVIEW_W, PREVIEW_H);
 }
 function previewTick(now) {
