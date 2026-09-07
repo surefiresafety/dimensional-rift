@@ -27,6 +27,9 @@
   .bar.hunger { border-color: #6a3a4a; }
   .bar.hunger i { background: linear-gradient(90deg, #4a0f1c, #c0294a 60%, #ff6b7a); transition: width .25s; }
   .bar.hunger.starving i { background: linear-gradient(90deg, #6a0000, #ff2d3a 60%, #fff0f0); animation: starve .5s infinite alternate; }
+  .bar.bond { border-color: #3f5a6a; }
+  .bar.bond i { background: linear-gradient(90deg, #14303a, #2f8fa8 60%, #8fe0f4); transition: width .25s; }
+  .bar.bond.slipping i { background: linear-gradient(90deg, #6a3400, #ff9a3d 60%, #ffe0b0); animation: starve .5s infinite alternate; }
   @keyframes starve { from { opacity: .55; } to { opacity: 1; } }
   /* The symbiote does not get a voice, so it gets a typeface instead. */
   #sym-talk { margin-top: 6px; width: 300px; font-size: 12px; line-height: 1.35; font-style: italic;
@@ -152,8 +155,6 @@
     linear-gradient(var(--gold), var(--gold)) center/20px 2px no-repeat; opacity: .85; }
   #lock-tag { position: absolute; left: 50%; top: calc(50% + 22px); transform: translateX(-50%); font-size: 10px;
     letter-spacing: .18em; color: var(--gold); text-shadow: 0 1px 3px #000; pointer-events: none; }
-  #auto-tag { position: absolute; left: 50%; top: calc(50% + 38px); transform: translateX(-50%); font-size: 10px;
-    letter-spacing: .18em; color: #ff8a9c; text-shadow: 0 1px 3px #000; pointer-events: none; }
   .float { position: absolute; font-size: 22px; font-weight: 800; text-shadow: 2px 2px 0 #000; transform: translate(-50%, -50%); pointer-events: none; }
   .float.se { color: var(--gold); font-size: 26px; }
   .float.nve { color: #aaa; font-size: 16px; }
@@ -259,7 +260,6 @@
     <div id="speedlines"></div>
     <div id="reticle"></div>
     <div id="lock-tag" hidden>SHIFT LOCK</div>
-    <div id="auto-tag" hidden>AUTO · R</div>
     <div id="lock-hint" hidden>Click to give the mouse back to the game</div>
     <div id="vitals">
       <div class="label"><span>Rift Walker</span><span id="hp-text">500 / 500</span></div>
@@ -271,6 +271,8 @@
         <div class="bar suit"><i id="suit-bar" style="width:100%"></i></div>
         <div class="label"><span>Hunger</span><span id="hunger-text">100%</span></div>
         <div class="bar hunger"><i id="hunger-bar" style="width:100%"></i></div>
+        <div class="label"><span>Bond</span><span id="bond-text">100%</span></div>
+        <div class="bar bond"><i id="bond-bar" style="width:100%"></i></div>
       </div>
       <div id="sym-talk"></div>
     </div>
@@ -323,7 +325,7 @@
         <tr><td>Dodge</td><td>C. When the screen goes purple, Spider-Sense is open: dodge for a Perfect Dodge.</td></tr>
         <tr><td>Loadout</td><td>Tab</td></tr>
         <tr><td>Ultimate</td><td>G (Yuji: Sukuna for a minute · Megumi: summon Mahoraga)</td></tr>
-        <tr><td>Signature (E)</td><td>Spider-Man and the three symbiotes swing · Gojo, Iron Man, Jean and Eleven fly · Naruto charges a Rasengan · Sasuke charges Chidori · Megumi opens his domain · Yuji cuts with Dismantle</td></tr>
+        <tr><td>Signature (E)</td><td>Every symbiote eats (Consume) · the other Spider-Men swing · Gojo, Iron Man, Jean and Eleven fly · Naruto charges a Rasengan · Sasuke charges Chidori · Megumi opens his domain · Yuji cuts with Dismantle</td></tr>
         <tr><td>Select character</td><td>M</td></tr>
         <tr><td>Auto-attack</td><td>R. The symbiotes and every Spider-Man fire their tendrils and webbing on their own. Press again to take it back.</td></tr>
         <tr><td>Shift lock</td><td>Shift. Camera over the shoulder, cursor hidden, and the mouse turns you on its own — nudge it off centre to turn, bring it back to stop. With shift lock off the cursor is yours: hold a button to look around.</td></tr>
@@ -437,6 +439,7 @@ const NATURE = {
   physical: { label: 'Physical', color: 0xe8e8e8 }, cursed: { label: 'Cursed', color: 0xb06cff },
   fire: { label: 'Fire', color: 0xff6b3d }, wind: { label: 'Wind', color: 0x8fe3c9 }, lightning: { label: 'Lightning', color: 0xffe45c },
   earth: { label: 'Earth', color: 0xc9a068 }, water: { label: 'Water', color: 0x5aa9ff },
+  sound: { label: 'Sound', color: 0xff8ae0 },
 };
 function effectiveness(a, d) {
   if (!(a in BEATS) || !(d in BEATS)) return 1;
@@ -766,7 +769,20 @@ const SKILLS = {
   blunt_throw:     { name: 'Thrown Cleaver', origin: 'Nanami', nature: 'physical', cost: 8, cd: 2.6, type: 'projectile', speed: 58, radius: .8, power: 104, pierce: true, color: 0xdfe8f4, onHit: { knock: 16 }, desc: 'He would rather not. It works, so he does.' },
   overtime:        { name: 'Overtime', origin: 'Nanami', nature: 'cursed', cost: 30, cd: 26, type: 'buff', duration: 22, dmgMul: 2.3, speedMul: 1.35, costMul: .5, regen: 8, color: 0xd8b46a, desc: 'Working hours are over. Everything past the clock comes out of a bigger reserve, and he stops being careful with it.' },
 
-  // --- Insomniac Peter, Anti-Venom suit ------------------------------------
+  // --- Iron Spider: no symbiote, four arms he built himself ----------------
+  iron_arms:       { name: 'Iron Arms', origin: 'Iron Spider', nature: 'physical', cost: 7, cd: 1, type: 'melee', range: 8, arc: .5, power: 104, knock: 26, ignoreDef: true, color: 0xffc83d, desc: 'Four titanium arms through the same arc. Armour is not a factor.' },
+  iron_pin:        { name: 'Pin', origin: 'Iron Spider', nature: 'physical', cost: 10, cd: 3.4, type: 'trap', range: 4, radius: 10, power: 96, color: 0xffc83d, onHit: { root: 4, defDown: .35 }, desc: 'All four into the ground around him. Nothing inside moves.' },
+  iron_lance:      { name: 'Lance', origin: 'Iron Spider', nature: 'physical', cost: 9, cd: 2.2, type: 'projectile', speed: 68, radius: .7, power: 102, pierce: true, ignoreDef: true, color: 0xffc83d, desc: 'One arm fired out straight, through a whole line of them.' },
+  instant_kill:    { name: 'Instant Kill', origin: 'Iron Spider', nature: 'physical', cost: 34, cd: 24, type: 'buff', duration: 18, dmgMul: 2.2, speedMul: 1.4, costMul: .5, color: 0xffc83d, desc: 'The mode Peter keeps switched off. He switches it on.' },
+
+  // --- Insomniac Peter: the Advanced Suit and its gadgets -------------------
+  adv_web:         { name: 'Web-Shooters', origin: 'Insomniac', nature: 'physical', cost: 5, cd: 1.4, type: 'projectile', speed: 54, radius: 1, power: 62, color: 0xf0f4ff, onHit: { root: 2.8, defDown: .3 }, desc: 'Standard issue, fired better than anyone else fires it.' },
+  impact_web:      { name: 'Impact Web', origin: 'Insomniac', nature: 'physical', cost: 8, cd: 2.6, type: 'projectile', speed: 46, radius: 1.3, power: 96, aoe: 5, color: 0xdfe8f4, onHit: { root: 4, knock: 26 }, desc: 'A compressed charge that puts whatever it hits into the nearest wall and keeps it there.' },
+  web_bomb:        { name: 'Web Bomb', origin: 'Insomniac', nature: 'physical', cost: 13, cd: 5, type: 'trap', range: 12, radius: 9, power: 118, color: 0xf0f4ff, onHit: { root: 4.5, defDown: .35 }, desc: 'Everything inside nine metres is stuck to everything else.' },
+  spider_arms:     { name: 'Spider-Arms', origin: 'Insomniac', nature: 'physical', cost: 11, cd: 3.2, type: 'melee', range: 7, arc: .45, power: 108, knock: 24, color: 0xd8202e, desc: 'Four arms out of the suit at once, the whole arc in front of him.' },
+  adv_swing_kick:  { name: 'Swing Kick', origin: 'Insomniac', nature: 'physical', cost: 9, cd: 2.4, type: 'dash', range: 19, power: 118, onHit: { knock: 22 }, desc: 'In on the line, both feet first.' },
+
+  // --- The white suit he turns into ----------------------------------------
   av_touch:        { name: 'Anti-Venom Touch', origin: 'Insomniac', nature: 'physical', cost: 7, cd: 1.1, type: 'melee', range: 5.5, arc: .34, power: 92, knock: 18, color: 0xeef2f6, onHit: { leech: .4 }, desc: 'The white suit burns whatever it touches and gives him back most of it.' },
   av_web:          { name: 'Anti-Venom Web', origin: 'Insomniac', nature: 'physical', cost: 6, cd: 1.8, type: 'projectile', speed: 54, radius: 1, power: 66, aoe: 4, color: 0xeef2f6, onHit: { root: 2.8, defDown: .3, leech: .2 }, desc: 'Webbing laced with antibodies. It sticks, and it keeps burning.' },
   av_swing_kick:   { name: 'Swing Kick', origin: 'Insomniac', nature: 'physical', cost: 9, cd: 2.4, type: 'dash', range: 19, power: 118, onHit: { knock: 22, leech: .25 }, desc: 'In on the line, both feet first, and the suit takes a bite on the way past.' },
@@ -807,12 +823,12 @@ const STYLES = {
   spiderman: { name: 'Spider-Man: Neighborhood', blurb: 'Webs, kicks, Spider-Sense. Control the fight, then punish.',
     passives: ['Webbed enemies move at 40% speed and take 25% more damage.',
       'The symbiote rides on him: two black tendrils strike on their own inside seven metres, no input needed.',
-      'It armours him too — it eats 30% of every hit, paid out of its own 260-point health bar. Tear that open and it stops covering him until it mends.', 'It gets hungry, and it tells you so. Let the hunger bar hit zero and it takes the body and feeds itself.',
+      'It armours him too — it eats 30% of every hit, paid out of its own 260-point health bar. Tear that open and it stops covering him until it mends.', 'It gets hungry, and it tells you so. Let the hunger bar hit zero and it takes the body and feeds itself.', 'Fire and sound strip the Bond bar — noise twice as fast as flame. Empty it and the suit comes off you: stand on it and hold F to get it back, or walk away and keep the Iron Spider arms instead.',
       'Under 100 health it stops asking: the suit covers him on its own, and stays until you press G.'],
     autoLimbs: { count: 100, reach: 9, power: 6, cd: 2.5, color: 0x2a2a34, knock: 1 },
     autoWeb: { skill: 'web_shooters', cd: 1.6, range: 26 },
-    symbiote: { absorb: .3, panicUnder: 100, panicFor: 20, panicCd: 45, suit: 260, regen: 9, regenAfter: 5, hunger: { drain: 1.5 } },
-    pool: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'healing_factor', 'web_trap'], slots: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'healing_factor'],
+    symbiote: { absorb: .3, panicUnder: 100, panicFor: 20, panicCd: 45, suit: 260, regen: 9, regenAfter: 5, hunger: { drain: .5 } },
+    pool: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'healing_factor', 'web_trap', 'symbiote_feed'], slots: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'healing_factor'],
     ultimate: { kind: 'transform', into: 'venom', name: 'Symbiote: Venom', cost: 34, cd: .5, toggle: true,
       title: 'WE ARE VENOM', color: 0xf0f0f0,
       log: 'The suit crawls up over him and takes the mouth off the mask. It stays on until you press G again.' } },
@@ -847,23 +863,30 @@ const STYLES = {
     m1: 30, m1Range: 1.2,
     autoLimbs: { count: 4, reach: 8.5, power: 22, cd: 1.3, color: 0xd4142a, knock: 5, onHit: { leech: .2 } },
     autoWeb: { skill: 'red_web', cd: 1.8, range: 26 },
-    pool: ['carnage_blades', 'impale', 'red_web', 'carnage_swarm', 'blood_frenzy', 'tendril_spear'], slots: ['carnage_blades', 'impale', 'red_web', 'carnage_swarm', 'blood_frenzy'],
+    pool: ['carnage_blades', 'impale', 'red_web', 'carnage_swarm', 'blood_frenzy', 'tendril_spear', 'symbiote_feed'], slots: ['carnage_blades', 'impale', 'red_web', 'carnage_swarm', 'blood_frenzy'],
     ultimate: { skill: 'maximum_carnage', name: 'MAXIMUM CARNAGE', cost: 38, cd: 28, duration: 1 } },
   antivenom: { name: 'Anti-Venom', blurb: 'The white one. It cures what it touches, and being cured by it is not pleasant.',
+    symbiote: { absorb: .4, suit: 380, regen: 13, regenAfter: 4, hunger: { drain: .55 } },
     passives: ['Almost everything he does heals him: Cleansing Touch alone gives back 45% of its damage.', 'Three tendrils fight on their own inside eight metres, and a third of what they deal comes back as health.', 'Antibody Shell eats four hits and burns whoever threw them.', 'White Lash is his webbing, and he swings on a white line with E.'],
     m1: 28, m1Range: 1.1,
     autoLimbs: { count: 3, reach: 8, power: 20, cd: 1.5, color: 0xeef2f6, knock: 4, onHit: { leech: .35 } },
     autoWeb: { skill: 'white_lash', cd: 2, range: 26 },
-    pool: ['cleansing_touch', 'white_lash', 'antibody_burst', 'antibody_shell', 'purify'], slots: ['cleansing_touch', 'white_lash', 'antibody_burst', 'antibody_shell', 'purify'],
+    pool: ['cleansing_touch', 'white_lash', 'antibody_burst', 'antibody_shell', 'purify', 'symbiote_feed'], slots: ['cleansing_touch', 'white_lash', 'antibody_burst', 'antibody_shell', 'purify'],
     ultimate: { skill: 'total_cure', name: 'TOTAL CURE', cost: 38, cd: 26, duration: 1 } },
-  insomniac: { name: 'Spider-Man: Anti-Venom Suit', blurb: 'The Insomniac Peter, wearing the white one. Everything he does burns the thing it touches and heals the thing wearing it.',
-    passives: ['Nearly everything he does feeds him: Anti-Venom Touch alone returns 40% of its damage, Purge and the ultimate 40-50%.', 'Three white tendrils strike on their own, and R hands the webbing over to the suit as well.', 'Antibody Shell eats four hits and sends them back.'],
-    m1: 26, m1Range: .8,
-    autoLimbs: { count: 3, reach: 8, power: 20, cd: 1.5, color: 0xeef2f6, knock: 4, onHit: { leech: .3 } },
-    autoWeb: { skill: 'av_web', cd: 1.9, range: 26 },
-    symbiote: { absorb: .35, suit: 320, regen: 12, regenAfter: 4, hunger: { drain: 1.1 } },
-    pool: ['av_touch', 'av_web', 'av_swing_kick', 'av_purge', 'av_shell'], slots: ['av_touch', 'av_web', 'av_swing_kick', 'av_purge', 'av_shell'],
-    ultimate: { skill: 'av_cure', name: 'THE CURE', cost: 36, cd: 26, duration: 1 } },
+  ironspider: { name: 'Iron Spider', blurb: 'No symbiote. Four titanium arms Peter built himself, and they do not get hungry.',
+    passives: ['Four arms fight on their own inside nine metres, and they ignore hardened defence.', 'Nothing here can be burned off you or shouted off you.', 'This is what you keep if you let the symbiote go.'],
+    m1: 28, m1Range: 1.6,
+    autoLimbs: { count: 4, reach: 9, power: 24, cd: 1.4, color: 0xffc83d, claw: true, knock: 6, onHit: { ignoreDef: true } },
+    autoWeb: { skill: 'iron_lance', cd: 2.4, range: 28 },
+    pool: ['iron_arms', 'iron_lance', 'iron_pin', 'adv_web', 'adv_swing_kick'], slots: ['iron_arms', 'iron_lance', 'iron_pin', 'adv_web', 'adv_swing_kick'],
+    ultimate: { skill: 'instant_kill', name: 'Instant Kill', cost: 34, cd: 24, duration: 18 } },
+  insomniac: { name: 'Spider-Man: Advanced Suit', blurb: 'The Insomniac Peter. Gadgets, web tricks and four arms out of the back of the suit — and G puts the white one on.',
+    passives: ['Everything he throws sticks: three to four and a half seconds of root on the webbing, and softer targets afterwards.', 'Spider-Arms takes a seven-metre arc.', 'G is WE ARE ANTI-VENOM. It stays on until you press G again.'],
+    autoWeb: { skill: 'adv_web', cd: 1.6, range: 26 },
+    pool: ['adv_web', 'impact_web', 'spider_arms', 'web_bomb', 'adv_swing_kick'], slots: ['adv_web', 'impact_web', 'spider_arms', 'web_bomb', 'adv_swing_kick'],
+    ultimate: { kind: 'transform', into: 'antivenom', name: 'WE ARE ANTI-VENOM', cost: 34, cd: .5, toggle: true,
+      title: 'WE ARE ANTI-VENOM', color: 0xffffff,
+      log: 'The white one closes over the suit. It stays on until you press G again.' } },
   miles: { name: 'Miles Morales', blurb: 'Brooklyn. Same webs, plus a body that stores charge and a knack for not being seen.',
     passives: ['Almost everything he throws paralyses: 2.5 to 5 seconds depending on what it was.', 'Camouflage makes him untouchable for four seconds and faster while it lasts.', 'Hold E to swing on his own line, and R hands the webbing to the suit.'],
     autoWeb: { skill: 'miles_web', cd: 1.7, range: 26 },
@@ -875,7 +898,7 @@ const STYLES = {
     autoLimbs: { count: 100, reach: 10, power: 8, cd: 2.5, color: 0x2a2a34, knock: 1 },
     autoWeb: { skill: 'black_web', cd: 1.8, range: 28 },
     // Fully worn rather than carried, so it soaks more and mends faster.
-    symbiote: { absorb: .45, suit: 420, regen: 14, regenAfter: 4, hunger: { drain: 2.4 } },
+    symbiote: { absorb: .45, suit: 420, regen: 14, regenAfter: 4, hunger: { drain: .8 } },
     pool: ['symbiote_lash', 'venom_pounce', 'black_web', 'tendril_slam', 'symbiote_feed'], slots: ['symbiote_lash', 'venom_pounce', 'black_web', 'tendril_slam', 'symbiote_feed'],
     ultimate: { skill: 'we_are_venom', name: 'WE ARE VENOM', cost: 34, cd: 24, duration: 1 } },
   yuji: { name: 'Yuji: The Vessel', blurb: 'Fists, Black Flash, blood. G lets Sukuna out; die once and he takes the wheel.',
@@ -2390,13 +2413,18 @@ const CHARACTERS = {
                necktie: 0xc89a4a, tieSpots: true, buckle: 0x8a7a5a, brow: 0xd8c07a, browAngle: .2 },
   // Insomniac Peter in the Anti-Venom suit: white with the black spider and the
   // grey veining bleeding through it.
-  insomniac: { height: 1.06, sig: 0xeef2f6, skin: 0xe8eef4, hair: 0xe8eef4, hairStyle: 'none', top: 0xe8eef4, bottom: 0xdfe6ee,
-               sleeves: 0xe8eef4, eye: 0xffffff, mask: true, webs: true, spider: 0x2a3038, streaks: 0x9aa8b8,
-               shoulders: 0xdfe6ee, sandals: 0xdae2ea },
+  // Insomniac Peter in the Advanced Suit: red and blue with the big white spider.
+  insomniac: { height: 1.04, sig: 0xd8202e, skin: 0xc8202c, hair: 0xc8202c, hairStyle: 'none', top: 0xc8202c, bottom: 0x1a2f7a,
+               sleeves: 0xc8202c, eye: 0xf4f8ff, mask: true, webs: true, spider: 0xf0f4ff, shoulders: 0x1a2f7a,
+               belt: 0x1a2f7a, sandals: 0x1a2f7a },
   // Miles: black suit, red spider and red-soled boots, hood down.
   miles:     { sig: 0xff2d3a, skin: 0x14141a, hair: 0x14141a, hairStyle: 'none', top: 0x14141a, bottom: 0x14141a,
                sleeves: 0x14141a, eye: 0xffffff, mask: true, webs: true, spider: 0xd8202e, sandals: 0xd8202e,
                shoulders: 0x1c1c24 },
+  // Iron Spider: red and gold, four mechanical arms of Peter's own making.
+  ironspider:{ height: 1.05, sig: 0xffc83d, skin: 0xb01824, hair: 0xb01824, hairStyle: 'none', top: 0xb01824, bottom: 0x8a1018,
+               sleeves: 0xb01824, eye: 0x1a1a22, mask: true, spider: 0xffc83d, tentacles: 0xd8a83a,
+               shoulders: 0xffc83d, belt: 0xffc83d },
   tophat:    { buckle: 0xf0f0f0, brow: 0x101010, sig: 0xf0f0f0, skin: 0xf0f0f0, hair: 0x101010, hairStyle: 'none',   top: 0x181818, bottom: 0x101010, sleeves: 0xf0f0f0, eye: 0x101010, tophat: true, collar: 0xf0f0f0 },
 };
 CHARACTERS.jogo = CHARACTERS.jogoC; CHARACTERS.hanami = CHARACTERS.hanamiC; CHARACTERS.dagon = CHARACTERS.dagonC;
@@ -2978,7 +3006,7 @@ function playAnim(kind, dur = .38) { animState = { kind, t: 0, dur, k: 0 }; }
 scene.add(body);
 // Who can swing, and what colour their line comes out. The symbiotes make their
 // own webbing rather than carrying Peter's shooters, so each has its own.
-const WEB_SLINGERS = { spiderman: 0xffffff, venom: 0x2a2a34, carnage: 0xd4142a, antivenom: 0xeef2f6, insomniac: 0xeef2f6, miles: 0xdfe8f4 };
+const WEB_SLINGERS = { spiderman: 0xffffff, venom: 0x2a2a34, carnage: 0xd4142a, antivenom: 0xeef2f6, insomniac: 0xf0f4ff, miles: 0xdfe8f4, ironspider: 0xffc83d };
 const webLine = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0xffffff }));
 webLine.visible = false; webLine.frustumCulled = false; scene.add(webLine);
 let cloneMesh = null, shieldMesh = null, auraMesh = null;
@@ -3052,7 +3080,7 @@ function findAnchor() {
 // E is a signature action, not a universal one. Only Spider-Man carries
 // web-shooters; the fliers take off; Naruto winds up a Rasengan; Sukuna's
 // technique leaks out of Yuji.
-const E_ACTION = { spiderman: 'swing', venom: 'swing', carnage: 'swing', antivenom: 'swing', insomniac: 'swing', miles: 'swing', ironman: 'fly', jean: 'fly', eleven: 'fly', gojo: 'fly', naruto: 'rasengan', sasuke: 'chidori', yuji: 'dismantle', megumi: 'garden' };
+const E_ACTION = { spiderman: 'consume', venom: 'consume', carnage: 'consume', antivenom: 'consume', insomniac: 'swing', miles: 'swing', ironspider: 'swing', ironman: 'fly', jean: 'fly', eleven: 'fly', gojo: 'fly', naruto: 'rasengan', sasuke: 'chidori', yuji: 'dismantle', megumi: 'garden' };
 const eActionOf = () => E_ACTION[player.style] ?? null;
 function startEAction() {
   const a = eActionOf();
@@ -3062,6 +3090,7 @@ function startEAction() {
   else if (a === 'chidori') startChidori();
   else if (a === 'dismantle') castSkill('dismantle_s', {});
   else if (a === 'garden') castSkill('chimera_garden', {});
+  else if (a === 'consume') castSkill('symbiote_feed', {});   // the sixth move: eat
   else log('No web-shooters. Only Spider-Man swings.');
 }
 function endEAction() {
@@ -3959,9 +3988,13 @@ function enemyTakeHit(e, power, nature, from, onHit = {}) {
   if (e.dead) return;
   const eff = effectiveness(nature, e.t.nature);
   const buffMul = player.buff && now < player.buff.until ? player.buff.dmgMul : 1;
+  // A starving symbiote is a worse one to be hit by. Full is normal, empty is
+  // half again, and it ramps the whole way down rather than at a threshold.
+  const hungerMul = (player.style && STYLES[player.style]?.symbiote?.hunger)
+    ? 1 + .5 * (1 - Math.max(0, Math.min(100, player.hunger ?? 100)) / 100) : 1;
   // Armour is a flat cut off everything except techniques that ignore defence.
   const armour = onHit.ignoreDef ? 1 : 1 - (e.t.armor ?? 0);
-  const dmg = Math.round(power * eff * (onHit.ignoreDef ? 1 : e.defMul) * armour * buffMul * (0.9 + Math.random() * .2));
+  const dmg = Math.round(power * eff * (onHit.ignoreDef ? 1 : e.defMul) * armour * buffMul * hungerMul * (0.9 + Math.random() * .2));
   // Who owns this health? Mine to subtract unless it belongs to another machine.
   let mine = true;
   if (!onHit.fromNet && typeof netInterceptHit === 'function' && netInterceptHit(e, dmg, nature)) mine = false;
@@ -4426,6 +4459,7 @@ function hurtPlayer(atk, nature, from) {
     }
   }
   player.hp -= dmg; floatText(player.pos, dmg, 'hurt'); shake = .5; screenFlash(.25);
+  bondDamage(nature, dmg);
   // Below the line it stops waiting to be asked.
   // An absolute floor, not a fraction: under a hundred left, it covers him.
   if (sym && player.hp > 0 && player.hp < sym.panicUnder && now >= (player.symbioteCd ?? 0) && !player.transform) {
@@ -5183,9 +5217,12 @@ function webOf(style) { return style ? STYLES[style]?.autoWeb ?? null : null; }
 /** R hands the fight to the suit: tendrils and webbing both fire on their own. */
 function toggleAuto() {
   player.autoAttack = !player.autoAttack;
-  const tag = $('#auto-tag');
-  if (tag) tag.hidden = !player.autoAttack;
-  center(player.autoAttack ? 'AUTO ON' : 'AUTO OFF', 900);
+  // Turning it on also hands over the swinging, if this one can swing at all.
+  if (player.autoAttack && WEB_SLINGERS[player.style]) {
+    player.autoSwing = { until: now + 60, next: 0 };
+    symSay('Sit back. We have this.');
+  } else player.autoSwing = null;
+  center(player.autoAttack ? 'AUTO ON · 60s' : 'AUTO OFF', 900);
   log(player.autoAttack
     ? 'The suit is off the leash: every tendril and every web fires on its own. R to take it back.'
     : 'Back on the leash. Nothing fires unless you fire it.', true);
@@ -5228,6 +5265,60 @@ function symSay(text, loud = false) {
   while (box.children.length > 3) box.removeChild(box.firstChild);
   setTimeout(() => d.remove(), 6000);
 }
+// The two things a symbiote cannot take. Fire and sound do not just hurt: they
+// break the bond, and enough of either peels it off you entirely.
+const BOND_MAX = 100;
+function bondDamage(nature, dmg) {
+  const sym = player.style ? STYLES[player.style].symbiote : null;
+  if (!sym || player.dead) return;
+  const mul = nature === 'sound' ? 1.6 : nature === 'fire' ? 1.1 : 0;
+  if (!mul) return;
+  player.bond = Math.max(0, (player.bond ?? BOND_MAX) - dmg * mul * .5);
+  if (player.bond > 0 && player.bond < 35 && !player.bondWarned) {
+    player.bondWarned = true;
+    symSay(nature === 'sound' ? 'The noise — stop the NOISE —' : 'It burns, it BURNS —', true);
+  }
+  if (player.bond <= 0) detachSymbiote(nature === 'sound' ? 'the noise' : 'the fire');
+}
+/** It comes off. You have a minute to get it back, or you never do. */
+function detachSymbiote(cause) {
+  if (player.looseSuit) return;
+  const host = player.transform?.toggle ? player.transform.from : player.style;
+  if (player.transform?.toggle) revertTransform();
+  player.bond = 0; player.hunger = 100; player.feeding = false;
+  player.looseSuit = { until: now + 60, host, pos: player.pos.clone().add(new THREE.Vector3(2.5, 0, 2.5)) };
+  const m = new THREE.Mesh(new THREE.SphereGeometry(.55, 14, 10),
+    new THREE.MeshBasicMaterial({ color: 0x1a1a24 }));
+  m.position.copy(player.looseSuit.pos); m.position.y = .55;
+  scene.add(m); player.looseSuit.mesh = m;
+  symSay('NO — no, no, we need you —', true);
+  center('THE SYMBIOTE IS OFF', 2200); screenFlash(.9); shake = 1.4;
+  log(`${cause[0].toUpperCase() + cause.slice(1)} tore it off you. It is on the ground: walk into it and press F to put it back on, or leave it and it finds someone else.`, true);
+  burst(player.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), 0x1a1a24, 34);
+}
+function updateLooseSuit(dt) {
+  const L = player.looseSuit;
+  if (!L) return;
+  L.mesh.position.y = .5 + Math.sin(now * 3) * .12;
+  L.mesh.scale.setScalar(1 + Math.sin(now * 7) * .07);
+  const near = L.pos.distanceTo(player.pos) < 3.2;
+  if (near && keys.has('KeyF')) {
+    scene.remove(L.mesh); player.looseSuit = null;
+    player.bond = BOND_MAX; player.bondWarned = false; player.suitHp = null;
+    applyStyle(L.host, false);
+    symSay('...thank you.');
+    center('BONDED AGAIN', 1400); log('It climbs back on. The bond is whole.', true);
+    return;
+  }
+  if (now > L.until) {
+    scene.remove(L.mesh); player.looseSuit = null;
+    // You let it go. What is left is the hardware Peter built for himself.
+    player.ironSpider = true;
+    applyStyle('ironspider', false);
+    center('IRON SPIDER', 2000); screenFlash(.7);
+    log('It gave up on you and crawled away. What you have left is four arms of your own making.', true);
+  }
+}
 /** The suit mends itself once it has been left alone for a few seconds. */
 function updateSuit(dt) {
   const sym = player.style ? STYLES[player.style].symbiote : null;
@@ -5254,7 +5345,9 @@ function updateSuit(dt) {
     player.symChat = (player.symChat ?? 14) - dt;
     if (player.symChat <= 0) { player.symChat = 16 + Math.random() * 14; if (player.hunger > 40) symSay(pick(SYM_IDLE)); }
     // Nothing left: it stops asking and drives.
-    if (player.hunger <= 0 && !player.feeding) {
+    if (player.hunger <= 0 && !player.looseSuit) player.bond = Math.max(0, (player.bond ?? BOND_MAX) - 6 * dt);
+    if (player.bond <= 0 && !player.looseSuit) detachSymbiote('the hunger');
+    if (player.hunger <= 0 && !player.feeding && !player.looseSuit) {
       player.feeding = true;
       symSay(SYM_LINES[0][0], true);
       center('IT TAKES OVER', 1800); screenFlash(.8); shake = 1.1;
@@ -5282,6 +5375,16 @@ function updateSuit(dt) {
   }
   if (row) {
     row.hidden = false;
+    // Bond: how well it is holding on. Fire and noise strip it; leaving it
+    // alone rebuilds it, slowly, the way trust actually works.
+    const b = Math.max(0, Math.min(100, player.bond ?? BOND_MAX));
+    $('#bond-bar').style.width = `${b}%`;
+    $('#bond-text').textContent = `${Math.round(b)}%`;
+    $('#bond-bar').parentElement.classList.toggle('slipping', b < 40);
+    if (!player.dead && b > 0 && b < BOND_MAX && now - (player.suitHurtAt ?? -99) > 4) {
+      player.bond = Math.min(BOND_MAX, b + 3.5 * dt);
+      if (player.bond > 45) player.bondWarned = false;
+    }
     if (hcfg) {
       const h = Math.max(0, Math.min(100, player.hunger ?? 100));
       $('#hunger-bar').style.width = `${h}%`;
@@ -5295,6 +5398,29 @@ function updateSuit(dt) {
   }
 }
 /** The webbing half of it: the suit picks a target and fires the web itself. */
+/** Hand the swinging to the suit. It picks its own anchors and its own moment
+ *  to let go, for a minute, and then gives the controls back. */
+function updateAutoSwing(dt) {
+  const A = player.autoSwing;
+  if (!A) return;
+  if (now > A.until || player.dead) {
+    player.autoSwing = null; releaseSwing(false);
+    log('The suit hands the swinging back to you.', true); symSay('Your turn.');
+    return;
+  }
+  if (player.swinging) {
+    // Let go at the bottom of the arc, when it is throwing you forward and up.
+    const rising = player.vel.y > 1.5, far = now - player.swingStart > 1.6;
+    if (rising || far) releaseSwing(true);
+    return;
+  }
+  A.next = (A.next ?? 0) - dt;
+  if (A.next > 0) return;
+  A.next = .25;
+  if (!startSwing()) {                    // nothing to catch: keep the height up
+    if (player.vel.y < 2 && !player.onGround) player.vel.y += 9 * dt * 6;
+  }
+}
 function updateAutoWeb(dt) {
   const w = player.autoAttack ? webOf(player.style) : null;
   if (!w || player.dead) return;
@@ -5343,7 +5469,14 @@ function updateAutoLimbs(dt) {
     if (budget-- <= 0) { player.limbCd[i] = .05; continue; }   // wait a frame, do not skip
     player.limbCd[i] = cfg.cd * (.85 + Math.random() * .3);
     const at = best.pos.clone().add(new THREE.Vector3(0, (best.height ?? 2) * .5, 0));
-    const from = origin.clone().add(new THREE.Vector3(Math.cos(i * 1.9) * .45, Math.sin(i * 2.3) * .25, Math.sin(i * 1.9) * .3));
+    // Out of the shoulders and behind him. These are not his arms and should
+    // never read as him throwing a punch.
+    const back = new THREE.Vector3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw));
+    const side = new THREE.Vector3(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
+    const from = origin.clone()
+      .addScaledVector(back, .35)
+      .addScaledVector(side, Math.sin(i * 2.7) * .5)
+      .add(new THREE.Vector3(0, .3 + Math.cos(i * 1.7) * .2, 0));
     spawnLash(from, at, cfg, i);
     enemyTakeHit(best, cfg.power, cfg.nature ?? 'physical', player.pos, { knock: cfg.knock ?? 4, ...(cfg.onHit ?? {}) });
     sfx.hit?.();
@@ -5631,7 +5764,6 @@ function applyStyle(id, announce = true) {
   // transform keeps the condition carrySuit just worked out for it.
   if (!suitCarried) { player.suitHp = null; player.suitBroken = false; player.suitHurtAt = -99; }
   player.autoAttack ??= true;
-  const at = $('#auto-tag'); if (at) at.hidden = !(player.autoAttack && (STYLES[id]?.autoLimbs || STYLES[id]?.autoWeb));
   suitCarried = false;
   const st = STYLES[id]; player.style = id;
   for (const sk of st.pool) if (!player.learned.includes(sk)) player.learned.push(sk);
@@ -5903,7 +6035,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyR' && !e.repeat) {
     const a = arsenalOf(player.style);
     if (a && a.key === 'r') { const w = cycleWeapon(); renderSlots(); center(w.name.toUpperCase(), 1000); log(`Switched to ${w.name}. ${w.note}`, true); }
-    else if (limbOf(player.style) || webOf(player.style)) toggleAuto();
+    else if (limbOf(player.style) || webOf(player.style) || STYLES[player.style]?.autoLimbs) toggleAuto();
     else log('Nothing to swap on R for this character.');
   }
 });
@@ -5977,8 +6109,10 @@ function frame(t) {
   updateEnemies(worldDt);
   updateProjectiles(worldDt);
   updateSuit(playerDt);
+  updateLooseSuit(playerDt);
   updateAutoLimbs(worldDt);
   updateAutoWeb(worldDt);
+  updateAutoSwing(playerDt);
   updateFreeLook(playerDt);
   updateEnemyProjectiles(worldDt);
   updateFxLights(real);
@@ -6609,6 +6743,8 @@ $('#retry').onclick = () => {
   enemies.length = 0; wave = 0; player.hp = player.maxHp; player.se = player.maxSe; player.dead = false; player.pos.copy(MAPS[currentMap].spawn); player.vel.set(0, 0, 0);
   player.suitHp = null; player.suitBroken = false; player.suitHurtAt = -99;
   player.hunger = 100; player.feeding = false; player.symChat = 14;
+  player.bond = BOND_MAX; player.bondWarned = false;
+  if (player.looseSuit) { scene.remove(player.looseSuit.mesh); player.looseSuit = null; }
   player.sukunaUsed = false; player.flashRamp = 0; player.transform = null; player.ultCd = 0; player.output = null; player.charging = null; player.freezeUntil = 0; player.shieldReflect = 0; player.infinity = false; history.length = 0; if (chargeAura) { scene.remove(chargeAura); chargeAura = null; } if (avatarMesh) { scene.remove(avatarMesh); avatarMesh = null; }
   for (const p of eprojectiles) scene.remove(p.m); eprojectiles.length = 0;
   for (const d of debris) scene.remove(d.m); debris.length = 0;
