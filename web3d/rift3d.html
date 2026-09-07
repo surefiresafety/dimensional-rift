@@ -757,9 +757,9 @@ const STYLES = {
     passives: ['Webbed enemies move at 40% speed and take 25% more damage.',
       'The symbiote rides on him: two black tendrils strike on their own inside seven metres, no input needed.',
       'It armours him too — it eats 30% of every hit that lands.',
-      'Below 35% health it stops asking. The suit takes over on its own, and G is not needed for it.'],
+      'Under 100 health it stops asking. The suit takes over on its own for twenty seconds, and G is not needed for it.'],
     autoLimbs: { count: 2, reach: 7, power: 18, cd: 1.8, color: 0x2a2a34, knock: 4 },
-    symbiote: { absorb: .3, panicAt: .35, panicFor: 20, panicCd: 45 },
+    symbiote: { absorb: .3, panicUnder: 100, panicFor: 20, panicCd: 45 },
     pool: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'healing_factor', 'web_trap'], slots: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'healing_factor'],
     ultimate: { kind: 'transform', into: 'venom', name: 'Symbiote: Venom', cost: 34, cd: 44, duration: 40,
       title: 'WE ARE VENOM', color: 0xf0f0f0,
@@ -4253,7 +4253,8 @@ function hurtPlayer(atk, nature, from) {
   }
   player.hp -= dmg; floatText(player.pos, dmg, 'hurt'); shake = .5; screenFlash(.25);
   // Below the line it stops waiting to be asked.
-  if (sym && player.hp > 0 && player.hp < player.maxHp * sym.panicAt && now >= (player.symbioteCd ?? 0) && !player.transform) {
+  // An absolute floor, not a fraction: under a hundred left, it covers him.
+  if (sym && player.hp > 0 && player.hp < sym.panicUnder && now >= (player.symbioteCd ?? 0) && !player.transform) {
     player.symbioteCd = now + sym.panicCd;
     symbioteTakeover(sym.panicFor);
   }
