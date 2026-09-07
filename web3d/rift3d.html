@@ -3777,6 +3777,80 @@ const ENEMY_LOOKS = {
   kyoto_student:{ skin: 0xefd0b0, hair: 0x2a1e18, hairStyle: 'swept', top: 0x1e3a2a, bottom: 0x162a20, sleeves: 0x1e3a2a, eye: 0x6a8f5a, uniform: 0x16301f, cuff: 0x16301f, buckle: 0xc8a44a },
 };
 
+// =============================================================================
+// Bosses
+//
+// Everyone you can be, you can also fight, and everything you fight has a
+// bigger version of itself. Both sets are generated rather than written out:
+// a character boss is that character's own look and their own techniques
+// pointed back at you, and an alpha is an ordinary curse grown into a special
+// grade. Sixty-odd entries by hand would drift out of step with the roster the
+// first time anything was rebalanced.
+// =============================================================================
+const BOSS_IDS = [], ALPHA_IDS = [];
+(function buildBosses() {
+  const shortName = (full) => full.split(':')[0].replace(/\s*\(.*\)$/, '').trim();
+
+  for (const [id, st] of Object.entries(STYLES)) {
+    const look = CHARACTERS[id] ?? CHARACTERS.default;
+    const kit = (st.slots ?? []).map((k) => SKILLS[k]).filter(Boolean);
+    // Take the character's own numbers: the heaviest thing they have decides how
+    // hard the boss hits, and their longest-range technique becomes its shot.
+    const heaviest = kit.reduce((a, b) => ((b.power ?? 0) > (a?.power ?? 0) ? b : a), null);
+    const shot = kit.find((k) => k.type === 'projectile') ?? kit.find((k) => k.type === 'beam');
+    const nature = heaviest?.nature ?? 'physical';
+    const bid = 'boss_' + id;
+    ENEMIES[bid] = {
+      name: shortName(st.name), grade: 'special', nature,
+      hp: Math.round(900 + (heaviest?.power ?? 80) * 2.6),
+      atk: Math.round(26 + (heaviest?.power ?? 80) * .12),
+      speed: st.autoLimbs ? 7.4 : 6.2, size: 1.35, boss: true, shape: 'human',
+      drops: st.slots?.[0] ?? 'web_shooters',
+      armor: .16, enrage: { at: .4, speed: 1.3, dmg: 1.4 },
+      ranged: shot ? {
+        power: Math.round((shot.power ?? 70) * .28), speed: shot.speed ?? 40, cd: 3.2, min: 9,
+        color: shot.color ?? look.sig ?? 0xffffff, arc: !!shot.arc, burst: shot.pierce ? 2 : 1, spread: .1,
+      } : undefined,
+      // The ones that fight with limbs keep fighting with them.
+      charge: st.autoLimbs ? { power: 46, speed: 28, cd: 7, time: .7, tell: .5, range: 26 } : undefined,
+      summon: st.ultimate?.kind === 'mahoraga' ? { of: 'grade4', every: 12, count: 2, max: 6 } : undefined,
+    };
+    ENEMY_LOOKS[bid] = look;               // it looks exactly like the character
+    BOSS_IDS.push(bid);
+  }
+
+  // Alphas: an ordinary curse that kept eating.
+  for (const [id, t] of Object.entries(ENEMIES)) {
+    if (t.boss || id.startsWith('boss_')) continue;
+    const aid = id + '_alpha';
+    ENEMIES[aid] = {
+      ...t, name: 'Alpha ' + t.name, grade: 'special', boss: true,
+      hp: Math.round(t.hp * 3.4), atk: Math.round(t.atk * 1.75), size: t.size * 1.35,
+      speed: t.speed * 1.05,
+      armor: Math.min(.4, (t.armor ?? 0) + .18),
+      enrage: { at: .4, speed: 1.35, dmg: 1.45 },
+      ranged: t.ranged ? { ...t.ranged, power: Math.round(t.ranged.power * 1.6), cd: t.ranged.cd * .8, burst: (t.ranged.burst ?? 1) + 1, spread: t.ranged.spread ?? .12 } : undefined,
+      charge: t.charge ? { ...t.charge, power: Math.round(t.charge.power * 1.5) } : undefined,
+      summon: t.summon ? { ...t.summon, count: (t.summon.count ?? 2) + 1, max: (t.summon.max ?? 6) + 3 } : { of: id, every: 14, count: 2, max: 4 },
+    };
+    if (ENEMY_LOOKS[id]) ENEMY_LOOKS[aid] = ENEMY_LOOKS[id];
+    ALPHA_IDS.push(aid);
+  }
+
+  // Give every world a boss ladder on the end of its waves: its own alphas
+  // first, then characters, so the last thing standing is always someone you
+  // could have played as.
+  let cursor = 0;
+  for (const id of MAP_IDS) {
+    const M = MAPS[id]; if (!M?.waves) continue;
+    const own = [...new Set(M.waves.flat())].filter((k) => ENEMIES[k + '_alpha']);
+    M.waves.push([own[0] + '_alpha', own[1] ?? own[0]]);
+    M.waves.push([BOSS_IDS[cursor++ % BOSS_IDS.length], own[0]]);
+    M.waves.push([BOSS_IDS[cursor++ % BOSS_IDS.length], BOSS_IDS[cursor++ % BOSS_IDS.length]]);
+    M.bossLadder = true;
+  }
+})();
+
 // ---- Creature builders ------------------------------------------------------
 // Every enemy hangs off a `vis` group so the hit-flash and the idle float can
 // move the body without ever touching the group that IS the enemy's position.
