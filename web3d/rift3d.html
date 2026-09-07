@@ -7,6 +7,11 @@
   html, body { margin: 0; height: 100%; background: var(--ink); color: var(--text); font-family: Rubik, "Segoe UI", system-ui, sans-serif; overflow: hidden; }
   #app { position: fixed; inset: 0; }
   canvas { display: block; width: 100%; height: 100%; }
+  /* Shift lock is a mouselook mode. The pointer has no business being visible in
+     it, whether or not the browser granted pointer lock. */
+  canvas.nocursor { cursor: none; }
+  #lock-hint { position: absolute; left: 50%; top: 58%; transform: translateX(-50%); font-size: 13px;
+    padding: 6px 16px; border: 1px solid var(--gold); border-radius: 18px; background: rgba(0,0,0,.6); color: var(--gold); }
   .display { font-family: Bangers, Impact, "Arial Black", sans-serif; letter-spacing: .04em; }
 
   /* HUD */
@@ -180,9 +185,13 @@
   #dead { background: rgba(6,4,10,.82); }
   #dead.grey { backdrop-filter: grayscale(1) contrast(1.1); }
   #wasted { position: absolute; left: 0; right: 0; top: 22%; text-align: center; pointer-events: none; }
-  #wasted .bar { background: rgba(0,0,0,.72); padding: 18px 0; border-top: 2px solid rgba(255,255,255,.12); border-bottom: 2px solid rgba(255,255,255,.12); animation: wasted 1.1s ease-out; }
+  /* The generic .bar rule (the HP/SE meters) is 14px tall with overflow hidden,
+     which was clipping the 84px WASTED text down to a thin empty strip. */
+  #wasted .bar { height: auto; overflow: visible; border-radius: 0; background: rgba(0,0,0,.72); padding: 18px 0; border-top: 2px solid rgba(255,255,255,.12); border-bottom: 2px solid rgba(255,255,255,.12); animation: wasted 1.1s ease-out both; }
   #wasted span { font-family: Bangers, Impact, serif; font-size: 84px; letter-spacing: .1em; color: #c0392b; text-shadow: 0 0 26px rgba(192,57,43,.8), 3px 3px 0 #000; }
-  @keyframes wasted { 0% { opacity: 0; transform: scale(1.5); filter: blur(8px); } 60% { opacity: 1; } }
+  /* Without an explicit final frame the bar interpolates away from full opacity
+     after the 60% mark and the card quietly fades out again. */
+  @keyframes wasted { 0% { opacity: 0; transform: scale(1.5); filter: blur(8px); } 60% { opacity: 1; transform: none; filter: none; } 100% { opacity: 1; transform: none; filter: none; } }
   @media (prefers-reduced-motion: reduce) { #wasted .bar { animation: none; } }
   #speedlines { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity .09s;
     background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,.85) 0deg .6deg, transparent .6deg 5deg);
@@ -234,6 +243,7 @@
     <div id="speedlines"></div>
     <div id="reticle"></div>
     <div id="lock-tag" hidden>SHIFT LOCK</div>
+    <div id="lock-hint" hidden>Click to give the mouse back to the game</div>
     <div id="vitals">
       <div class="label"><span>Rift Walker</span><span id="hp-text">500 / 500</span></div>
       <div class="bar"><i id="hp-bar" style="width:100%"></i></div>
@@ -368,7 +378,7 @@
   <div id="dead" class="overlay" hidden>
     <div id="wasted"><div class="bar"><span>WASTED</span></div></div>
     <div class="card" style="text-align:center">
-      <h1 class="display" style="font-size:38px;color:#c0392b">You collapsed</h1>
+      <h1 id="dead-title" class="display" style="font-size:38px;color:#c0392b">You collapsed</h1>
       <p id="dead-text"></p>
       <button id="retry">Rise again</button>
     </div>
@@ -3489,13 +3499,28 @@ let camYaw = Math.PI, camPitch = .34, camDist = 7.5;
 // Shift lock: the character turns with the camera and the view sits over the
 // right shoulder, so where you look is where you face. Toggle with Q.
 let shiftLock = false, shoulder = 0;
+function syncPointerLock() {
+  // The cursor is hidden by CSS whenever shift lock is on, so a failed or lost
+  // pointer lock never leaves an arrow sitting in the middle of a mouselook mode.
+  canvas.classList.toggle('nocursor', shiftLock);
+  const wantHint = shiftLock && running && !locked && !IS_TOUCH;
+  const el = $('#lock-hint'); if (el) el.hidden = !wantHint;
+}
+function grabPointer() {
+  if (IS_TOUCH) return;
+  const r = canvas.requestPointerLock?.();
+  // Chrome rejects a request made too soon after an exit. Swallow it and let the
+  // next click pick it up rather than throwing into the key handler.
+  if (r && typeof r.catch === 'function') r.catch(() => {});
+}
 function toggleShiftLock(on) {
   shiftLock = on ?? !shiftLock;
   $('#lock-tag').hidden = !shiftLock;
   $('#reticle').classList.toggle('locked', shiftLock);
   const btn = $('#btn-lock'); if (btn) btn.classList.toggle('on', shiftLock);
-  log(shiftLock ? 'Shift lock on: you face where the camera looks.' : 'Shift lock off.');
-  if (shiftLock) canvas.requestPointerLock?.();
+  log(shiftLock ? 'Shift lock on: the mouse turns you. Camera over the right shoulder.' : 'Shift lock off.');
+  syncPointerLock();
+  if (shiftLock) grabPointer();
 }
 function moveInput() {
   const f = new THREE.Vector3(Math.sin(camYaw), 0, Math.cos(camYaw)), r = new THREE.Vector3(-f.z, 0, f.x);
@@ -3570,10 +3595,13 @@ function landed(fallSpeed) {
   if (v > 24) { hitStop = Math.max(hitStop, .05); damageBuildings(player.pos, 3 + heavy * 4, 30 * heavy); }
 }
 function updateCamera(dt) {
-  const targetDist = player.swinging ? 9.5 : shiftLock ? 4.4 : 6.2;
+  const targetDist = player.swinging ? 9.5 : shiftLock ? 3.6 : 6.2;
   camDist += (targetDist - camDist) * Math.min(1, 4 * dt);
-  shoulder += ((shiftLock ? .95 : 0) - shoulder) * Math.min(1, 8 * dt);
-  const focus = player.pos.clone().add(new THREE.Vector3(0, 1.5, 0));
+  shoulder += ((shiftLock ? 1.15 : 0) - shoulder) * Math.min(1, 8 * dt);
+  // Tighter, offset further to the side and a little higher than the free
+  // camera, so the character clears the middle of the screen and the reticle
+  // looks down an empty lane.
+  const focus = player.pos.clone().add(new THREE.Vector3(0, 1.5 + shoulder * .3, 0));
   if (shoulder > .01) focus.add(new THREE.Vector3(Math.cos(camYaw), 0, -Math.sin(camYaw)).multiplyScalar(shoulder));
   // Behind the player horizontally, ABOVE by the pitch. The y term used to be
   // negated, which parked the default camera under the road.
@@ -4312,7 +4340,10 @@ function die() {
   if (player.style && STYLES[player.style].takeover && !player.sukunaUsed) { sukunaTakeover(); return; }
   player.dead = true; closeSense(); releaseSwing(false);
   $('#dead-text').textContent = `You reached wave ${wave + 1} with ${player.kills} extractions. Techniques learned: ${player.learned.map((s) => SKILLS[s].name).join(', ')}.`;
+  // One in ten deaths is the GTA card. When it comes up it IS the headline, so
+  // the usual one steps aside rather than sitting underneath it.
   $('#wasted').hidden = Math.random() >= .1;
+  $('#dead-title').hidden = !$('#wasted').hidden;
   $('#dead').classList.toggle('grey', !$('#wasted').hidden);
   $('#dead').hidden = false; document.exitPointerLock?.();
 }
@@ -5356,8 +5387,9 @@ function findAnchorCached() { if (now - anchorCache.t > .15) anchorCache = { t: 
 // Input
 // =============================================================================
 let locked = false, dragging = false, last = null;
-canvas.addEventListener('click', () => { if (!running) return; canvas.requestPointerLock?.(); });
-document.addEventListener('pointerlockchange', () => { locked = document.pointerLockElement === canvas; });
+canvas.addEventListener('click', () => { if (!running) return; grabPointer(); });
+document.addEventListener('pointerlockchange', () => { locked = document.pointerLockElement === canvas; syncPointerLock(); });
+document.addEventListener('pointerlockerror', () => { locked = false; syncPointerLock(); });
 canvas.addEventListener('mousedown', (e) => { if (!running) return; if (e.button === 0 && !locked) { dragging = true; last = [e.clientX, e.clientY]; } if (e.button === 0) strike(); if (e.button === 2) startEAction(); });
 addEventListener('mouseup', (e) => { if (e.button === 0) dragging = false; if (e.button === 2) endEAction(); });
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
