@@ -672,7 +672,7 @@ const SKILLS = {
   black_web:       { name: 'Black Webbing', origin: 'Venom', nature: 'physical', cost: 8, cd: 2, type: 'projectile', speed: 50, radius: 1.1, power: 52, aoe: 4, color: 0x2a2a34, onHit: { root: 3.5, defDown: .45 }, desc: 'Heavier and meaner than the web fluid. Pins them and softens them up.' },
   tendril_slam:    { name: 'Tendril Slam', origin: 'Venom', nature: 'physical', cost: 14, cd: 4.5, type: 'trap', range: 5, radius: 10, power: 128, color: 0x1a1a22, onHit: { knock: 30 }, desc: 'Every tendril at once, straight down into the street.' },
   venom_pounce:    { name: 'Pounce', origin: 'Venom', nature: 'physical', cost: 10, cd: 2.6, type: 'dash', range: 20, power: 118, onHit: { knock: 20, defDown: .3 }, desc: 'He crosses the gap on all fours and lands on top of you.' },
-  symbiote_feed:   { name: 'Feed', origin: 'Venom', nature: 'physical', cost: 16, cd: 9, type: 'heal', percent: .3, desc: 'The symbiote takes what it needs from whatever is nearby and gives it back to him.' },
+  symbiote_feed:   { name: 'Feed', origin: 'Venom', nature: 'physical', cost: 16, cd: 9, type: 'devour', range: 16, power: 260, desc: 'Tendrils drag the nearest one in by the head and the symbiote bites it off. Whatever it eats puts him back to full health.' },
   we_are_venom:    { name: 'WE ARE VENOM', origin: 'Venom', nature: 'physical', cost: 34, cd: 24, type: 'trap', range: 0, radius: 20, power: 300, color: 0xf0f0f0, onHit: { knock: 40, root: 2.5 }, desc: 'The suit comes off him in every direction at once.' },
 
   // --- Carnage: the symbiote with nothing holding it back -------------------
@@ -767,13 +767,13 @@ const STYLES = {
     passives: ['Webbed enemies move at 40% speed and take 25% more damage.',
       'The symbiote rides on him: two black tendrils strike on their own inside seven metres, no input needed.',
       'It armours him too — it eats 30% of every hit that lands.',
-      'Under 100 health it stops asking. The suit takes over on its own for twenty seconds, and G is not needed for it.'],
+      'Under 100 health it stops asking: the suit covers him on its own, and stays until you press G.'],
     autoLimbs: { count: 2, reach: 7, power: 18, cd: 1.8, color: 0x2a2a34, knock: 4 },
     symbiote: { absorb: .3, panicUnder: 100, panicFor: 20, panicCd: 45 },
     pool: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'healing_factor', 'web_trap'], slots: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'healing_factor'],
-    ultimate: { kind: 'transform', into: 'venom', name: 'Symbiote: Venom', cost: 34, cd: 44, duration: 40,
+    ultimate: { kind: 'transform', into: 'venom', name: 'Symbiote: Venom', cost: 34, cd: 0, toggle: true,
       title: 'WE ARE VENOM', color: 0xf0f0f0,
-      log: 'The suit crawls up over him and takes the mouth off the mask. Forty seconds as Venom, then Peter gets the body back.' } },
+      log: 'The suit crawls up over him and takes the mouth off the mask. It stays on until you press G again.' } },
   docock: { name: 'Doctor Octopus', blurb: 'Otto Octavius and four arms that answer faster than his own. He does not need to get close, and he does anyway.',
     passives: ['The arms give him reach: bare hands hit for 26 from two metres further out than anyone else.', 'The four arms fight by themselves: each picks its own target inside nine metres and strikes on its own cooldown while you do something else.', 'Actuator Sweep covers a nine-metre arc — the widest basic technique in the game.', 'Pin Down roots for four seconds and softens everything it holds.'],
     m1: 26, m1Range: 2,
@@ -813,7 +813,7 @@ const STYLES = {
     pool: ['cleansing_touch', 'white_lash', 'antibody_burst', 'antibody_shell', 'purify'], slots: ['cleansing_touch', 'white_lash', 'antibody_burst', 'antibody_shell', 'purify'],
     ultimate: { skill: 'total_cure', name: 'TOTAL CURE', cost: 38, cd: 26, duration: 1 } },
   venom: { name: 'Venom: The Symbiote', blurb: 'The black suit, and it is not a costume. Everything Peter does, it does harder and enjoys more.',
-    passives: ['No Spider-Sense and none of Peter\'s techniques, but the symbiote spins its own webbing: hold E to swing on a black line.', 'Three tendrils fight on their own, picking their own targets inside eight metres while you do something else.', 'Bare hands hit for 34 with the reach of the tendrils behind them.', 'Spider-Man turns into this with G, and turns back when it runs out.'],
+    passives: ['No Spider-Sense and none of Peter\'s techniques, but the symbiote spins its own webbing: hold E to swing on a black line.', 'Three tendrils fight on their own, picking their own targets inside eight metres while you do something else.', 'Bare hands hit for 34 with the reach of the tendrils behind them.', 'G puts the suit on and G takes it off. No timer, no cooldown — stay Venom as long as you like.'],
     m1: 34, m1Range: 1.4,
     autoLimbs: { count: 3, reach: 8, power: 24, cd: 1.6, color: 0x2a2a34, knock: 5 },
     pool: ['symbiote_lash', 'venom_pounce', 'black_web', 'tendril_slam', 'symbiote_feed'], slots: ['symbiote_lash', 'venom_pounce', 'black_web', 'tendril_slam', 'symbiote_feed'],
@@ -4284,10 +4284,21 @@ function symbioteFlare() {
     scene.add(t); effects.push({ kind: 'beam', m: t, t: 0, life: .25 });
   }
 }
+/** Take a toggled suit back off. The same call however it went on. */
+function revertTransform() {
+  const back = player.transform.from;
+  player.transform = null;
+  applyStyle(back, false);
+  player.cooldowns = {}; player.ultCd = 0;
+  hitStop = .2; screenFlash(.7); shake = .8;
+  center('THE SUIT COMES OFF', 1600);
+  log('The symbiote peels back. Peter has the body again — press G to put it on.', true);
+  burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), 0x2a2a34, 30);
+}
 /** Peter to Venom, on the suit's own initiative rather than the player's. */
 function symbioteTakeover(duration) {
   const u = STYLES.spiderman.ultimate;
-  player.transform = { from: 'spiderman', until: now + duration };
+  player.transform = { from: 'spiderman', until: Infinity, toggle: true };
   applyStyle('venom', false);
   player.cooldowns = {};
   hitStop = .3; screenFlash(1); shake = 1.2; camDist = 3.5;
@@ -4713,6 +4724,57 @@ function castSkill(id, opts = {}) {
     else if (s.mesh === 'spider') { player.decoy = false; burst(origin, 0xd8323c, 20); log('Spider-Verse: three of them dropped in.', true); center('SPIDER-VERSE', 1200); }
     else if (s.mesh === 'dog') { player.decoy = false; burst(origin, 0x222222, 12); log('Divine Dogs: Totality!', true); center('DIVINE DOGS', 700); }
     else { burst(origin, 0xffffff, 16); log('Multi Shadow Clone Jutsu!', true); center('SHADOW CLONES', 700); }
+  } else if (s.type === 'devour') {
+    // The symbiote feeds itself: it takes the nearest one by the head, drags it
+    // in, and bites. Whatever it gets out of that is enough to fill him up.
+    let prey = null, best = s.range;
+    for (const e of enemies) { if (e.dead) continue; const d = e.pos.distanceTo(player.pos); if (d < best) { best = d; prey = e; } }
+    if (!prey) { log('Nothing close enough to eat.'); return false; }
+    const head = () => prey.pos.clone().add(new THREE.Vector3(0, (prey.height ?? 2) * .82, 0));
+    const mouth = player.pos.clone().add(new THREE.Vector3(0, 1.5, 0));
+    // Two tendrils out to the head, then the drag.
+    for (let i = 0; i < 2; i++) {
+      const from = mouth.clone().add(new THREE.Vector3((i ? .4 : -.4), .1, 0));
+      const to = head(), dir = to.clone().sub(from), len = dir.length();
+      const t = new THREE.Mesh(new THREE.CylinderGeometry(.03, .1, len, 6), new THREE.MeshBasicMaterial({ color: 0x1a1a24 }));
+      t.position.copy(from).add(dir.clone().multiplyScalar(.5));
+      t.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+      scene.add(t); effects.push({ kind: 'beam', m: t, t: 0, life: .45 });
+    }
+    // Stun and root it, and zero its velocity: a floating enemy will otherwise
+    // drift straight back out of his reach before the bite lands.
+    const hold = (e) => {
+      e.status.stun = Math.max(e.status.stun ?? 0, 1.4);
+      e.status.root = Math.max(e.status.root ?? 0, 1.4);
+      e.vel.set(0, 0, 0); e.sep.set(0, 0, 0);
+      // Place it outright rather than nudging by a delta: keep its own height,
+      // put it two metres from him along the line it was already on.
+      const dir = e.pos.clone().sub(player.pos).setY(0);
+      if (dir.lengthSq() < 1e-4) dir.set(0, 0, 1);
+      const y = e.pos.y;
+      e.pos.copy(player.pos).addScaledVector(dir.normalize(), 2.2);
+      e.pos.y = y;
+    };
+    hold(prey);
+    sfx.whoosh();
+    // The bite lands a beat later, once it has been hauled in.
+    const bitePower = s.power * B;
+    setTimeout(() => {
+      if (player.dead) return;
+      if (!prey.dead) hold(prey);         // haul it back in for the bite itself
+      const at = prey.dead ? player.pos.clone().add(new THREE.Vector3(0, 1.5, 0)) : head();
+      burst(at, 0xc0294a, 26); burst(at, 0x1a1a24, 18);
+      shockwave(at, 0xc0294a, .5, 3.2, .3, 0);
+      sfx.hit(2.2); hitStop = Math.max(hitStop, .14); shake = Math.max(shake, .9); screenFlash(.35);
+      // No knockback: it is being eaten, not punched. Any impulse here throws
+      // the prey straight back out of the jaws it was just dragged into.
+      if (!prey.dead) enemyTakeHit(prey, bitePower, s.nature, null, { knock: 0, ignoreDef: true });
+      const before = player.hp;
+      player.hp = player.maxHp;
+      floatText(player.pos, '+' + Math.round(player.hp - before), 'heal');
+      center('FEED', 1000);
+      log('It takes the head, and he comes back to full.', true);
+    }, 260);
   } else if (s.type === 'heal') {
     const amt = Math.round(player.maxHp * s.percent * B); player.hp = Math.min(player.maxHp, player.hp + amt);
     floatText(player.pos, '+' + amt, 'heal'); burst(origin, 0x56e39f, 18); center('REVERSE CURSED TECHNIQUE', 900);
@@ -4920,6 +4982,7 @@ function updateCharge(dt) {
 function useUltimate() {
   if (player.charging) return;
   const st = player.style ? STYLES[player.style] : null; const u = st?.ultimate;
+  if (player.transform?.toggle) { revertTransform(); return; }
   if (!u) { log('No G ultimate for this move set.'); return; }
   if (!noCooldowns() && player.ultCd > now) { log(`${u.name} is recharging (${Math.ceil(player.ultCd - now)}s).`); return; }
   const ucost = Math.ceil(u.cost * outputCost() * buffCost());
@@ -4928,7 +4991,8 @@ function useUltimate() {
   if (!noCooldowns()) player.ultCd = now + (flatCd() ?? u.cd);
   if (u.kind === 'transform') {
     const from = player.style;
-    player.transform = { from, until: now + u.duration };
+    // A toggle has no clock on it: it holds until G is pressed again.
+    player.transform = { from, until: u.toggle ? Infinity : now + u.duration, toggle: !!u.toggle };
     applyStyle(u.into, false); player.hp = Math.min(player.maxHp, player.hp + 150); player.cooldowns = {};
     hitStop = .3; screenFlash(1); shake = 1.2; center(u.title ?? 'SUKUNA POSSESSION', 2000); camDist = 3.5;
     log(u.log ?? `"Finally." Sukuna has the body for ${u.duration} seconds. Yuji returns when it ends.`, true);
@@ -5293,13 +5357,13 @@ function renderSlots() {
     el.appendChild(d);
   });
   const st = player.style ? STYLES[player.style] : null;
-  if (st?.ultimate) {
+  if (st?.ultimate && !player.transform?.toggle) {
     const u = st.ultimate; const d = document.createElement('div'); d.className = 'slot ult';
     d.innerHTML = `<span class="key">G</span><span class="cost">${u.cost} SE</span><div class="name">${u.name}</div><div class="nature" style="color:var(--gold)">Ultimate · ${u.duration}s</div><div class="cd"></div>`;
     el.appendChild(d);
   } else if (player.transform) {
     const d = document.createElement('div'); d.className = 'slot ult';
-    d.innerHTML = `<span class="key">G</span><div class="name">Sukuna Possession</div><div class="nature" style="color:var(--gold)" id="transform-left"></div>`;
+    d.innerHTML = `<span class="key">G</span><div class="name">${player.transform.toggle ? 'Take the suit off' : 'Sukuna Possession'}</div><div class="nature" style="color:var(--gold)" id="transform-left"></div>`;
     el.appendChild(d);
   }
 }
@@ -5387,7 +5451,8 @@ function updateHud() {
       ult.style.opacity = player.se < st.ultimate.cost || rem > 0 ? .55 : 1;
       if (mahoraga) ult.querySelector('.nature').textContent = `Mahoraga · ${Math.ceil(mahoraga.until - now)}s`;
     }
-    else if (player.transform) { const t = ult.querySelector('#transform-left'); if (t) t.textContent = `${Math.ceil(player.transform.until - now)}s left`; }
+    else if (player.transform) { const t = ult.querySelector('#transform-left');
+      if (t) t.textContent = player.transform.toggle ? 'Press G' : `${Math.ceil(player.transform.until - now)}s left`; }
   }
   player.slots.forEach((id, i) => {
     const el = $('#slots').children[i]; if (!el || !id) return;
@@ -5686,7 +5751,7 @@ function frame(t) {
   updateFxLights(real);
   pruneEnemies();
   updateMahoraga(worldDt);
-  if (player.transform && now > player.transform.until && !player.dead) { const back = player.transform.from; player.transform = null; applyStyle(back, false); center('YUJI IS BACK', 1200); log('Sukuna\'s time is up. Yuji has the body again.', true); burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), 0xff8a8a, 20); }
+  if (player.transform && !player.transform.toggle && now > player.transform.until && !player.dead) { const back = player.transform.from; player.transform = null; applyStyle(back, false); center('YUJI IS BACK', 1200); log('Sukuna\'s time is up. Yuji has the body again.', true); burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), 0xff8a8a, 20); }
   for (const f of floats) { f.t += worldDt; f.pos.y += worldDt * 1.2; if (f.t > 1.1) { f.el.remove(); f.done = true; } }
   for (let i = floats.length - 1; i >= 0; i--) if (floats[i].done) floats.splice(i, 1);
   updateWorld(worldDt);
