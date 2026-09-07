@@ -301,7 +301,7 @@
         <tr><td>Ultimate</td><td>G (Yuji: Sukuna for a minute · Megumi: summon Mahoraga)</td></tr>
         <tr><td>Signature (E)</td><td>Spider-Man and the three symbiotes swing · Gojo, Iron Man, Jean and Eleven fly · Naruto charges a Rasengan · Sasuke charges Chidori · Megumi opens his domain · Yuji cuts with Dismantle</td></tr>
         <tr><td>Select character</td><td>M</td></tr>
-        <tr><td>Shift lock</td><td>Shift. The camera locks over your shoulder and you always face where you look.</td></tr>
+        <tr><td>Shift lock</td><td>Shift. Camera over the shoulder, cursor hidden, and the mouse turns you on its own — nudge it off centre to turn, bring it back to stop. With shift lock off the cursor is yours: hold a button to look around.</td></tr>
         <tr><td>Gates</td><td>Q at a glowing ring. Every world has a ring of them, one per destination.</td></tr>
         <tr><td>World map</td><td>N</td></tr>
         <tr><td>Output charge</td><td>Hold B to power up, release to store it. Tap = Minimum (x1.5), 5 s = Medium (x2.5), 10 s = Maximum (x4). It supercharges your next ability.</td></tr>
@@ -3536,8 +3536,14 @@ function syncPointerLock() {
   // pointer lock never leaves an arrow sitting in the middle of a mouselook mode.
   // The cursor is hidden for the whole of play, not only in shift lock: this is
   // a mouselook game either way and an arrow sitting over the reticle is noise.
-  canvas.classList.toggle('nocursor', running && !IS_TOUCH);
-  const el = $('#lock-hint'); if (el) el.hidden = true;
+  // The cursor only disappears in shift lock. Outside it the mouse is yours:
+  // you can see it, and you hold a button to look around.
+  canvas.classList.toggle('nocursor', shiftLock && running && !IS_TOUCH);
+  const el = $('#lock-hint');
+  if (el) {
+    el.hidden = !(shiftLock && running && !locked && !IS_TOUCH);
+    el.textContent = 'Nudge the mouse off centre to turn — it stays where you leave it.';
+  }
 }
 function grabPointer() {
   if (IS_TOUCH) return;
@@ -5424,24 +5430,69 @@ function findAnchorCached() { if (now - anchorCache.t > .15) anchorCache = { t: 
 // Input
 // =============================================================================
 let locked = false, dragging = false, last = null;
-canvas.addEventListener('click', () => { if (!running) return; grabPointer(); });
+canvas.addEventListener('click', () => { if (!running || !shiftLock) return; grabPointer(); });
 document.addEventListener('pointerlockchange', () => { locked = document.pointerLockElement === canvas; syncPointerLock(); });
 document.addEventListener('pointerlockerror', () => { locked = false; syncPointerLock(); });
-canvas.addEventListener('mousedown', (e) => { if (!running) return; if (e.button === 0) { last = [e.clientX, e.clientY]; strike(); } if (e.button === 2) startEAction(); });
+canvas.addEventListener('mousedown', (e) => { if (!running) return; if (e.button === 0) { dragging = true; last = [e.clientX, e.clientY]; strike(); } if (e.button === 2) startEAction(); });
 addEventListener('mouseup', (e) => { if (e.button === 0) dragging = false; if (e.button === 2) endEAction(); });
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+// Two ways to look, because only one of them is always available.
+//
+// With pointer lock the cursor is captured at the centre and we steer from raw
+// movement deltas — the way every shooter does it. But an artifact runs inside
+// an iframe, and a cross-origin frame only gets pointer lock if the host page
+// allows it, which is not ours to set.
+//
+// So without the lock we do not steer from deltas at all: a delta-driven camera
+// makes the pointer walk to the edge of the window and out of the game, and
+// then you cannot play. Instead the pointer's offset from the centre of the
+// screen becomes a turn RATE, like a stick. Near the middle nothing happens;
+// nudge it and you turn steadily for as long as it sits there; bring it back
+// and you stop. It never has to travel more than a couple of centimetres, so it
+// never leaves the frame.
+let lookRate = { x: 0, y: 0 }, pointerIn = false;
+const LOOK_DEAD = .1;          // fraction of the half-screen that does nothing
+const LOOK_SPEED = 2.6;        // radians per second at full deflection
 addEventListener('mousemove', (e) => {
   if (!running) return;
-  // Pointer lock is the good path, but it is not always available — an artifact
-  // runs in an iframe, and a cross-origin frame only gets it if the host allows
-  // it. So look works without it too: movementX/movementY are reported on every
-  // mousemove in a modern browser, so we steer from those and only fall back to
-  // client deltas if a browser omits them. Nothing has to be held down.
-  let dx = e.movementX ?? 0, dy = e.movementY ?? 0;
-  if (!locked && dx === 0 && dy === 0 && last) { dx = e.clientX - last[0]; dy = e.clientY - last[1]; }
-  last = [e.clientX, e.clientY];
-  camYaw -= dx * .0032; camPitch = THREE.MathUtils.clamp(camPitch + dy * .0025, -.45, 1.25);
+  if (locked) {
+    camYaw -= (e.movementX ?? 0) * .0032;
+    camPitch = THREE.MathUtils.clamp(camPitch + (e.movementY ?? 0) * .0025, -.45, 1.25);
+    lookRate.x = lookRate.y = 0;
+    return;
+  }
+  // Shift lock off: the cursor is yours. Hold a button and drag to look, and the
+  // camera does not move on its own while you are reading the screen.
+  if (!shiftLock) {
+    lookRate.x = lookRate.y = 0;
+    if (dragging && last) {
+      camYaw -= (e.clientX - last[0]) * .0032;
+      camPitch = THREE.MathUtils.clamp(camPitch + (e.clientY - last[1]) * .0025, -.45, 1.25);
+    }
+    last = [e.clientX, e.clientY];
+    return;
+  }
+  const r = canvas.getBoundingClientRect();
+  const nx = ((e.clientX - r.left) / r.width - .5) * 2;     // -1 .. 1
+  const ny = ((e.clientY - r.top) / r.height - .5) * 2;
+  const curve = (v) => {
+    const a = Math.abs(v);
+    if (a < LOOK_DEAD) return 0;
+    const t = (a - LOOK_DEAD) / (1 - LOOK_DEAD);
+    return Math.sign(v) * t * t;                            // squared: precise near the middle
+  };
+  lookRate.x = curve(THREE.MathUtils.clamp(nx, -1, 1));
+  lookRate.y = curve(THREE.MathUtils.clamp(ny, -1, 1));
+  pointerIn = true;
 });
+// If it does slip out of the frame, stop turning rather than spinning forever.
+canvas.addEventListener('mouseleave', () => { lookRate.x = lookRate.y = 0; pointerIn = false; });
+canvas.addEventListener('mouseenter', () => { pointerIn = true; });
+function updateFreeLook(dt) {
+  if (locked || !running || !pointerIn || !shiftLock) return;
+  camYaw -= lookRate.x * LOOK_SPEED * dt;
+  camPitch = THREE.MathUtils.clamp(camPitch + lookRate.y * LOOK_SPEED * .55 * dt, -.45, 1.25);
+}
 // =============================================================================
 // Touch controls
 // =============================================================================
@@ -5630,6 +5681,7 @@ function frame(t) {
   updateEnemies(worldDt);
   updateProjectiles(worldDt);
   updateAutoLimbs(worldDt);
+  updateFreeLook(playerDt);
   updateEnemyProjectiles(worldDt);
   updateFxLights(real);
   pruneEnemies();
