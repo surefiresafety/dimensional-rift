@@ -3054,6 +3054,38 @@ const sfx = {
     f.frequency.exponentialRampToValueAtTime(1800, ctx.currentTime + .18);
     f.Q.value = 2; n.connect(f); env(ctx, f, .12, .02, .18); n.start(); n.stop(ctx.currentTime + .3);
   },
+  /** Domain expansion: the barrier closing. A sub drop, a rising shimmer that
+   *  cuts dead the moment the dome seals, and a long ring underneath it. */
+  domain() {
+    if (!audio.on) return; const ctx = actx(); if (!ctx) return;
+    const t = ctx.currentTime;
+    // The drop: two detuned saws falling three octaves.
+    for (const [type, base, det] of [['sawtooth', 110, 0], ['sawtooth', 110, 4]]) {
+      const o = ctx.createOscillator(); o.type = type;
+      o.frequency.setValueAtTime(base + det, t);
+      o.frequency.exponentialRampToValueAtTime(13 + det, t + 1.5);
+      const f = ctx.createBiquadFilter(); f.type = 'lowpass';
+      f.frequency.setValueAtTime(1800, t); f.frequency.exponentialRampToValueAtTime(120, t + 1.5);
+      o.connect(f); env(ctx, f, .34, .02, 1.6); o.start(t); o.stop(t + 1.8);
+    }
+    // The inhale: noise sweeping up, then cut at the seal.
+    const n = noise(ctx); const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 3;
+    bp.frequency.setValueAtTime(300, t); bp.frequency.exponentialRampToValueAtTime(7000, t + .85);
+    n.connect(bp); env(ctx, bp, .22, .5, .42); n.start(t); n.stop(t + .95);
+    // The seal itself: a hard low thud on the cut.
+    const k = ctx.createOscillator(); k.type = 'sine';
+    k.frequency.setValueAtTime(150, t + .86); k.frequency.exponentialRampToValueAtTime(32, t + 1.25);
+    const kg = ctx.createGain(); kg.gain.setValueAtTime(0.0001, t);
+    kg.gain.setValueAtTime(0.0001, t + .85);
+    kg.gain.exponentialRampToValueAtTime(.7, t + .88);
+    kg.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
+    k.connect(kg); kg.connect(ctx.destination); k.start(t); k.stop(t + 1.6);
+    // And the barrier ringing: a bell an octave and a fifth apart, held long.
+    for (const [f0, d] of [[196, 3.2], [294, 2.6]]) {
+      const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(f0, t + .86);
+      env(ctx, o, .12, .04, d); o.start(t + .86); o.stop(t + .9 + d);
+    }
+  },
   boom() {
     if (!audio.on) return; const ctx = actx(); if (!ctx) return;
     const o = ctx.createOscillator(); o.type = 'triangle';
@@ -3502,9 +3534,10 @@ let shiftLock = false, shoulder = 0;
 function syncPointerLock() {
   // The cursor is hidden by CSS whenever shift lock is on, so a failed or lost
   // pointer lock never leaves an arrow sitting in the middle of a mouselook mode.
-  canvas.classList.toggle('nocursor', shiftLock);
-  const wantHint = shiftLock && running && !locked && !IS_TOUCH;
-  const el = $('#lock-hint'); if (el) el.hidden = !wantHint;
+  // The cursor is hidden for the whole of play, not only in shift lock: this is
+  // a mouselook game either way and an arrow sitting over the reticle is noise.
+  canvas.classList.toggle('nocursor', running && !IS_TOUCH);
+  const el = $('#lock-hint'); if (el) el.hidden = true;
 }
 function grabPointer() {
   if (IS_TOUCH) return;
@@ -4465,9 +4498,13 @@ function castSkill(id, opts = {}) {
     : s.type === 'dash' ? 'kick'
     : s.type === 'teleport' ? 'slash' : 'cast', s.type === 'melee' ? .34 : .45);
   const B = consumeOutput();   // the stored charge is spent on this ability
-  if (s.type === 'domain') shout('Domain Expansion! ' + (s.title ?? s.name));
-  else if (s.cost >= 18 || s.tags?.includes('ultimate')) shout(s.name);
-  sfx.whoosh();
+  if (s.type === 'domain' || s.type === 'shrine') {
+    shout('Domain Expansion! ' + (s.title ?? s.name));
+    sfx.domain();
+  } else {
+    if (s.cost >= 18 || s.tags?.includes('ultimate')) shout(s.name);
+    sfx.whoosh();
+  }
   const origin = player.pos.clone().add(new THREE.Vector3(0, 1.4, 0));
   const dir = aimDir();
   player.yaw = Math.atan2(dir.x, dir.z);
@@ -5390,14 +5427,19 @@ let locked = false, dragging = false, last = null;
 canvas.addEventListener('click', () => { if (!running) return; grabPointer(); });
 document.addEventListener('pointerlockchange', () => { locked = document.pointerLockElement === canvas; syncPointerLock(); });
 document.addEventListener('pointerlockerror', () => { locked = false; syncPointerLock(); });
-canvas.addEventListener('mousedown', (e) => { if (!running) return; if (e.button === 0 && !locked) { dragging = true; last = [e.clientX, e.clientY]; } if (e.button === 0) strike(); if (e.button === 2) startEAction(); });
+canvas.addEventListener('mousedown', (e) => { if (!running) return; if (e.button === 0) { last = [e.clientX, e.clientY]; strike(); } if (e.button === 2) startEAction(); });
 addEventListener('mouseup', (e) => { if (e.button === 0) dragging = false; if (e.button === 2) endEAction(); });
 canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 addEventListener('mousemove', (e) => {
   if (!running) return;
-  let dx = 0, dy = 0;
-  if (locked) { dx = e.movementX; dy = e.movementY; }
-  else if (dragging && last) { dx = e.clientX - last[0]; dy = e.clientY - last[1]; last = [e.clientX, e.clientY]; }
+  // Pointer lock is the good path, but it is not always available — an artifact
+  // runs in an iframe, and a cross-origin frame only gets it if the host allows
+  // it. So look works without it too: movementX/movementY are reported on every
+  // mousemove in a modern browser, so we steer from those and only fall back to
+  // client deltas if a browser omits them. Nothing has to be held down.
+  let dx = e.movementX ?? 0, dy = e.movementY ?? 0;
+  if (!locked && dx === 0 && dy === 0 && last) { dx = e.clientX - last[0]; dy = e.clientY - last[1]; }
+  last = [e.clientX, e.clientY];
   camYaw -= dx * .0032; camPitch = THREE.MathUtils.clamp(camPitch + dy * .0025, -.45, 1.25);
 });
 // =============================================================================
