@@ -20,6 +20,10 @@
   .bar { height: 14px; background: rgba(0,0,0,.55); border: 2px solid var(--line); border-radius: 3px; overflow: hidden; margin: 4px 0 8px; }
   .bar i { display: block; height: 100%; background: var(--hp); transition: width .15s; }
   .bar.se i { background: var(--se); }
+  /* The suit: black with a white edge, the way it looks. Goes red as it fails. */
+  .bar.suit { border-color: #6a6a7a; }
+  .bar.suit i { background: linear-gradient(90deg, #1a1a24, #6a6a7a 70%, #e8e8f0); }
+  .bar.suit.hurt i { background: linear-gradient(90deg, #3a0a12, #c0294a 70%, #ff8a9c); }
   .label { font-size: 11px; text-transform: uppercase; letter-spacing: .12em; opacity: .8; display: flex; justify-content: space-between; }
   #slots { position: absolute; left: 50%; bottom: 22px; transform: translateX(-50%); display: flex; gap: 8px; z-index: 6; }
   .slot { width: 82px; height: 82px; background: var(--panel); border: 2px solid var(--line); border-radius: 6px; position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; padding: 6px; }
@@ -249,6 +253,10 @@
       <div class="bar"><i id="hp-bar" style="width:100%"></i></div>
       <div class="label"><span>Spirit Energy</span><span id="se-text">100 / 100</span></div>
       <div class="bar se"><i id="se-bar" style="width:100%"></i></div>
+      <div id="suit-row" hidden>
+        <div class="label"><span>Symbiote</span><span id="suit-text">0 / 0</span></div>
+        <div class="bar suit"><i id="suit-bar" style="width:100%"></i></div>
+      </div>
     </div>
     <div id="wave"><small id="map-name">Times Square</small><div class="display" id="wave-title">Wave 1</div><small id="wave-sub"></small><small id="who"></small></div>
     <div id="slots"></div>
@@ -295,7 +303,7 @@
         <tr><td>Move / Look</td><td>WASD · mouse (click to capture, or drag)</td></tr>
         <tr><td>Web-Swing</td><td>Hold Right Mouse or E, release to let go. Aim high at a building. Spider-Man, Venom, Carnage and Anti-Venom each swing on their own line.</td></tr>
         <tr><td>Strike</td><td>Left Mouse</td></tr>
-        <tr><td>Techniques</td><td>1 2 3 4 5. Everyone waits on cooldowns except Gojo, who never does.</td></tr>
+        <tr><td>Techniques</td><td>1 2 3 4 5. Everyone waits on their own cooldowns; Gojo waits half a second on everything.</td></tr>
         <tr><td>Dodge</td><td>C. When the screen goes purple, Spider-Sense is open: dodge for a Perfect Dodge.</td></tr>
         <tr><td>Loadout</td><td>Tab</td></tr>
         <tr><td>Ultimate</td><td>G (Yuji: Sukuna for a minute · Megumi: summon Mahoraga)</td></tr>
@@ -751,8 +759,8 @@ const SKILLS = {
   rabbit_escape:   { name: 'Rabbit Escape', origin: 'Megumi', nature: 'physical', cost: 10, cd: 14, type: 'evade', duration: 3, speedMul: 1.5, desc: 'A swarm of rabbits. Untouchable and fast for 3 seconds.' },
 };
 const STYLES = {
-  gojo: { name: 'Gojo: Limitless', blurb: 'Six Eyes and Limitless. Nothing reaches him, everything reaches you.', energy: Infinity, noCd: true,
-    passives: ['All Cursed: never weak, never super effective. Raw numbers instead.', 'Hold E to fly. Limitless does not care about the ground.', 'No cooldowns at all, ultimate included, and nothing he does costs him anything.'],
+  gojo: { name: 'Gojo: Limitless', blurb: 'Six Eyes and Limitless. Nothing reaches him, everything reaches you.', energy: Infinity, cdFlat: .5,
+    passives: ['All Cursed: never weak, never super effective. Raw numbers instead.', 'Hold E to fly. Limitless does not care about the ground.', 'Half a second on everything, ultimate included, and nothing he does costs him anything.'],
     pool: ['blue', 'red', 'hollow_purple', 'infinity', 'rct_heal'], slots: ['blue', 'red', 'hollow_purple', 'infinity', 'rct_heal'],
     ultimate: { skill: 'unlimited_void', name: 'Domain: Unlimited Void', cost: 40, cd: 34, duration: 5 } },
   naruto: { name: 'Naruto: Uzumaki', blurb: 'Clones, Rasengan, Sage Mode. Relentless and mobile.',
@@ -766,12 +774,12 @@ const STYLES = {
   spiderman: { name: 'Spider-Man: Neighborhood', blurb: 'Webs, kicks, Spider-Sense. Control the fight, then punish.',
     passives: ['Webbed enemies move at 40% speed and take 25% more damage.',
       'The symbiote rides on him: two black tendrils strike on their own inside seven metres, no input needed.',
-      'It armours him too — it eats 30% of every hit that lands.',
+      'It armours him too — it eats 30% of every hit, paid out of its own 260-point health bar. Tear that open and it stops covering him until it mends.',
       'Under 100 health it stops asking: the suit covers him on its own, and stays until you press G.'],
     autoLimbs: { count: 2, reach: 7, power: 18, cd: 1.8, color: 0x2a2a34, knock: 4 },
-    symbiote: { absorb: .3, panicUnder: 100, panicFor: 20, panicCd: 45 },
+    symbiote: { absorb: .3, panicUnder: 100, panicFor: 20, panicCd: 45, suit: 260, regen: 9, regenAfter: 5 },
     pool: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'healing_factor', 'web_trap'], slots: ['web_shooters', 'swing_kick', 'web_pull', 'spider_sense_t', 'healing_factor'],
-    ultimate: { kind: 'transform', into: 'venom', name: 'Symbiote: Venom', cost: 34, cd: 0, toggle: true,
+    ultimate: { kind: 'transform', into: 'venom', name: 'Symbiote: Venom', cost: 34, cd: .5, toggle: true,
       title: 'WE ARE VENOM', color: 0xf0f0f0,
       log: 'The suit crawls up over him and takes the mouth off the mask. It stays on until you press G again.' } },
   docock: { name: 'Doctor Octopus', blurb: 'Otto Octavius and four arms that answer faster than his own. He does not need to get close, and he does anyway.',
@@ -813,9 +821,11 @@ const STYLES = {
     pool: ['cleansing_touch', 'white_lash', 'antibody_burst', 'antibody_shell', 'purify'], slots: ['cleansing_touch', 'white_lash', 'antibody_burst', 'antibody_shell', 'purify'],
     ultimate: { skill: 'total_cure', name: 'TOTAL CURE', cost: 38, cd: 26, duration: 1 } },
   venom: { name: 'Venom: The Symbiote', blurb: 'The black suit, and it is not a costume. Everything Peter does, it does harder and enjoys more.',
-    passives: ['No Spider-Sense and none of Peter\'s techniques, but the symbiote spins its own webbing: hold E to swing on a black line.', 'Three tendrils fight on their own, picking their own targets inside eight metres while you do something else.', 'Bare hands hit for 34 with the reach of the tendrils behind them.', 'G puts the suit on and G takes it off. No timer, no cooldown — stay Venom as long as you like.'],
+    passives: ['No Spider-Sense and none of Peter\'s techniques, but the symbiote spins its own webbing: hold E to swing on a black line.', 'Three tendrils fight on their own, picking their own targets inside eight metres while you do something else.', 'Worn properly it eats 45% of every hit out of a 420-point suit bar, and mends faster than it does on Peter.', 'Bare hands hit for 34 with the reach of the tendrils behind them.', 'G puts the suit on and G takes it off. No timer, no cooldown — stay Venom as long as you like.'],
     m1: 34, m1Range: 1.4,
     autoLimbs: { count: 3, reach: 8, power: 24, cd: 1.6, color: 0x2a2a34, knock: 5 },
+    // Fully worn rather than carried, so it soaks more and mends faster.
+    symbiote: { absorb: .45, suit: 420, regen: 14, regenAfter: 4 },
     pool: ['symbiote_lash', 'venom_pounce', 'black_web', 'tendril_slam', 'symbiote_feed'], slots: ['symbiote_lash', 'venom_pounce', 'black_web', 'tendril_slam', 'symbiote_feed'],
     ultimate: { skill: 'we_are_venom', name: 'WE ARE VENOM', cost: 34, cd: 24, duration: 1 } },
   yuji: { name: 'Yuji: The Vessel', blurb: 'Fists, Black Flash, blood. G lets Sukuna out; die once and he takes the wheel.',
@@ -4284,12 +4294,29 @@ function symbioteFlare() {
     scene.add(t); effects.push({ kind: 'beam', m: t, t: 0, life: .25 });
   }
 }
+/** Carry the suit's condition across a transform, but hand a different
+ *  character a fresh one. Otherwise Venom inherits Peter's torn suit, and
+ *  toggling would be a way to refill it for free. */
+let suitCarried = false;
+function carrySuit(toStyle) {
+  suitCarried = true;
+  const from = player.style ? STYLES[player.style].symbiote : null;
+  const to = STYLES[toStyle]?.symbiote;
+  if (!to) { player.suitHp = null; player.suitBroken = false; return; }
+  if (from && player.suitHp != null) {
+    const frac = Math.max(0, Math.min(1, player.suitHp / (from.suit || 1)));
+    player.suitHp = to.suit * frac;                  // same symbiote, same condition
+  } else {
+    player.suitHp = to.suit; player.suitBroken = false; player.suitHurtAt = -99;
+  }
+}
 /** Take a toggled suit back off. The same call however it went on. */
 function revertTransform() {
   const back = player.transform.from;
   player.transform = null;
+  carrySuit(back);
   applyStyle(back, false);
-  player.cooldowns = {}; player.ultCd = 0;
+  player.cooldowns = {}; player.ultCd = now + .5;   // it needs a beat either way
   hitStop = .2; screenFlash(.7); shake = .8;
   center('THE SUIT COMES OFF', 1600);
   log('The symbiote peels back. Peter has the body again — press G to put it on.', true);
@@ -4320,13 +4347,23 @@ function hurtPlayer(atk, nature, from) {
   const sym = player.style ? STYLES[player.style].symbiote : null;
   let dmg = Math.round(atk * eff * (0.9 + Math.random() * .2));
   if (sym) {
-    // The suit takes the hit before he does. It is not a shield with charges —
-    // it is always there, and it always takes its share.
-    const eaten = Math.round(dmg * sym.absorb);
+    // The suit takes the hit before he does, and pays for it out of its own
+    // health. What it cannot cover goes straight through to him.
+    player.suitHurtAt = now;
+    const want = player.suitBroken ? 0 : Math.round(dmg * sym.absorb);
+    const eaten = Math.min(want, Math.max(0, Math.round(player.suitHp ?? 0)));
     if (eaten > 0) {
       dmg -= eaten;
+      player.suitHp -= eaten;
       floatText(player.pos.clone().add(new THREE.Vector3(.6, .4, 0)), '-' + eaten, 'heal');
       symbioteFlare();
+    }
+    if (player.suitHp <= 0 && !player.suitBroken) {
+      player.suitBroken = true;
+      log('The symbiote is torn open. It stops covering him until it knits back together.', true);
+      center('SUIT TORN', 1200); screenFlash(.5); shake = .7;
+      burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), 0x2a2a34, 26);
+      if (player.transform?.toggle) revertTransform();   // it cannot hold the shape either
     }
   }
   player.hp -= dmg; floatText(player.pos, dmg, 'hurt'); shake = .5; screenFlash(.25);
@@ -4982,7 +5019,10 @@ function updateCharge(dt) {
 function useUltimate() {
   if (player.charging) return;
   const st = player.style ? STYLES[player.style] : null; const u = st?.ultimate;
-  if (player.transform?.toggle) { revertTransform(); return; }
+  if (player.transform?.toggle) {
+    if (player.ultCd > now) { log(`The suit is still settling (${(player.ultCd - now).toFixed(1)}s).`); return; }
+    revertTransform(); return;
+  }
   if (!u) { log('No G ultimate for this move set.'); return; }
   if (!noCooldowns() && player.ultCd > now) { log(`${u.name} is recharging (${Math.ceil(player.ultCd - now)}s).`); return; }
   const ucost = Math.ceil(u.cost * outputCost() * buffCost());
@@ -4993,6 +5033,7 @@ function useUltimate() {
     const from = player.style;
     // A toggle has no clock on it: it holds until G is pressed again.
     player.transform = { from, until: u.toggle ? Infinity : now + u.duration, toggle: !!u.toggle };
+    carrySuit(u.into);
     applyStyle(u.into, false); player.hp = Math.min(player.maxHp, player.hp + 150); player.cooldowns = {};
     hitStop = .3; screenFlash(1); shake = 1.2; center(u.title ?? 'SUKUNA POSSESSION', 2000); camDist = 3.5;
     log(u.log ?? `"Finally." Sukuna has the body for ${u.duration} seconds. Yuji returns when it ends.`, true);
@@ -5088,6 +5129,28 @@ function spawnLash(from, to, cfg, idx) {
     const claw = new THREE.Mesh(new THREE.ConeGeometry(.13, .3, 5), m.material);
     claw.position.copy(to); scene.add(claw);
     limbLashes.push({ m: claw, t: 0, life: .28 });
+  }
+}
+/** The suit mends itself once it has been left alone for a few seconds. */
+function updateSuit(dt) {
+  const sym = player.style ? STYLES[player.style].symbiote : null;
+  const row = $('#suit-row');
+  if (!sym) { if (row) row.hidden = true; return; }
+  player.suitMax = sym.suit;
+  player.suitHp ??= sym.suit;
+  if (!player.dead && now - (player.suitHurtAt ?? -99) > (sym.regenAfter ?? 5) && player.suitHp < sym.suit) {
+    player.suitHp = Math.min(sym.suit, player.suitHp + (sym.regen ?? 9) * dt);
+    if (player.suitBroken && player.suitHp > sym.suit * .25) {
+      player.suitBroken = false;
+      log('The symbiote has knitted itself back together.', true);
+    }
+  }
+  if (row) {
+    row.hidden = false;
+    const frac = Math.max(0, player.suitHp / sym.suit);
+    $('#suit-bar').style.width = `${frac * 100}%`;
+    $('#suit-text').textContent = `${Math.round(Math.max(0, player.suitHp))} / ${sym.suit}`;
+    $('#suit-bar').parentElement.classList.toggle('hurt', player.suitBroken || frac < .3);
   }
 }
 function updateAutoLimbs(dt) {
@@ -5403,6 +5466,10 @@ function makeMahoragaMesh() {
   return g;
 }
 function applyStyle(id, announce = true) {
+  // Picking a different character off the menu hands you an untouched suit; a
+  // transform keeps the condition carrySuit just worked out for it.
+  if (!suitCarried) { player.suitHp = null; player.suitBroken = false; player.suitHurtAt = -99; }
+  suitCarried = false;
   const st = STYLES[id]; player.style = id;
   for (const sk of st.pool) if (!player.learned.includes(sk)) player.learned.push(sk);
   player.slots = st.slots.slice();
@@ -5745,6 +5812,7 @@ function frame(t) {
   updateStreets(worldDt);
   updateEnemies(worldDt);
   updateProjectiles(worldDt);
+  updateSuit(playerDt);
   updateAutoLimbs(worldDt);
   updateFreeLook(playerDt);
   updateEnemyProjectiles(worldDt);
@@ -6374,6 +6442,7 @@ for (const b of document.querySelectorAll('.look-btn')) {
 $('#retry').onclick = () => {
   for (const e of enemies) { if (!e.dead) { scene.remove(e.mesh); e.bar.remove(); } }
   enemies.length = 0; wave = 0; player.hp = player.maxHp; player.se = player.maxSe; player.dead = false; player.pos.copy(MAPS[currentMap].spawn); player.vel.set(0, 0, 0);
+  player.suitHp = null; player.suitBroken = false; player.suitHurtAt = -99;
   player.sukunaUsed = false; player.flashRamp = 0; player.transform = null; player.ultCd = 0; player.output = null; player.charging = null; player.freezeUntil = 0; player.shieldReflect = 0; player.infinity = false; history.length = 0; if (chargeAura) { scene.remove(chargeAura); chargeAura = null; } if (avatarMesh) { scene.remove(avatarMesh); avatarMesh = null; }
   for (const p of eprojectiles) scene.remove(p.m); eprojectiles.length = 0;
   for (const d of debris) scene.remove(d.m); debris.length = 0;
