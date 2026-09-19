@@ -155,6 +155,8 @@
     linear-gradient(var(--gold), var(--gold)) center/20px 2px no-repeat; opacity: .85; }
   #lock-tag { position: absolute; left: 50%; top: calc(50% + 22px); transform: translateX(-50%); font-size: 10px;
     letter-spacing: .18em; color: var(--gold); text-shadow: 0 1px 3px #000; pointer-events: none; }
+  #fp-tag { position: absolute; left: 50%; top: calc(50% + 36px); transform: translateX(-50%); font-size: 10px;
+    letter-spacing: .18em; color: #8fe0f4; text-shadow: 0 1px 3px #000; pointer-events: none; }
   .float { position: absolute; font-size: 22px; font-weight: 800; text-shadow: 2px 2px 0 #000; transform: translate(-50%, -50%); pointer-events: none; }
   .float.se { color: var(--gold); font-size: 26px; }
   .float.nve { color: #aaa; font-size: 16px; }
@@ -260,6 +262,7 @@
     <div id="speedlines"></div>
     <div id="reticle"></div>
     <div id="lock-tag" hidden>SHIFT LOCK</div>
+    <div id="fp-tag" hidden>FIRST PERSON</div>
     <div id="lock-hint" hidden>Click to give the mouse back to the game</div>
     <div id="vitals">
       <div class="label"><span>Rift Walker</span><span id="hp-text">500 / 500</span></div>
@@ -278,7 +281,7 @@
     </div>
     <div id="wave"><small id="map-name">Times Square</small><div class="display" id="wave-title">Wave 1</div><small id="wave-sub"></small><small id="who"></small></div>
     <div id="slots"></div>
-    <div id="basic">LMB Strike · RMB / E hold: Web-Swing · C Dodge<br>Space Jump · 1–5 Techniques · G Ultimate · Shift lock<br>Hold B Output charge · Tab Loadout · M Characters<br>Q Step through a gate · N World map</div>
+    <div id="basic">LMB Strike · RMB / E hold: Web-Swing · C Dodge<br>Space Jump · 1–5 Techniques · G Ultimate · Shift lock<br>Hold B Output charge · Tab Loadout · M Characters · Ctrl First person<br>Q Step through a gate · N World map</div>
     <div id="log"></div>
     <div id="center"></div>
     <div id="charge" hidden><div class="tier display"></div><div class="track"><i class="fill"></i><span class="mark" style="left:50%"></span><span class="mark" style="left:100%"></span></div><div class="hint">Hold B. Release to store it for your next ability.</div></div>
@@ -327,6 +330,7 @@
         <tr><td>Ultimate</td><td>G (Yuji: Sukuna for a minute · Megumi: summon Mahoraga)</td></tr>
         <tr><td>Signature (E)</td><td>Every Spider-Man and every symbiote swings · the other Spider-Men swing · Gojo, Iron Man, Jean and Eleven fly · Naruto charges a Rasengan · Sasuke charges Chidori · Megumi opens his domain · Yuji cuts with Dismantle</td></tr>
         <tr><td>Select character</td><td>M</td></tr>
+        <tr><td>First person</td><td>Ctrl (or P). The camera moves into his head; press again to come back out. Mid-swing Ctrl still reels the line in.</td></tr>
         <tr><td>Consume (V)</td><td>V. The symbiotes grab the nearest one, bite, and feed. It is in their pools too.</td></tr>
         <tr><td>Auto-attack</td><td>R. The symbiotes and every Spider-Man fire their tendrils and webbing on their own. Press again to take it back.</td></tr>
         <tr><td>Shift lock</td><td>Shift. Camera over the shoulder, cursor hidden, and the mouse turns you on its own — nudge it off centre to turn, bring it back to stop. With shift lock off the cursor is yours: hold a button to look around.</td></tr>
@@ -3630,6 +3634,40 @@ let camYaw = Math.PI, camPitch = .34, camDist = 7.5;
 // Shift lock: the character turns with the camera and the view sits over the
 // right shoulder, so where you look is where you face. Toggle with Q.
 let shiftLock = false, shoulder = 0;
+// First person. The camera sits where the eyes are and the body is hidden from
+// it, except the arms, which are the whole point of looking down.
+let firstPerson = false;
+function toggleFirstPerson(on) {
+  firstPerson = on ?? !firstPerson;
+  $('#fp-tag').hidden = !firstPerson;
+  // His own head and hair would fill the frame from the inside.
+  if (playerRig) {
+    playerRig.neck.visible = !firstPerson;
+    playerRig.chest.children.forEach((c) => { if (c.isMesh && c !== playerRig.neck) c.visible = true; });
+  }
+  if (body) body.traverse((o) => { if (o.isMesh && o.userData.fpHide) o.visible = !firstPerson; });
+  if (sigRing) sigRing.visible = !firstPerson;
+  camDist = firstPerson ? 0 : 6.2;
+  log(firstPerson ? 'First person. Ctrl to come back out.' : 'Third person.');
+  center(firstPerson ? 'FIRST PERSON' : 'THIRD PERSON', 900);
+}
+function updateFirstPerson(dt) {
+  // Eye height, and half a head forward so the near plane clears his own face.
+  const fwd = new THREE.Vector3(Math.sin(camYaw), 0, Math.cos(camYaw));
+  const eye = player.pos.clone().add(new THREE.Vector3(0, 1.62, 0)).addScaledVector(fwd, .12);
+  camera.position.lerp(eye, Math.min(1, 26 * dt));
+  if (shake > 0) {
+    camera.position.add(new THREE.Vector3(Math.random() - .5, Math.random() - .5, Math.random() - .5).multiplyScalar(shake * .35));
+    shake = Math.max(0, shake - dt * 2.5);
+  }
+  // Look where the mouse is looking, and let the body follow the camera.
+  const look = camera.position.clone().add(new THREE.Vector3(
+    Math.sin(camYaw) * Math.cos(camPitch), -Math.sin(camPitch), Math.cos(camYaw) * Math.cos(camPitch)).multiplyScalar(10));
+  camera.lookAt(look);
+  player.yaw = camYaw;
+  camera.fov += ((player.vel.length() > 25 ? 88 : 74) - camera.fov) * Math.min(1, 3 * dt);
+  camera.updateProjectionMatrix();
+}
 function syncPointerLock() {
   // The cursor is hidden by CSS whenever shift lock is on, so a failed or lost
   // pointer lock never leaves an arrow sitting in the middle of a mouselook mode.
@@ -3733,6 +3771,7 @@ function landed(fallSpeed) {
   if (v > 24) { hitStop = Math.max(hitStop, .05); damageBuildings(player.pos, 3 + heavy * 4, 30 * heavy); }
 }
 function updateCamera(dt) {
+  if (firstPerson) return updateFirstPerson(dt);
   const targetDist = player.swinging ? 9.5 : shiftLock ? 3.6 : 6.2;
   camDist += (targetDist - camDist) * Math.min(1, 4 * dt);
   shoulder += ((shiftLock ? 1.15 : 0) - shoulder) * Math.min(1, 8 * dt);
@@ -5791,7 +5830,7 @@ function renderSlots() {
   const st = player.style ? STYLES[player.style] : null;
   if (st?.ultimate && !player.transform?.toggle) {
     const u = st.ultimate; const d = document.createElement('div'); d.className = 'slot ult';
-    d.innerHTML = `<span class="key">G</span><span class="cost">${u.cost} SE</span><div class="name">${u.name}</div><div class="nature" style="color:var(--gold)">Ultimate · ${u.duration}s</div><div class="cd"></div>`;
+    d.innerHTML = `<span class="key">G</span><span class="cost">${u.cost} SE</span><div class="name">${u.name}</div><div class="nature" style="color:var(--gold)">Ultimate${u.toggle ? ' · toggle' : u.duration ? ` · ${u.duration}s` : ''}</div><div class="cd"></div>`;
     el.appendChild(d);
   } else if (player.transform) {
     const d = document.createElement('div'); d.className = 'slot ult';
@@ -5807,6 +5846,7 @@ function setLook(style) {
   if (playerRig) body.remove(playerRig.root);
   playerRig = buildCharacter(L);
   body.add(playerRig.root);
+  if (firstPerson) playerRig.neck.visible = false;   // keep his head out of the lens
   // A ring in the character's own colour, so you can tell who you are at a glance.
   if (sigRing) body.remove(sigRing);
   sigRing = new THREE.Mesh(new THREE.RingGeometry(.58, .76, 40), new THREE.MeshBasicMaterial({ color: L.sig ?? 0xffe45c, side: THREE.DoubleSide, transparent: true, opacity: .62, depthWrite: false }));
@@ -6109,6 +6149,12 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyL' && !e.repeat) toggleShiftLock();   // alias for Shift
   // Consume moved off E when E went back to swinging. It is on V now, and it
   // is still in every symbiote's pool if you would rather slot it.
+  // Ctrl toggles the view. While you are on a web-line it keeps its old job of
+  // reeling in, since nobody changes camera halfway through an arc.
+  if ((e.code === 'ControlLeft' || e.code === 'ControlRight') && !e.repeat && !player.swinging) {
+    e.preventDefault(); toggleFirstPerson();
+  }
+  if (e.code === 'KeyP' && !e.repeat) toggleFirstPerson();
   if (e.code === 'KeyV' && !e.repeat) {
     if (STYLES[player.style]?.symbiote) castSkill('symbiote_feed', {});
     else log('Nothing here eats people.');
