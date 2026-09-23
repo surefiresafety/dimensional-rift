@@ -52,7 +52,7 @@ return {
 		bossLadder = true,
 	},
 	jujutsu_high = {
-		name = "Tokyo Jujutsu High",
+		name = "Tokyo Sorcery Academy",
 		sub = "the hidden campus",
 		seed = 5150,
 		build = "buildJujutsuHigh",
@@ -94,11 +94,11 @@ return {
 		bossLadder = true,
 	},
 	star_corridor = {
-		name = "Tombs of the Star Corridor",
-		sub = "beneath Jujutsu High",
+		name = "Tombs of the Star Vault",
+		sub = "beneath Sorcery Academy",
 		seed = 909,
 		build = "buildStarCorridor",
-		blurb = "Master Tengen's sanctuary, far under the school. No sky, no way out but the gates.",
+		blurb = "the Keeper's sanctuary, far under the school. No sky, no way out but the gates.",
 		sky = 0x0a0812,
 		fogColor = 0x1c1430,
 		fogNear = 40,
@@ -178,7 +178,7 @@ return {
 		bossLadder = true,
 	},
 	culling_colony = {
-		name = "Culling Game Colony",
+		name = "Survival Colony",
 		sub = "Tokyo No. 1",
 		seed = 3131,
 		build = "buildCullingColony",
@@ -222,7 +222,7 @@ return {
 	},
 	land_of_wind = {
 		name = "Land of Wind",
-		sub = "Hidden Sand — Suna",
+		sub = "Desert Village",
 		seed = 2468,
 		build = "buildLandOfWind",
 		blurb = "Harsh desert in the southwest, and a village walled in by rock.",
@@ -263,7 +263,7 @@ return {
 	},
 	land_of_earth = {
 		name = "Land of Earth",
-		sub = "Hidden Stone — Iwa",
+		sub = "Stone Village",
 		seed = 1357,
 		build = "buildLandOfEarth",
 		blurb = "Rock and terraces in the northwest. Everything here hits like the ground.",
@@ -304,7 +304,7 @@ return {
 	},
 	land_of_water = {
 		name = "Land of Water",
-		sub = "Hidden Mist — Kiri",
+		sub = "Mist Village",
 		seed = 8642,
 		build = "buildLandOfWater",
 		blurb = "An island nation to the east. You will not see much of it.",
@@ -345,7 +345,7 @@ return {
 	},
 	land_of_lightning = {
 		name = "Land of Lightning",
-		sub = "Hidden Cloud — Kumo",
+		sub = "Storm Village",
 		seed = 9753,
 		build = "buildLandOfLightning",
 		blurb = "Mountain peaks in the northeast, above the cloud line, in a permanent storm.",

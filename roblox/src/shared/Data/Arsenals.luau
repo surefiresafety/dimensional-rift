@@ -129,7 +129,7 @@ return {
 				mul = 1,
 				range = 1,
 				knock = 5,
-				note = "Bare hands, and 70% of them come out as Black Flash.",
+				note = "Bare hands, and 70% of them come out as Dark Spark.",
 			},
 			knife = {
 				name = "Cursed Knife",
@@ -143,7 +143,7 @@ return {
 			},
 			slaughter = {
 				name = "Slaughter Demon",
-				sub = "Toji's blade",
+				sub = "Zero's blade",
 				color = 0x9fe870,
 				m1 = 30,
 				mul = 1.3,
@@ -169,7 +169,7 @@ return {
 				note = "Balanced armour. Nothing it does badly.",
 			},
 			hulkbuster = {
-				name = "Hulkbuster",
+				name = "Titanbreaker",
 				sub = "Veronica",
 				color = 0xe06010,
 				m1 = 48,
@@ -193,7 +193,7 @@ return {
 				note = "Half the cooldowns and half the cost. Death by a thousand cuts.",
 			},
 			warmachine = {
-				name = "War Machine",
+				name = "Warhammer",
 				sub = "guns, mostly",
 				color = 0x8a8a96,
 				m1 = 34,

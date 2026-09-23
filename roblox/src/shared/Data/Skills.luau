@@ -10,7 +10,7 @@
 return {
 	web_stun = {
 		name = "Web-Stun",
-		origin = "Marvel",
+		origin = "Skyline City",
 		nature = "physical",
 		cost = 4,
 		cd = 2.5,
@@ -26,7 +26,7 @@ return {
 	},
 	fireball = {
 		name = "Fireball Jutsu",
-		origin = "Naruto",
+		origin = "Ren",
 		nature = "fire",
 		cost = 10,
 		cd = 3,
@@ -37,11 +37,11 @@ return {
 		onHit = {
 			burn = 3,
 		},
-		desc = "Uchiha signature. May burn.",
+		desc = "Crow-clan signature. May burn.",
 	},
 	chidori = {
-		name = "Chidori",
-		origin = "Naruto",
+		name = "Lightning Lance",
+		origin = "Ren",
 		nature = "lightning",
 		cost = 14,
 		cd = 5,
@@ -54,8 +54,8 @@ return {
 		desc = "Lightning dash. Hits everything in the line.",
 	},
 	rasengan = {
-		name = "Rasengan",
-		origin = "Naruto",
+		name = "Spiral Core",
+		origin = "Ren",
 		nature = "wind",
 		cost = 12,
 		cd = 4,
@@ -97,7 +97,7 @@ return {
 	},
 	hanami_roots = {
 		name = "Cursed Roots",
-		origin = "JJK",
+		origin = "Sorcery",
 		nature = "earth",
 		cost = 10,
 		cd = 4,
@@ -111,7 +111,7 @@ return {
 	},
 	disaster_flames = {
 		name = "Disaster Flames",
-		origin = "JJK",
+		origin = "Sorcery",
 		nature = "fire",
 		cost = 18,
 		cd = 6,
@@ -122,11 +122,11 @@ return {
 		onHit = {
 			burn = 4,
 		},
-		desc = "Jogo's volcanic technique.",
+		desc = "Kazan's volcanic technique.",
 	},
 	shadow_clone = {
 		name = "Shadow Clone",
-		origin = "Naruto",
+		origin = "Ren",
 		nature = "physical",
 		cost = 9,
 		cd = 9,
@@ -136,7 +136,7 @@ return {
 	},
 	dismantle = {
 		name = "Dismantle",
-		origin = "JJK",
+		origin = "Sorcery",
 		nature = "wind",
 		cost = 10,
 		cd = 3,
@@ -144,7 +144,7 @@ return {
 		range = 6,
 		arc = 0.5,
 		power = 60,
-		desc = "Sukuna's invisible slashes.",
+		desc = "Akuro's invisible slashes.",
 	},
 	boulder_toss = {
 		name = "Boulder Toss",
@@ -177,7 +177,7 @@ return {
 	},
 	blue = {
 		name = "Lapse: Blue",
-		origin = "Gojo",
+		origin = "Hakumei",
 		nature = "cursed",
 		cost = 12,
 		cd = 4,
@@ -191,7 +191,7 @@ return {
 	},
 	red = {
 		name = "Reversal: Red",
-		origin = "Gojo",
+		origin = "Hakumei",
 		nature = "cursed",
 		cost = 14,
 		cd = 4.5,
@@ -204,8 +204,8 @@ return {
 		desc = "Repulsion blast. Sends enemies flying.",
 	},
 	hollow_purple = {
-		name = "Hollow Purple",
-		origin = "Gojo",
+		name = "Void Violet",
+		origin = "Hakumei",
 		nature = "cursed",
 		cost = 30,
 		cd = 12,
@@ -217,8 +217,8 @@ return {
 		desc = "Blue and Red collide. Erases everything in a line.",
 	},
 	unlimited_void = {
-		name = "Domain: Unlimited Void",
-		origin = "Gojo",
+		name = "Realm: Unlimited Void",
+		origin = "Hakumei",
 		nature = "cursed",
 		cost = 40,
 		cd = 11,
@@ -238,7 +238,7 @@ return {
 	},
 	infinity = {
 		name = "Infinity",
-		origin = "Gojo",
+		origin = "Hakumei",
 		nature = "cursed",
 		cost = 15,
 		cd = 0,
@@ -246,8 +246,8 @@ return {
 		desc = "Nothing reaches you, for as long as you leave it up. Press 4 again to drop it.",
 	},
 	rasengan_n = {
-		name = "Rasengan",
-		origin = "Naruto",
+		name = "Spiral Core",
+		origin = "Ren",
 		nature = "wind",
 		cost = 10,
 		cd = 3,
@@ -259,7 +259,7 @@ return {
 	},
 	multi_clone = {
 		name = "Multi Shadow Clone",
-		origin = "Naruto",
+		origin = "Ren",
 		nature = "physical",
 		cost = 14,
 		cd = 5,
@@ -268,11 +268,11 @@ return {
 		count = 4,
 		duration = 18,
 		power = 14,
-		desc = "Uncharged it makes three to five clones. Charge it with B first for the real thing: Minimum Output 1,000, Medium 5,000, Maximum 10,000. Ten HP each, and they throw their own Rasengan and Rasenshuriken.",
+		desc = "Uncharged it makes three to five clones. Charge it with B first for the real thing: Minimum Output 1,000, Medium 5,000, Maximum 10,000. Ten HP each, and they throw their own Spiral Core and Rasenshuriken.",
 	},
 	rasenshuriken = {
 		name = "Rasenshuriken",
-		origin = "Naruto",
+		origin = "Ren",
 		nature = "wind",
 		cost = 26,
 		cd = 9,
@@ -286,7 +286,7 @@ return {
 	},
 	sage_mode = {
 		name = "Sage Mode",
-		origin = "Naruto",
+		origin = "Ren",
 		nature = "physical",
 		cost = 20,
 		cd = 25,
@@ -298,7 +298,7 @@ return {
 	},
 	tailed_beast_bomb = {
 		name = "Tailed Beast Bomb",
-		origin = "Naruto",
+		origin = "Ren",
 		nature = "fire",
 		cost = 34,
 		cd = 14,
@@ -310,11 +310,11 @@ return {
 		onHit = {
 			burn = 5,
 		},
-		desc = "Kurama's chakra, compressed and fired.",
+		desc = "the Fox's chakra, compressed and fired.",
 	},
 	dismantle_s = {
 		name = "Dismantle",
-		origin = "Sukuna",
+		origin = "Akuro",
 		nature = "wind",
 		cost = 7,
 		cd = 0,
@@ -327,7 +327,7 @@ return {
 	},
 	cleave = {
 		name = "Cleave",
-		origin = "Sukuna",
+		origin = "Akuro",
 		nature = "wind",
 		cost = 12,
 		cd = 0,
@@ -341,7 +341,7 @@ return {
 	},
 	fuga = {
 		name = "Fire Arrow (Fuga)",
-		origin = "Sukuna",
+		origin = "Akuro",
 		nature = "fire",
 		cost = 22,
 		cd = 8,
@@ -357,7 +357,7 @@ return {
 	},
 	world_slash = {
 		name = "World Cutting Slash",
-		origin = "Sukuna",
+		origin = "Akuro",
 		nature = "wind",
 		cost = 32,
 		cd = 14,
@@ -369,8 +369,8 @@ return {
 		desc = "Space itself is cut. Everything in the line is halved.",
 	},
 	malevolent_shrine = {
-		name = "Domain: Malevolent Shrine",
-		origin = "Sukuna",
+		name = "Realm: Malevolent Shrine",
+		origin = "Akuro",
 		nature = "wind",
 		cost = 40,
 		cd = 11,
@@ -390,7 +390,7 @@ return {
 	},
 	web_shooters = {
 		name = "Web-Shooters",
-		origin = "Spider-Man",
+		origin = "Threadrunner",
 		nature = "physical",
 		cost = 5,
 		cd = 1.1,
@@ -407,7 +407,7 @@ return {
 	},
 	swing_kick = {
 		name = "Web Swing Kick",
-		origin = "Spider-Man",
+		origin = "Threadrunner",
 		nature = "physical",
 		cost = 9,
 		cd = 3,
@@ -423,7 +423,7 @@ return {
 	},
 	web_pull = {
 		name = "Web-Pull",
-		origin = "Spider-Man",
+		origin = "Threadrunner",
 		nature = "physical",
 		cost = 8,
 		cd = 4,
@@ -433,8 +433,8 @@ return {
 		desc = "Yank an enemy to you and stagger it. Also moves boulders, apparently.",
 	},
 	spider_sense_t = {
-		name = "Spider-Sense",
-		origin = "Spider-Man",
+		name = "Danger Sense",
+		origin = "Threadrunner",
 		nature = "physical",
 		cost = 12,
 		cd = 16,
@@ -444,7 +444,7 @@ return {
 	},
 	web_trap = {
 		name = "Web Trap",
-		origin = "Spider-Man",
+		origin = "Threadrunner",
 		nature = "physical",
 		cost = 16,
 		cd = 9,
@@ -461,7 +461,7 @@ return {
 	},
 	divergent_fist = {
 		name = "Divergent Fist",
-		origin = "Yuji",
+		origin = "Haru",
 		nature = "physical",
 		cost = 5,
 		cd = 1.2,
@@ -477,8 +477,8 @@ return {
 		desc = "The cursed energy lands a beat after the punch. Two hits.",
 	},
 	black_flash = {
-		name = "Black Flash",
-		origin = "Yuji",
+		name = "Dark Spark",
+		origin = "Haru",
 		nature = "cursed",
 		cost = 9,
 		cd = 2.5,
@@ -496,7 +496,7 @@ return {
 	},
 	manji_kick = {
 		name = "Manji Kick",
-		origin = "Yuji",
+		origin = "Haru",
 		nature = "physical",
 		cost = 8,
 		cd = 3,
@@ -510,7 +510,7 @@ return {
 	},
 	piercing_blood = {
 		name = "Piercing Blood",
-		origin = "Yuji",
+		origin = "Haru",
 		nature = "cursed",
 		cost = 14,
 		cd = 6,
@@ -523,7 +523,7 @@ return {
 	},
 	healing_factor = {
 		name = "Healing Factor",
-		origin = "Spider-Man",
+		origin = "Threadrunner",
 		nature = "physical",
 		cost = 22,
 		cd = 16,
@@ -533,7 +533,7 @@ return {
 	},
 	rct_heal = {
 		name = "Reverse Cursed Technique",
-		origin = "Jujutsu",
+		origin = "Sorcery",
 		nature = "cursed",
 		cost = 22,
 		cd = 16,
@@ -543,7 +543,7 @@ return {
 	},
 	incomplete_shrine = {
 		name = "Incomplete Shrine",
-		origin = "Sukuna",
+		origin = "Akuro",
 		nature = "wind",
 		cost = 26,
 		cd = 22,
@@ -564,7 +564,7 @@ return {
 	},
 	sorcerer_killer = {
 		name = "Sorcerer Killer",
-		origin = "Toji",
+		origin = "Zero",
 		nature = "physical",
 		cost = 8,
 		cd = 3,
@@ -579,7 +579,7 @@ return {
 	},
 	wide_sweep = {
 		name = "Wide Sweep",
-		origin = "Toji",
+		origin = "Zero",
 		nature = "physical",
 		cost = 7,
 		cd = 2.4,
@@ -593,7 +593,7 @@ return {
 	},
 	inventory_throw = {
 		name = "Inventory Curse",
-		origin = "Toji",
+		origin = "Zero",
 		nature = "physical",
 		cost = 6,
 		cd = 2,
@@ -607,7 +607,7 @@ return {
 	},
 	execution = {
 		name = "Execution",
-		origin = "Toji",
+		origin = "Zero",
 		nature = "physical",
 		cost = 12,
 		cd = 5,
@@ -622,7 +622,7 @@ return {
 	},
 	weapon_switch = {
 		name = "Switch Weapon",
-		origin = "Toji",
+		origin = "Zero",
 		nature = "physical",
 		cost = 0,
 		cd = 0,
@@ -631,7 +631,7 @@ return {
 	},
 	heavenly_restriction = {
 		name = "Heavenly Restriction",
-		origin = "Toji",
+		origin = "Zero",
 		nature = "physical",
 		cost = 30,
 		cd = 30,
@@ -645,7 +645,7 @@ return {
 	},
 	amenotejikara = {
 		name = "Amenotejikara",
-		origin = "Sasuke",
+		origin = "Kurobane",
 		nature = "lightning",
 		cost = 6,
 		cd = 2,
@@ -656,7 +656,7 @@ return {
 	},
 	time_freeze = {
 		name = "Time Freeze",
-		origin = "Sasuke",
+		origin = "Kurobane",
 		nature = "cursed",
 		cost = 16,
 		cd = 14,
@@ -666,7 +666,7 @@ return {
 	},
 	frozen_world = {
 		name = "Frozen World",
-		origin = "Sasuke",
+		origin = "Kurobane",
 		nature = "cursed",
 		cost = 26,
 		cd = 22,
@@ -678,7 +678,7 @@ return {
 	},
 	reverse_time = {
 		name = "Reverse Time",
-		origin = "Sasuke",
+		origin = "Kurobane",
 		nature = "cursed",
 		cost = 20,
 		cd = 25,
@@ -687,8 +687,8 @@ return {
 		desc = "Rewind yourself six seconds. Your health, energy and position all come back.",
 	},
 	amaterasu = {
-		name = "Amaterasu",
-		origin = "Sasuke",
+		name = "Black Sun",
+		origin = "Kurobane",
 		nature = "fire",
 		cost = 18,
 		cd = 8,
@@ -704,8 +704,8 @@ return {
 		desc = "Black flames that will not go out.",
 	},
 	susanoo = {
-		name = "Perfect Susanoo",
-		origin = "Sasuke",
+		name = "Perfect Spectral Titan",
+		origin = "Kurobane",
 		nature = "lightning",
 		cost = 40,
 		cd = 36,
@@ -720,7 +720,7 @@ return {
 	},
 	spirit_barrage = {
 		name = "Cursed Spirit Barrage",
-		origin = "Geto",
+		origin = "Hoshiro",
 		nature = "cursed",
 		cost = 10,
 		cd = 3,
@@ -733,7 +733,7 @@ return {
 	},
 	spirit_summon = {
 		name = "Spirit Manipulation",
-		origin = "Geto",
+		origin = "Hoshiro",
 		nature = "cursed",
 		cost = 16,
 		cd = 14,
@@ -747,7 +747,7 @@ return {
 	},
 	rainbow_dragon = {
 		name = "Rainbow Dragon",
-		origin = "Geto",
+		origin = "Hoshiro",
 		nature = "water",
 		cost = 22,
 		cd = 8,
@@ -759,8 +759,8 @@ return {
 		desc = "A serpent of cursed energy tears down the street.",
 	},
 	uzumaki = {
-		name = "Maximum: Uzumaki",
-		origin = "Geto",
+		name = "Maximum: Tsumuji",
+		origin = "Hoshiro",
 		nature = "cursed",
 		cost = 34,
 		cd = 12,
@@ -776,8 +776,8 @@ return {
 		desc = "Crushes every curse he owns into one sphere and drops it.",
 	},
 	geto_domain = {
-		name = "Domain: Coffin of the Curses",
-		origin = "Geto",
+		name = "Realm: Coffin of the Curses",
+		origin = "Hoshiro",
 		nature = "cursed",
 		cost = 40,
 		cd = 34,
@@ -795,7 +795,7 @@ return {
 	},
 	body_swap = {
 		name = "Body Swap",
-		origin = "Kenjaku",
+		origin = "Nuime",
 		nature = "cursed",
 		cost = 18,
 		cd = 16,
@@ -808,7 +808,7 @@ return {
 	},
 	curse_womb = {
 		name = "Cursed Womb",
-		origin = "Kenjaku",
+		origin = "Nuime",
 		nature = "cursed",
 		cost = 14,
 		cd = 4,
@@ -824,7 +824,7 @@ return {
 	},
 	antigravity = {
 		name = "Antigravity System",
-		origin = "Kenjaku",
+		origin = "Nuime",
 		nature = "wind",
 		cost = 16,
 		cd = 7,
@@ -840,8 +840,8 @@ return {
 		desc = "Rips gravity out from under them and holds them there.",
 	},
 	kenjaku_domain = {
-		name = "Domain: Womb Profusion",
-		origin = "Kenjaku",
+		name = "Realm: Womb Profusion",
+		origin = "Nuime",
 		nature = "cursed",
 		cost = 40,
 		cd = 34,
@@ -859,7 +859,7 @@ return {
 	},
 	piercing_blood_c = {
 		name = "Piercing Blood",
-		origin = "Choso",
+		origin = "Akagane",
 		nature = "cursed",
 		cost = 12,
 		cd = 4,
@@ -873,7 +873,7 @@ return {
 	},
 	flowing_red = {
 		name = "Flowing Red Scale",
-		origin = "Choso",
+		origin = "Akagane",
 		nature = "cursed",
 		cost = 20,
 		cd = 22,
@@ -887,7 +887,7 @@ return {
 	},
 	blood_meteorite = {
 		name = "Blood Meteorite",
-		origin = "Choso",
+		origin = "Akagane",
 		nature = "cursed",
 		cost = 14,
 		cd = 5,
@@ -901,7 +901,7 @@ return {
 	},
 	supernova = {
 		name = "Supernova",
-		origin = "Choso",
+		origin = "Akagane",
 		nature = "fire",
 		cost = 34,
 		cd = 8,
@@ -914,7 +914,7 @@ return {
 	},
 	idle_transfig = {
 		name = "Idle Transfiguration",
-		origin = "Mahito",
+		origin = "Patchwork",
 		nature = "cursed",
 		cost = 10,
 		cd = 2,
@@ -927,7 +927,7 @@ return {
 	},
 	body_repel = {
 		name = "Body Repel",
-		origin = "Mahito",
+		origin = "Patchwork",
 		nature = "cursed",
 		cost = 14,
 		cd = 6,
@@ -944,7 +944,7 @@ return {
 	},
 	soul_multiplicity = {
 		name = "Soul Multiplicity",
-		origin = "Mahito",
+		origin = "Patchwork",
 		nature = "cursed",
 		cost = 20,
 		cd = 16,
@@ -958,7 +958,7 @@ return {
 	},
 	polymorphic = {
 		name = "Polymorphic Soul Isomer",
-		origin = "Mahito",
+		origin = "Patchwork",
 		nature = "water",
 		cost = 24,
 		cd = 8,
@@ -973,8 +973,8 @@ return {
 		desc = "Throws a transfigured human that bursts into rot.",
 	},
 	mahito_domain = {
-		name = "Domain: Self-Embodiment of Perfection",
-		origin = "Mahito",
+		name = "Realm: Self-Embodiment of Perfection",
+		origin = "Patchwork",
 		nature = "cursed",
 		cost = 40,
 		cd = 34,
@@ -992,7 +992,7 @@ return {
 	},
 	ember_insects = {
 		name = "Ember Insects",
-		origin = "Jogo",
+		origin = "Kazan",
 		nature = "fire",
 		cost = 12,
 		cd = 3,
@@ -1008,7 +1008,7 @@ return {
 	},
 	volcano_head = {
 		name = "Mount Fuji",
-		origin = "Jogo",
+		origin = "Kazan",
 		nature = "fire",
 		cost = 24,
 		cd = 9,
@@ -1021,7 +1021,7 @@ return {
 	},
 	maximum_meteor = {
 		name = "Maximum: Meteor",
-		origin = "Jogo",
+		origin = "Kazan",
 		nature = "fire",
 		cost = 36,
 		cd = 15,
@@ -1036,8 +1036,8 @@ return {
 		desc = "Drops a meteor. Nothing under it survives.",
 	},
 	jogo_domain = {
-		name = "Domain: Coffin of the Molten Mountain",
-		origin = "Jogo",
+		name = "Realm: Coffin of the Molten Mountain",
+		origin = "Kazan",
 		nature = "fire",
 		cost = 40,
 		cd = 34,
@@ -1056,7 +1056,7 @@ return {
 	},
 	flower_field = {
 		name = "Flower Field",
-		origin = "Hanami",
+		origin = "Thornbloom",
 		nature = "earth",
 		cost = 16,
 		cd = 8,
@@ -1073,7 +1073,7 @@ return {
 	},
 	wood_spikes = {
 		name = "Wooden Ball",
-		origin = "Hanami",
+		origin = "Thornbloom",
 		nature = "earth",
 		cost = 12,
 		cd = 4,
@@ -1086,7 +1086,7 @@ return {
 	},
 	drain_life = {
 		name = "Drain",
-		origin = "Hanami",
+		origin = "Thornbloom",
 		nature = "earth",
 		cost = 14,
 		cd = 10,
@@ -1095,8 +1095,8 @@ return {
 		desc = "Pulls life out of the ground and back into himself.",
 	},
 	chimera_garden = {
-		name = "Domain: Chimera Shadow Garden",
-		origin = "Megumi",
+		name = "Realm: Chimera Shadow Garden",
+		origin = "Kage",
 		nature = "earth",
 		cost = 34,
 		cd = 26,
@@ -1114,8 +1114,8 @@ return {
 		desc = "The ground turns to shadow and every shikigami he has can rise out of it.",
 	},
 	hanami_domain = {
-		name = "Domain: Garden of Rot",
-		origin = "Hanami",
+		name = "Realm: Garden of Rot",
+		origin = "Thornbloom",
 		nature = "earth",
 		cost = 40,
 		cd = 34,
@@ -1134,7 +1134,7 @@ return {
 	},
 	water_shikigami = {
 		name = "Water Shikigami",
-		origin = "Dagon",
+		origin = "Tidehollow",
 		nature = "water",
 		cost = 16,
 		cd = 14,
@@ -1148,7 +1148,7 @@ return {
 	},
 	tidal_wave = {
 		name = "Tidal Wave",
-		origin = "Dagon",
+		origin = "Tidehollow",
 		nature = "water",
 		cost = 22,
 		cd = 8,
@@ -1161,7 +1161,7 @@ return {
 	},
 	whirlpool = {
 		name = "Whirlpool",
-		origin = "Dagon",
+		origin = "Tidehollow",
 		nature = "water",
 		cost = 16,
 		cd = 6,
@@ -1175,7 +1175,7 @@ return {
 	},
 	death_swarm = {
 		name = "Death Swarm",
-		origin = "Dagon",
+		origin = "Tidehollow",
 		nature = "water",
 		cost = 20,
 		cd = 7,
@@ -1187,8 +1187,8 @@ return {
 		desc = "Sends the whole shoal at once.",
 	},
 	dagon_domain = {
-		name = "Domain: Horizon of the Captivating Skandha",
-		origin = "Dagon",
+		name = "Realm: Horizon of the Captivating Skandha",
+		origin = "Tidehollow",
 		nature = "water",
 		cost = 40,
 		cd = 34,
@@ -1207,7 +1207,7 @@ return {
 	},
 	tk_push = {
 		name = "Telekinetic Push",
-		origin = "Eleven",
+		origin = "Nosebleed",
 		nature = "physical",
 		cost = 10,
 		cd = 3,
@@ -1224,7 +1224,7 @@ return {
 	},
 	tk_lift = {
 		name = "Lift",
-		origin = "Eleven",
+		origin = "Nosebleed",
 		nature = "physical",
 		cost = 12,
 		cd = 5,
@@ -1238,7 +1238,7 @@ return {
 	},
 	tk_crush = {
 		name = "Crush",
-		origin = "Eleven",
+		origin = "Nosebleed",
 		nature = "physical",
 		cost = 14,
 		cd = 4,
@@ -1251,7 +1251,7 @@ return {
 	},
 	mind_flay = {
 		name = "Mind Flay",
-		origin = "Eleven",
+		origin = "Nosebleed",
 		nature = "cursed",
 		cost = 24,
 		cd = 9,
@@ -1264,7 +1264,7 @@ return {
 	},
 	nosebleed = {
 		name = "Push Past the Nosebleed",
-		origin = "Eleven",
+		origin = "Nosebleed",
 		nature = "physical",
 		cost = 22,
 		cd = 24,
@@ -1278,7 +1278,7 @@ return {
 	},
 	the_gate = {
 		name = "Open the Gate",
-		origin = "Eleven",
+		origin = "Nosebleed",
 		nature = "cursed",
 		cost = 40,
 		cd = 34,
@@ -1296,7 +1296,7 @@ return {
 	},
 	tk_blast = {
 		name = "Telekinetic Blast",
-		origin = "Jean Grey",
+		origin = "Mindflare",
 		nature = "physical",
 		cost = 10,
 		cd = 2.5,
@@ -1310,7 +1310,7 @@ return {
 	},
 	psi_stun = {
 		name = "Psychic Stun",
-		origin = "Jean Grey",
+		origin = "Mindflare",
 		nature = "cursed",
 		cost = 18,
 		cd = 14,
@@ -1322,7 +1322,7 @@ return {
 	},
 	psi_shield = {
 		name = "Telekinetic Shield",
-		origin = "Jean Grey",
+		origin = "Mindflare",
 		nature = "physical",
 		cost = 14,
 		cd = 12,
@@ -1335,7 +1335,7 @@ return {
 	},
 	psi_bolt = {
 		name = "Psi-Bolt",
-		origin = "Jean Grey",
+		origin = "Mindflare",
 		nature = "cursed",
 		cost = 22,
 		cd = 8,
@@ -1347,8 +1347,8 @@ return {
 		desc = "A lance of psychic force straight down the road.",
 	},
 	phoenix_flare = {
-		name = "Phoenix Flare",
-		origin = "Jean Grey",
+		name = "Ember Flare",
+		origin = "Mindflare",
 		nature = "fire",
 		cost = 26,
 		cd = 10,
@@ -1363,8 +1363,8 @@ return {
 		desc = "A bird of fire that bursts over them.",
 	},
 	phoenix_force = {
-		name = "The Phoenix Force",
-		origin = "Jean Grey",
+		name = "The Ember Force",
+		origin = "Mindflare",
 		nature = "fire",
 		cost = 40,
 		cd = 36,
@@ -1384,7 +1384,7 @@ return {
 	},
 	repulsor = {
 		name = "Repulsor",
-		origin = "Iron Man",
+		origin = "Arc Knight",
 		nature = "lightning",
 		cost = 8,
 		cd = 1.6,
@@ -1399,7 +1399,7 @@ return {
 	},
 	unibeam = {
 		name = "Unibeam",
-		origin = "Iron Man",
+		origin = "Arc Knight",
 		nature = "lightning",
 		cost = 24,
 		cd = 9,
@@ -1413,7 +1413,7 @@ return {
 	},
 	micro_missiles = {
 		name = "Micro-Missiles",
-		origin = "Iron Man",
+		origin = "Arc Knight",
 		nature = "fire",
 		cost = 18,
 		cd = 6,
@@ -1430,7 +1430,7 @@ return {
 	},
 	flight_boost = {
 		name = "Flight",
-		origin = "Iron Man",
+		origin = "Arc Knight",
 		nature = "physical",
 		cost = 10,
 		cd = 4,
@@ -1445,16 +1445,16 @@ return {
 	},
 	change_suit = {
 		name = "Change Suit",
-		origin = "Iron Man",
+		origin = "Arc Knight",
 		nature = "physical",
 		cost = 0,
 		cd = 0,
 		["type"] = "switch",
-		desc = "Call down the next suit: Mark 42, Hulkbuster, Bleeding Edge, War Machine. Each one changes your basic attack and every move.",
+		desc = "Call down the next suit: Mark 42, Titanbreaker, Bleeding Edge, Warhammer. Each one changes your basic attack and every move.",
 	},
 	house_party = {
 		name = "House Party Protocol",
-		origin = "Iron Man",
+		origin = "Arc Knight",
 		nature = "physical",
 		cost = 36,
 		cd = 32,
@@ -1548,8 +1548,8 @@ return {
 		desc = "The panel holds. He keeps moving; nothing else does.",
 	},
 	chidori_k = {
-		name = "Chidori",
-		origin = "Kakashi",
+		name = "Lightning Lance",
+		origin = "Hatsuyuki",
 		nature = "lightning",
 		cost = 14,
 		cd = 3,
@@ -1563,8 +1563,8 @@ return {
 		desc = "His own technique. He runs it straight through whatever is in the way.",
 	},
 	rasengan_k = {
-		name = "Rasengan",
-		origin = "Kakashi",
+		name = "Spiral Core",
+		origin = "Hatsuyuki",
 		nature = "wind",
 		cost = 12,
 		cd = 3,
@@ -1573,11 +1573,11 @@ return {
 		arc = 0.25,
 		power = 95,
 		knock = 20,
-		desc = "Copied with the Sharingan and driven in at close range.",
+		desc = "Copied with the copy eye and driven in at close range.",
 	},
 	raikiri = {
 		name = "Lightning Blade",
-		origin = "Kakashi",
+		origin = "Hatsuyuki",
 		nature = "lightning",
 		cost = 16,
 		cd = 4,
@@ -1588,11 +1588,11 @@ return {
 			paralyze = 3,
 			knock = 18,
 		},
-		desc = "Chidori sharpened until it cuts clean through.",
+		desc = "Lightning Lance sharpened until it cuts clean through.",
 	},
 	water_dragon_k = {
 		name = "Water Dragon Jutsu",
-		origin = "Kakashi",
+		origin = "Hatsuyuki",
 		nature = "water",
 		cost = 16,
 		cd = 4,
@@ -1608,7 +1608,7 @@ return {
 	},
 	mud_wall_k = {
 		name = "Earth Style: Mud Wall",
-		origin = "Kakashi",
+		origin = "Hatsuyuki",
 		nature = "earth",
 		cost = 12,
 		cd = 8,
@@ -1620,7 +1620,7 @@ return {
 	},
 	ninja_hounds_k = {
 		name = "Summoning: Ninja Hounds",
-		origin = "Kakashi",
+		origin = "Hatsuyuki",
 		nature = "earth",
 		cost = 16,
 		cd = 12,
@@ -1633,8 +1633,8 @@ return {
 		desc = "The pack comes up out of the ground and pins whatever it catches.",
 	},
 	kamui = {
-		name = "Kamui",
-		origin = "Kakashi",
+		name = "Rift Step",
+		origin = "Hatsuyuki",
 		nature = "cursed",
 		cost = 12,
 		cd = 6,
@@ -1644,8 +1644,8 @@ return {
 		desc = "Sends part of the world somewhere else, himself included.",
 	},
 	kamui_raikiri = {
-		name = "Kamui Lightning Blade",
-		origin = "Kakashi",
+		name = "Rift Step Lightning Blade",
+		origin = "Hatsuyuki",
 		nature = "lightning",
 		cost = 38,
 		cd = 30,
@@ -1658,7 +1658,7 @@ return {
 	},
 	kashimo_amber = {
 		name = "Mythical Beast Amber",
-		origin = "Kashimo",
+		origin = "Ikazuchi",
 		nature = "lightning",
 		cost = 12,
 		cd = 3,
@@ -1674,7 +1674,7 @@ return {
 	},
 	lightning_guard = {
 		name = "Lightning Guard",
-		origin = "Kashimo",
+		origin = "Ikazuchi",
 		nature = "lightning",
 		cost = 14,
 		cd = 12,
@@ -1687,7 +1687,7 @@ return {
 	},
 	thunder_staff = {
 		name = "Thunderclap Staff",
-		origin = "Kashimo",
+		origin = "Ikazuchi",
 		nature = "lightning",
 		cost = 7,
 		cd = 1.4,
@@ -1703,7 +1703,7 @@ return {
 	},
 	discharge = {
 		name = "Full Discharge",
-		origin = "Kashimo",
+		origin = "Ikazuchi",
 		nature = "lightning",
 		cost = 20,
 		cd = 7,
@@ -1720,7 +1720,7 @@ return {
 	},
 	amber_maximum = {
 		name = "Amber: Maximum",
-		origin = "Kashimo",
+		origin = "Ikazuchi",
 		nature = "lightning",
 		cost = 38,
 		cd = 34,
@@ -1740,7 +1740,7 @@ return {
 	},
 	projection_dash = {
 		name = "Projection Sorcery",
-		origin = "Naoya",
+		origin = "Framerate",
 		nature = "physical",
 		cost = 10,
 		cd = 2.2,
@@ -1755,7 +1755,7 @@ return {
 	},
 	frame_kick = {
 		name = "24 Frame Kick",
-		origin = "Naoya",
+		origin = "Framerate",
 		nature = "physical",
 		cost = 6,
 		cd = 0.9,
@@ -1768,7 +1768,7 @@ return {
 	},
 	frame_lock = {
 		name = "Frame Lock",
-		origin = "Naoya",
+		origin = "Framerate",
 		nature = "physical",
 		cost = 12,
 		cd = 6,
@@ -1784,7 +1784,7 @@ return {
 	},
 	heel_drop = {
 		name = "Heel Drop",
-		origin = "Naoya",
+		origin = "Framerate",
 		nature = "physical",
 		cost = 9,
 		cd = 3,
@@ -1800,7 +1800,7 @@ return {
 	},
 	speed_of_sound = {
 		name = "Speed of Sound",
-		origin = "Naoya",
+		origin = "Framerate",
 		nature = "physical",
 		cost = 14,
 		cd = 16,
@@ -1814,7 +1814,7 @@ return {
 	},
 	projection_24 = {
 		name = "Projection Sorcery: 24 Frames",
-		origin = "Naoya",
+		origin = "Framerate",
 		nature = "physical",
 		cost = 36,
 		cd = 30,
@@ -1828,8 +1828,8 @@ return {
 		desc = "Every frame of the next sixteen seconds belongs to him.",
 	},
 	rika_manifest = {
-		name = "Rika: Manifest",
-		origin = "Yuta",
+		name = "Yurei: Manifest",
+		origin = "Rei",
 		nature = "cursed",
 		cost = 20,
 		cd = 14,
@@ -1843,7 +1843,7 @@ return {
 	},
 	pure_love = {
 		name = "Pure Love",
-		origin = "Yuta",
+		origin = "Rei",
 		nature = "cursed",
 		cost = 16,
 		cd = 3,
@@ -1853,11 +1853,11 @@ return {
 		power = 132,
 		knock = 26,
 		color = 0x9fd6ff,
-		desc = "Rika's strength poured into one swing of the katana.",
+		desc = "Yurei's strength poured into one swing of the katana.",
 	},
 	cursed_speech_y = {
 		name = "Cursed Speech: Blast Away",
-		origin = "Yuta",
+		origin = "Rei",
 		nature = "cursed",
 		cost = 12,
 		cd = 4,
@@ -1870,11 +1870,11 @@ return {
 		onHit = {
 			paralyze = 2,
 		},
-		desc = "A word borrowed from Inumaki. Saying it costs him his throat.",
+		desc = "A word borrowed from Kotodama. Saying it costs him his throat.",
 	},
 	rika_guard = {
-		name = "Rika's Guard",
-		origin = "Yuta",
+		name = "Yurei's Guard",
+		origin = "Rei",
 		nature = "cursed",
 		cost = 14,
 		cd = 12,
@@ -1886,8 +1886,8 @@ return {
 		desc = "She puts herself in front of him and bites back.",
 	},
 	authentic_love = {
-		name = "Domain: Authentic Mutual Love",
-		origin = "Yuta",
+		name = "Realm: Authentic Mutual Love",
+		origin = "Rei",
 		nature = "cursed",
 		cost = 42,
 		cd = 34,
@@ -1906,7 +1906,7 @@ return {
 	},
 	granite_blast = {
 		name = "Granite Blast",
-		origin = "Ishigori",
+		origin = "Gankyu",
 		nature = "cursed",
 		cost = 22,
 		cd = 6,
@@ -1919,7 +1919,7 @@ return {
 	},
 	granite_shot = {
 		name = "Granite Shot",
-		origin = "Ishigori",
+		origin = "Gankyu",
 		nature = "cursed",
 		cost = 9,
 		cd = 1.2,
@@ -1933,7 +1933,7 @@ return {
 	},
 	granite_slam = {
 		name = "Granite Slam",
-		origin = "Ishigori",
+		origin = "Gankyu",
 		nature = "cursed",
 		cost = 14,
 		cd = 4,
@@ -1949,7 +1949,7 @@ return {
 	},
 	raw_output = {
 		name = "Raw Output",
-		origin = "Ishigori",
+		origin = "Gankyu",
 		nature = "cursed",
 		cost = 16,
 		cd = 15,
@@ -1963,7 +1963,7 @@ return {
 	},
 	granite_maximum = {
 		name = "Granite Blast: Maximum",
-		origin = "Ishigori",
+		origin = "Gankyu",
 		nature = "cursed",
 		cost = 40,
 		cd = 26,
@@ -1976,7 +1976,7 @@ return {
 	},
 	sky_manipulation = {
 		name = "Sky Manipulation",
-		origin = "Uro",
+		origin = "Skyfold",
 		nature = "wind",
 		cost = 12,
 		cd = 2.4,
@@ -1990,7 +1990,7 @@ return {
 	},
 	thin_ice = {
 		name = "Thin Ice Breaker",
-		origin = "Uro",
+		origin = "Skyfold",
 		nature = "wind",
 		cost = 20,
 		cd = 8,
@@ -2006,7 +2006,7 @@ return {
 	},
 	falling_sky = {
 		name = "Falling Sky",
-		origin = "Uro",
+		origin = "Skyfold",
 		nature = "wind",
 		cost = 15,
 		cd = 5,
@@ -2022,7 +2022,7 @@ return {
 	},
 	sky_guard = {
 		name = "Sky Guard",
-		origin = "Uro",
+		origin = "Skyfold",
 		nature = "wind",
 		cost = 14,
 		cd = 12,
@@ -2035,7 +2035,7 @@ return {
 	},
 	sky_skate = {
 		name = "Sky Skate",
-		origin = "Uro",
+		origin = "Skyfold",
 		nature = "wind",
 		cost = 10,
 		cd = 12,
@@ -2046,7 +2046,7 @@ return {
 	},
 	sky_maximum = {
 		name = "Thin Ice Breaker: Maximum",
-		origin = "Uro",
+		origin = "Skyfold",
 		nature = "wind",
 		cost = 38,
 		cd = 30,
@@ -2062,8 +2062,8 @@ return {
 		desc = "She breaks the whole thing at once and stands underneath it.",
 	},
 	kurama_cloak = {
-		name = "Kurama Chakra Mode",
-		origin = "Naruto",
+		name = "Fox Chakra Mode",
+		origin = "Ren",
 		nature = "fire",
 		cost = 35,
 		cd = 32,
@@ -2074,11 +2074,11 @@ return {
 		costMul = 0.5,
 		regen = 12,
 		color = 0xffb340,
-		desc = "Kurama's chakra floods every jutsu: far more damage, faster, half price, chakra pouring back.",
+		desc = "the Fox's chakra floods every jutsu: far more damage, faster, half price, chakra pouring back.",
 	},
 	symbiote_lash = {
 		name = "Symbiote Lash",
-		origin = "Venom",
+		origin = "Blackmaw",
 		nature = "physical",
 		cost = 6,
 		cd = 0.9,
@@ -2092,7 +2092,7 @@ return {
 	},
 	black_web = {
 		name = "Black Webbing",
-		origin = "Venom",
+		origin = "Blackmaw",
 		nature = "physical",
 		cost = 8,
 		cd = 2,
@@ -2110,7 +2110,7 @@ return {
 	},
 	tendril_slam = {
 		name = "Tendril Slam",
-		origin = "Venom",
+		origin = "Blackmaw",
 		nature = "physical",
 		cost = 14,
 		cd = 4.5,
@@ -2126,7 +2126,7 @@ return {
 	},
 	venom_pounce = {
 		name = "Pounce",
-		origin = "Venom",
+		origin = "Blackmaw",
 		nature = "physical",
 		cost = 10,
 		cd = 2.6,
@@ -2141,7 +2141,7 @@ return {
 	},
 	symbiote_feed = {
 		name = "Feed",
-		origin = "Venom",
+		origin = "Blackmaw",
 		nature = "physical",
 		cost = 16,
 		cd = 0,
@@ -2152,8 +2152,8 @@ return {
 		desc = "Tendrils drag the nearest one in by the head and the symbiote bites it off. Whatever it eats puts him back to full health.",
 	},
 	we_are_venom = {
-		name = "WE ARE VENOM",
-		origin = "Venom",
+		name = "WE ARE BLACKMAW",
+		origin = "Blackmaw",
 		nature = "physical",
 		cost = 34,
 		cd = 24,
@@ -2169,8 +2169,8 @@ return {
 		desc = "The suit comes off him in every direction at once.",
 	},
 	carnage_blades = {
-		name = "Carnage Blades",
-		origin = "Carnage",
+		name = "Redmaw Blades",
+		origin = "Redmaw",
 		nature = "physical",
 		cost = 7,
 		cd = 0.8,
@@ -2188,7 +2188,7 @@ return {
 	},
 	tendril_spear = {
 		name = "Tendril Spear",
-		origin = "Carnage",
+		origin = "Redmaw",
 		nature = "physical",
 		cost = 10,
 		cd = 2,
@@ -2205,7 +2205,7 @@ return {
 	},
 	red_web = {
 		name = "Red Webbing",
-		origin = "Carnage",
+		origin = "Redmaw",
 		nature = "physical",
 		cost = 8,
 		cd = 2,
@@ -2224,7 +2224,7 @@ return {
 	},
 	carnage_swarm = {
 		name = "Spawn",
-		origin = "Carnage",
+		origin = "Redmaw",
 		nature = "physical",
 		cost = 22,
 		cd = 16,
@@ -2237,7 +2237,7 @@ return {
 	},
 	impale = {
 		name = "Impale",
-		origin = "Carnage",
+		origin = "Redmaw",
 		nature = "physical",
 		cost = 12,
 		cd = 3.4,
@@ -2253,7 +2253,7 @@ return {
 	},
 	blood_frenzy = {
 		name = "Frenzy",
-		origin = "Carnage",
+		origin = "Redmaw",
 		nature = "physical",
 		cost = 18,
 		cd = 18,
@@ -2266,8 +2266,8 @@ return {
 		desc = "The more it goes the less it stops. Everything hits harder and costs less.",
 	},
 	maximum_carnage = {
-		name = "MAXIMUM CARNAGE",
-		origin = "Carnage",
+		name = "MAXIMUM REDMAW",
+		origin = "Redmaw",
 		nature = "physical",
 		cost = 38,
 		cd = 28,
@@ -2285,7 +2285,7 @@ return {
 	},
 	cleansing_touch = {
 		name = "Cleansing Touch",
-		origin = "Anti-Venom",
+		origin = "Antidote",
 		nature = "physical",
 		cost = 7,
 		cd = 1,
@@ -2302,7 +2302,7 @@ return {
 	},
 	white_lash = {
 		name = "White Lash",
-		origin = "Anti-Venom",
+		origin = "Antidote",
 		nature = "physical",
 		cost = 9,
 		cd = 2.2,
@@ -2320,7 +2320,7 @@ return {
 	},
 	antibody_burst = {
 		name = "Antibody Burst",
-		origin = "Anti-Venom",
+		origin = "Antidote",
 		nature = "physical",
 		cost = 16,
 		cd = 5,
@@ -2337,7 +2337,7 @@ return {
 	},
 	purify = {
 		name = "Purify",
-		origin = "Anti-Venom",
+		origin = "Antidote",
 		nature = "physical",
 		cost = 14,
 		cd = 8,
@@ -2347,7 +2347,7 @@ return {
 	},
 	antibody_shell = {
 		name = "Antibody Shell",
-		origin = "Anti-Venom",
+		origin = "Antidote",
 		nature = "physical",
 		cost = 14,
 		cd = 12,
@@ -2360,7 +2360,7 @@ return {
 	},
 	total_cure = {
 		name = "TOTAL CURE",
-		origin = "Anti-Venom",
+		origin = "Antidote",
 		nature = "physical",
 		cost = 38,
 		cd = 26,
@@ -2378,7 +2378,7 @@ return {
 	},
 	actuator_sweep = {
 		name = "Actuator Sweep",
-		origin = "Doc Ock",
+		origin = "Eightfold",
 		nature = "physical",
 		cost = 7,
 		cd = 1,
@@ -2392,7 +2392,7 @@ return {
 	},
 	tentacle_grab = {
 		name = "Tentacle Grab",
-		origin = "Doc Ock",
+		origin = "Eightfold",
 		nature = "physical",
 		cost = 8,
 		cd = 2.6,
@@ -2403,7 +2403,7 @@ return {
 	},
 	debris_hurl = {
 		name = "Debris Hurl",
-		origin = "Doc Ock",
+		origin = "Eightfold",
 		nature = "earth",
 		cost = 12,
 		cd = 2.4,
@@ -2421,7 +2421,7 @@ return {
 	},
 	pin_down = {
 		name = "Pin Down",
-		origin = "Doc Ock",
+		origin = "Eightfold",
 		nature = "physical",
 		cost = 14,
 		cd = 6,
@@ -2438,7 +2438,7 @@ return {
 	},
 	actuator_guard = {
 		name = "Actuator Guard",
-		origin = "Doc Ock",
+		origin = "Eightfold",
 		nature = "physical",
 		cost = 13,
 		cd = 11,
@@ -2451,7 +2451,7 @@ return {
 	},
 	fusion_flare = {
 		name = "Fusion Flare",
-		origin = "Doc Ock",
+		origin = "Eightfold",
 		nature = "fire",
 		cost = 38,
 		cd = 27,
@@ -2467,7 +2467,7 @@ return {
 	},
 	speech_stop = {
 		name = "Don't Move",
-		origin = "Toge",
+		origin = "Kotodama",
 		nature = "cursed",
 		cost = 8,
 		cd = 5,
@@ -2483,7 +2483,7 @@ return {
 	},
 	speech_blast = {
 		name = "Blast Away",
-		origin = "Toge",
+		origin = "Kotodama",
 		nature = "cursed",
 		cost = 11,
 		cd = 3,
@@ -2500,7 +2500,7 @@ return {
 	},
 	speech_crush = {
 		name = "Crush",
-		origin = "Toge",
+		origin = "Kotodama",
 		nature = "cursed",
 		cost = 14,
 		cd = 4,
@@ -2513,7 +2513,7 @@ return {
 	},
 	speech_explode = {
 		name = "Explode",
-		origin = "Toge",
+		origin = "Kotodama",
 		nature = "cursed",
 		cost = 18,
 		cd = 7,
@@ -2529,7 +2529,7 @@ return {
 	},
 	speech_sleep = {
 		name = "Sleep",
-		origin = "Toge",
+		origin = "Kotodama",
 		nature = "cursed",
 		cost = 12,
 		cd = 9,
@@ -2546,7 +2546,7 @@ return {
 	},
 	speech_die = {
 		name = "DIE",
-		origin = "Toge",
+		origin = "Kotodama",
 		nature = "cursed",
 		cost = 44,
 		cd = 30,
@@ -2563,7 +2563,7 @@ return {
 	},
 	maki_sweep = {
 		name = "Sweep",
-		origin = "Maki",
+		origin = "Rin",
 		nature = "physical",
 		cost = 4,
 		cd = 1.2,
@@ -2577,7 +2577,7 @@ return {
 	},
 	maki_rush = {
 		name = "Closing Step",
-		origin = "Maki",
+		origin = "Rin",
 		nature = "physical",
 		cost = 5,
 		cd = 2.4,
@@ -2592,7 +2592,7 @@ return {
 	},
 	pole_thrust = {
 		name = "Thrust",
-		origin = "Maki",
+		origin = "Rin",
 		nature = "physical",
 		cost = 5,
 		cd = 2,
@@ -2607,7 +2607,7 @@ return {
 	},
 	tool_throw = {
 		name = "Thrown Tool",
-		origin = "Maki",
+		origin = "Rin",
 		nature = "physical",
 		cost = 6,
 		cd = 2.6,
@@ -2622,7 +2622,7 @@ return {
 	},
 	heavenly_awake = {
 		name = "Heavenly Restriction",
-		origin = "Maki",
+		origin = "Rin",
 		nature = "physical",
 		cost = 10,
 		cd = 20,
@@ -2636,7 +2636,7 @@ return {
 	},
 	maki_switch = {
 		name = "Switch Tool",
-		origin = "Maki",
+		origin = "Rin",
 		nature = "physical",
 		cost = 0,
 		cd = 0,
@@ -2644,8 +2644,8 @@ return {
 		desc = "Take the next one off the rack: naginata, Playful Cloud, Split Soul Katana, kusarigama. It changes your basic attack and every move.",
 	},
 	zenin_reckoning = {
-		name = "Zen'in Reckoning",
-		origin = "Maki",
+		name = "Hoshigane Reckoning",
+		origin = "Rin",
 		nature = "physical",
 		cost = 20,
 		cd = 24,
@@ -2663,7 +2663,7 @@ return {
 	},
 	straw_doll = {
 		name = "Straw Doll",
-		origin = "Nobara",
+		origin = "Hammer Maiden",
 		nature = "cursed",
 		cost = 7,
 		cd = 2,
@@ -2680,7 +2680,7 @@ return {
 	},
 	hairpin = {
 		name = "Hairpin",
-		origin = "Nobara",
+		origin = "Hammer Maiden",
 		nature = "cursed",
 		cost = 12,
 		cd = 3.4,
@@ -2699,7 +2699,7 @@ return {
 	},
 	resonance = {
 		name = "Resonance",
-		origin = "Nobara",
+		origin = "Hammer Maiden",
 		nature = "cursed",
 		cost = 16,
 		cd = 5,
@@ -2716,7 +2716,7 @@ return {
 	},
 	nail_barrage = {
 		name = "Nail Barrage",
-		origin = "Nobara",
+		origin = "Hammer Maiden",
 		nature = "physical",
 		cost = 9,
 		cd = 2.2,
@@ -2730,7 +2730,7 @@ return {
 	},
 	hammer_swing = {
 		name = "Hammer",
-		origin = "Nobara",
+		origin = "Hammer Maiden",
 		nature = "physical",
 		cost = 5,
 		cd = 1,
@@ -2743,7 +2743,7 @@ return {
 	},
 	resonance_max = {
 		name = "Resonance: Maximum",
-		origin = "Nobara",
+		origin = "Hammer Maiden",
 		nature = "cursed",
 		cost = 36,
 		cd = 26,
@@ -2763,7 +2763,7 @@ return {
 	},
 	metal_fist = {
 		name = "Metal Fist",
-		origin = "Winter Soldier",
+		origin = "Frost Arm",
 		nature = "physical",
 		cost = 5,
 		cd = 1,
@@ -2778,7 +2778,7 @@ return {
 	},
 	sidearm = {
 		name = "Sidearm",
-		origin = "Winter Soldier",
+		origin = "Frost Arm",
 		nature = "physical",
 		cost = 6,
 		cd = 1.4,
@@ -2792,7 +2792,7 @@ return {
 	},
 	combat_knife = {
 		name = "Combat Knife",
-		origin = "Winter Soldier",
+		origin = "Frost Arm",
 		nature = "physical",
 		cost = 8,
 		cd = 2.6,
@@ -2807,7 +2807,7 @@ return {
 	},
 	frag_grenade = {
 		name = "Frag Grenade",
-		origin = "Winter Soldier",
+		origin = "Frost Arm",
 		nature = "fire",
 		cost = 13,
 		cd = 5,
@@ -2824,7 +2824,7 @@ return {
 	},
 	arm_block = {
 		name = "Arm Block",
-		origin = "Winter Soldier",
+		origin = "Frost Arm",
 		nature = "physical",
 		cost = 11,
 		cd = 11,
@@ -2837,7 +2837,7 @@ return {
 	},
 	winter_protocol = {
 		name = "Winter Protocol",
-		origin = "Winter Soldier",
+		origin = "Frost Arm",
 		nature = "physical",
 		cost = 34,
 		cd = 25,
@@ -2851,7 +2851,7 @@ return {
 	},
 	ratio_strike = {
 		name = "Ratio Technique",
-		origin = "Nanami",
+		origin = "Overtime",
 		nature = "cursed",
 		cost = 8,
 		cd = 1.1,
@@ -2871,7 +2871,7 @@ return {
 	},
 	cleaver_sweep = {
 		name = "Blunt Cleaver",
-		origin = "Nanami",
+		origin = "Overtime",
 		nature = "physical",
 		cost = 6,
 		cd = 1.4,
@@ -2884,7 +2884,7 @@ return {
 	},
 	ratio_collapse = {
 		name = "Collapse",
-		origin = "Nanami",
+		origin = "Overtime",
 		nature = "cursed",
 		cost = 14,
 		cd = 4,
@@ -2899,7 +2899,7 @@ return {
 	},
 	ratio_mark = {
 		name = "Divide",
-		origin = "Nanami",
+		origin = "Overtime",
 		nature = "cursed",
 		cost = 9,
 		cd = 3,
@@ -2916,7 +2916,7 @@ return {
 	},
 	blunt_throw = {
 		name = "Thrown Cleaver",
-		origin = "Nanami",
+		origin = "Overtime",
 		nature = "physical",
 		cost = 8,
 		cd = 2.6,
@@ -2933,7 +2933,7 @@ return {
 	},
 	overtime = {
 		name = "Overtime",
-		origin = "Nanami",
+		origin = "Overtime",
 		nature = "cursed",
 		cost = 30,
 		cd = 26,
@@ -2948,7 +2948,7 @@ return {
 	},
 	iron_arms = {
 		name = "Iron Arms",
-		origin = "Iron Spider",
+		origin = "Ironthread",
 		nature = "physical",
 		cost = 7,
 		cd = 1,
@@ -2963,7 +2963,7 @@ return {
 	},
 	iron_pin = {
 		name = "Pin",
-		origin = "Iron Spider",
+		origin = "Ironthread",
 		nature = "physical",
 		cost = 10,
 		cd = 3.4,
@@ -2980,7 +2980,7 @@ return {
 	},
 	iron_lance = {
 		name = "Lance",
-		origin = "Iron Spider",
+		origin = "Ironthread",
 		nature = "physical",
 		cost = 9,
 		cd = 2.2,
@@ -2995,7 +2995,7 @@ return {
 	},
 	instant_kill = {
 		name = "Instant Kill",
-		origin = "Iron Spider",
+		origin = "Ironthread",
 		nature = "physical",
 		cost = 34,
 		cd = 24,
@@ -3005,11 +3005,11 @@ return {
 		speedMul = 1.4,
 		costMul = 0.5,
 		color = 0xffc83d,
-		desc = "The mode Peter keeps switched off. He switches it on.",
+		desc = "The mode Theo keeps switched off. He switches it on.",
 	},
 	adv_web = {
 		name = "Web-Shooters",
-		origin = "Insomniac",
+		origin = "Nightshift",
 		nature = "physical",
 		cost = 5,
 		cd = 1.4,
@@ -3026,7 +3026,7 @@ return {
 	},
 	impact_web = {
 		name = "Impact Web",
-		origin = "Insomniac",
+		origin = "Nightshift",
 		nature = "physical",
 		cost = 8,
 		cd = 2.6,
@@ -3044,7 +3044,7 @@ return {
 	},
 	web_bomb = {
 		name = "Web Bomb",
-		origin = "Insomniac",
+		origin = "Nightshift",
 		nature = "physical",
 		cost = 13,
 		cd = 5,
@@ -3060,8 +3060,8 @@ return {
 		desc = "Everything inside nine metres is stuck to everything else.",
 	},
 	spider_arms = {
-		name = "Spider-Arms",
-		origin = "Insomniac",
+		name = "Iron Arms",
+		origin = "Nightshift",
 		nature = "physical",
 		cost = 11,
 		cd = 3.2,
@@ -3075,7 +3075,7 @@ return {
 	},
 	adv_swing_kick = {
 		name = "Swing Kick",
-		origin = "Insomniac",
+		origin = "Nightshift",
 		nature = "physical",
 		cost = 9,
 		cd = 2.4,
@@ -3088,8 +3088,8 @@ return {
 		desc = "In on the line, both feet first.",
 	},
 	av_touch = {
-		name = "Anti-Venom Touch",
-		origin = "Insomniac",
+		name = "Antidote Touch",
+		origin = "Nightshift",
 		nature = "physical",
 		cost = 7,
 		cd = 1.1,
@@ -3105,8 +3105,8 @@ return {
 		desc = "The white suit burns whatever it touches and gives him back most of it.",
 	},
 	av_web = {
-		name = "Anti-Venom Web",
-		origin = "Insomniac",
+		name = "Antidote Web",
+		origin = "Nightshift",
 		nature = "physical",
 		cost = 6,
 		cd = 1.8,
@@ -3125,7 +3125,7 @@ return {
 	},
 	av_swing_kick = {
 		name = "Swing Kick",
-		origin = "Insomniac",
+		origin = "Nightshift",
 		nature = "physical",
 		cost = 9,
 		cd = 2.4,
@@ -3140,7 +3140,7 @@ return {
 	},
 	av_purge = {
 		name = "Purge",
-		origin = "Insomniac",
+		origin = "Nightshift",
 		nature = "physical",
 		cost = 15,
 		cd = 5,
@@ -3157,7 +3157,7 @@ return {
 	},
 	av_shell = {
 		name = "Antibody Shell",
-		origin = "Insomniac",
+		origin = "Nightshift",
 		nature = "physical",
 		cost = 13,
 		cd = 11,
@@ -3170,7 +3170,7 @@ return {
 	},
 	av_cure = {
 		name = "THE CURE",
-		origin = "Insomniac",
+		origin = "Nightshift",
 		nature = "physical",
 		cost = 36,
 		cd = 26,
@@ -3187,8 +3187,8 @@ return {
 		desc = "He empties the entire suit outward at once, and half of everything it burns comes straight back to him.",
 	},
 	venom_strike = {
-		name = "Venom Strike",
-		origin = "Miles",
+		name = "Blackmaw Strike",
+		origin = "Voltstep",
 		nature = "lightning",
 		cost = 7,
 		cd = 1.2,
@@ -3204,8 +3204,8 @@ return {
 		desc = "A bio-electric charge dumped through his fist. Whatever it lands on stops moving.",
 	},
 	venom_dash = {
-		name = "Venom Dash",
-		origin = "Miles",
+		name = "Blackmaw Dash",
+		origin = "Voltstep",
 		nature = "lightning",
 		cost = 9,
 		cd = 2.4,
@@ -3219,8 +3219,8 @@ return {
 		desc = "He crosses the gap trailing current and leaves it in whatever he passes.",
 	},
 	venom_jump = {
-		name = "Venom Smash",
-		origin = "Miles",
+		name = "Blackmaw Smash",
+		origin = "Voltstep",
 		nature = "lightning",
 		cost = 13,
 		cd = 4,
@@ -3237,7 +3237,7 @@ return {
 	},
 	camouflage = {
 		name = "Camouflage",
-		origin = "Miles",
+		origin = "Voltstep",
 		nature = "physical",
 		cost = 10,
 		cd = 14,
@@ -3248,7 +3248,7 @@ return {
 	},
 	miles_web = {
 		name = "Web-Shooters",
-		origin = "Miles",
+		origin = "Voltstep",
 		nature = "physical",
 		cost = 5,
 		cd = 1.6,
@@ -3261,11 +3261,11 @@ return {
 			root = 2.6,
 			defDown = 0.25,
 		},
-		desc = "The same webbing Peter uses, thrown by someone with more current in him.",
+		desc = "The same webbing Theo uses, thrown by someone with more current in him.",
 	},
 	mega_venom = {
-		name = "MEGA VENOM BLAST",
-		origin = "Miles",
+		name = "MEGA BLACKMAW BLAST",
+		origin = "Voltstep",
 		nature = "lightning",
 		cost = 38,
 		cd = 26,
@@ -3281,8 +3281,8 @@ return {
 		desc = "Everything he has, all at once, in every direction. The street will not forget it.",
 	},
 	spider_verse = {
-		name = "Spider-Verse Assist",
-		origin = "Spider-Man",
+		name = "Multiverse Assist",
+		origin = "Threadrunner",
 		nature = "physical",
 		cost = 32,
 		cd = 30,
@@ -3296,7 +3296,7 @@ return {
 	},
 	divine_dogs = {
 		name = "Divine Dogs",
-		origin = "Megumi",
+		origin = "Kage",
 		nature = "earth",
 		cost = 12,
 		cd = 12,
@@ -3310,7 +3310,7 @@ return {
 	},
 	nue = {
 		name = "Nue",
-		origin = "Megumi",
+		origin = "Kage",
 		nature = "lightning",
 		cost = 12,
 		cd = 4,
@@ -3326,7 +3326,7 @@ return {
 	},
 	toad_s = {
 		name = "Toad",
-		origin = "Megumi",
+		origin = "Kage",
 		nature = "water",
 		cost = 8,
 		cd = 4,
@@ -3337,7 +3337,7 @@ return {
 	},
 	max_elephant = {
 		name = "Max Elephant",
-		origin = "Megumi",
+		origin = "Kage",
 		nature = "water",
 		cost = 18,
 		cd = 8,
@@ -3387,7 +3387,7 @@ return {
 	},
 	rabbit_escape = {
 		name = "Rabbit Escape",
-		origin = "Megumi",
+		origin = "Kage",
 		nature = "physical",
 		cost = 10,
 		cd = 14,
@@ -3398,7 +3398,7 @@ return {
 	},
 	great_fireball = {
 		name = "Great Fireball",
-		origin = "Itachi",
+		origin = "Karasu",
 		nature = "fire",
 		cost = 11,
 		cd = 3,
@@ -3411,11 +3411,11 @@ return {
 			burn = 4,
 		},
 		color = 0xff7a2a,
-		desc = "The Uchiha signature, at the size the clan actually uses it.",
+		desc = "The Crow-clan signature, at the size the clan actually uses it.",
 	},
 	amaterasu_i = {
-		name = "Amaterasu",
-		origin = "Itachi",
+		name = "Black Sun",
+		origin = "Karasu",
 		nature = "fire",
 		cost = 22,
 		cd = 8,
@@ -3433,7 +3433,7 @@ return {
 	},
 	tsukuyomi = {
 		name = "Tsukuyomi",
-		origin = "Itachi",
+		origin = "Karasu",
 		nature = "cursed",
 		cost = 20,
 		cd = 16,
@@ -3445,7 +3445,7 @@ return {
 	},
 	crow_clones = {
 		name = "Crow Clone",
-		origin = "Itachi",
+		origin = "Karasu",
 		nature = "physical",
 		cost = 14,
 		cd = 13,
@@ -3458,8 +3458,8 @@ return {
 		desc = "The body you hit was never the body. Three of them break apart into crows and hunt.",
 	},
 	susanoo_guard = {
-		name = "Susanoo: Yata Mirror",
-		origin = "Itachi",
+		name = "Spectral Titan: Yata Mirror",
+		origin = "Karasu",
 		nature = "cursed",
 		cost = 16,
 		cd = 14,
@@ -3471,8 +3471,8 @@ return {
 		desc = "The ribcage closes. Three hits come back the way they arrived.",
 	},
 	totsuka_blade = {
-		name = "Susanoo: Totsuka Blade",
-		origin = "Itachi",
+		name = "Spectral Titan: Totsuka Blade",
+		origin = "Karasu",
 		nature = "cursed",
 		cost = 40,
 		cd = 34,
@@ -3490,7 +3490,7 @@ return {
 	},
 	leaf_hurricane = {
 		name = "Leaf Hurricane",
-		origin = "Might Guy",
+		origin = "Midori Tetsu",
 		nature = "physical",
 		cost = 7,
 		cd = 2.2,
@@ -3503,7 +3503,7 @@ return {
 	},
 	front_lotus = {
 		name = "Front Lotus",
-		origin = "Might Guy",
+		origin = "Midori Tetsu",
 		nature = "physical",
 		cost = 14,
 		cd = 6,
@@ -3525,7 +3525,7 @@ return {
 	},
 	gate_of_life = {
 		name = "Gate of Life: Open",
-		origin = "Might Guy",
+		origin = "Midori Tetsu",
 		nature = "fire",
 		cost = 18,
 		cd = 24,
@@ -3539,7 +3539,7 @@ return {
 	},
 	morning_peacock = {
 		name = "Morning Peacock",
-		origin = "Might Guy",
+		origin = "Midori Tetsu",
 		nature = "fire",
 		cost = 22,
 		cd = 7,
@@ -3555,7 +3555,7 @@ return {
 	},
 	daytime_tiger = {
 		name = "Daytime Tiger",
-		origin = "Might Guy",
+		origin = "Midori Tetsu",
 		nature = "wind",
 		cost = 30,
 		cd = 11,
@@ -3569,8 +3569,8 @@ return {
 		desc = "A punch thrown so hard the air it displaced arrives as the attack.",
 	},
 	night_guy = {
-		name = "Night Guy",
-		origin = "Might Guy",
+		name = "Night Gate",
+		origin = "Midori Tetsu",
 		nature = "fire",
 		cost = 45,
 		cd = 40,
@@ -3582,7 +3582,7 @@ return {
 			chance = 0.4,
 			mul = 2.2,
 			ramp = 0.04,
-			tag = "NIGHT GUY",
+			tag = "NIGHT GATE",
 			color = 0xff4a2a,
 		},
 		onHit = {
@@ -3593,8 +3593,8 @@ return {
 		desc = "The eighth gate. It costs him his leg and it is worth it.",
 	},
 	shinra_tensei = {
-		name = "Shinra Tensei",
-		origin = "Pain",
+		name = "Repulse",
+		origin = "Gravewell",
 		nature = "physical",
 		cost = 16,
 		cd = 6,
@@ -3611,7 +3611,7 @@ return {
 	},
 	bansho_tenin = {
 		name = "Bansho Ten'in",
-		origin = "Pain",
+		origin = "Gravewell",
 		nature = "physical",
 		cost = 8,
 		cd = 3.4,
@@ -3622,7 +3622,7 @@ return {
 	},
 	asura_missiles = {
 		name = "Asura Path: Barrage",
-		origin = "Pain",
+		origin = "Gravewell",
 		nature = "fire",
 		cost = 15,
 		cd = 4.5,
@@ -3639,7 +3639,7 @@ return {
 	},
 	preta_absorb = {
 		name = "Preta Path",
-		origin = "Pain",
+		origin = "Gravewell",
 		nature = "cursed",
 		cost = 12,
 		cd = 13,
@@ -3653,7 +3653,7 @@ return {
 	},
 	summon_beasts = {
 		name = "Animal Path",
-		origin = "Pain",
+		origin = "Gravewell",
 		nature = "earth",
 		cost = 16,
 		cd = 15,
@@ -3667,7 +3667,7 @@ return {
 	},
 	chibaku_tensei = {
 		name = "Chibaku Tensei",
-		origin = "Pain",
+		origin = "Gravewell",
 		nature = "earth",
 		cost = 46,
 		cd = 38,
@@ -3685,7 +3685,7 @@ return {
 	},
 	boogie_woogie = {
 		name = "Boogie Woogie",
-		origin = "Todo",
+		origin = "Hakushu",
 		nature = "physical",
 		cost = 5,
 		cd = 1.6,
@@ -3696,7 +3696,7 @@ return {
 	},
 	brother_barrage = {
 		name = "Brother's Barrage",
-		origin = "Todo",
+		origin = "Hakushu",
 		nature = "physical",
 		cost = 12,
 		cd = 3.4,
@@ -3708,8 +3708,8 @@ return {
 		desc = "Close-range boxing from a man built like a wall.",
 	},
 	black_flash_t = {
-		name = "Black Flash",
-		origin = "Todo",
+		name = "Dark Spark",
+		origin = "Hakushu",
 		nature = "cursed",
 		cost = 18,
 		cd = 6,
@@ -3720,7 +3720,7 @@ return {
 			chance = 0.45,
 			mul = 2.6,
 			ramp = 0.08,
-			tag = "BLACK FLASH",
+			tag = "DARK SPARK",
 			color = 0xd4142a,
 		},
 		color = 0xd4142a,
@@ -3730,8 +3730,8 @@ return {
 		desc = "Cursed energy landing within a thousandth of a second of the fist. Distorts space on contact.",
 	},
 	takada_chant = {
-		name = "Takada-chan",
-		origin = "Todo",
+		name = "Idol-chan",
+		origin = "Hakushu",
 		nature = "sound",
 		cost = 14,
 		cd = 20,
@@ -3745,7 +3745,7 @@ return {
 	},
 	clap_step = {
 		name = "Clap and Step",
-		origin = "Todo",
+		origin = "Hakushu",
 		nature = "physical",
 		cost = 9,
 		cd = 4,
@@ -3759,7 +3759,7 @@ return {
 	},
 	boogie_blitz = {
 		name = "Boogie Woogie: Unlimited",
-		origin = "Todo",
+		origin = "Hakushu",
 		nature = "cursed",
 		cost = 40,
 		cd = 34,
@@ -3778,7 +3778,7 @@ return {
 	},
 	cursed_slot = {
 		name = "Cursed Slot",
-		origin = "Hakari",
+		origin = "Jackpot",
 		nature = "cursed",
 		cost = 8,
 		cd = 2.4,
@@ -3791,7 +3791,7 @@ return {
 	},
 	overwhelm_fist = {
 		name = "Overwhelming Fist",
-		origin = "Hakari",
+		origin = "Jackpot",
 		nature = "physical",
 		cost = 13,
 		cd = 3.6,
@@ -3804,7 +3804,7 @@ return {
 	},
 	door_open = {
 		name = "Private Pure Love Train",
-		origin = "Hakari",
+		origin = "Jackpot",
 		nature = "cursed",
 		cost = 16,
 		cd = 9,
@@ -3821,7 +3821,7 @@ return {
 	},
 	jackpot_gamble = {
 		name = "Jackpot",
-		origin = "Hakari",
+		origin = "Jackpot",
 		nature = "cursed",
 		cost = 20,
 		cd = 26,
@@ -3835,7 +3835,7 @@ return {
 	},
 	idle_guard = {
 		name = "Idle Death Guard",
-		origin = "Hakari",
+		origin = "Jackpot",
 		nature = "cursed",
 		cost = 14,
 		cd = 15,
@@ -3848,8 +3848,8 @@ return {
 		desc = "Cursed energy poured into staying upright. Four hits, and each one pays.",
 	},
 	idle_death_gamble = {
-		name = "Domain: Idle Death Gamble",
-		origin = "Hakari",
+		name = "Realm: Idle Death Gamble",
+		origin = "Jackpot",
 		nature = "cursed",
 		cost = 42,
 		cd = 36,
@@ -3868,7 +3868,7 @@ return {
 	},
 	star_rage = {
 		name = "Star Rage: Shrine",
-		origin = "Yuki",
+		origin = "Supernova",
 		nature = "physical",
 		cost = 14,
 		cd = 3.4,
@@ -3881,7 +3881,7 @@ return {
 	},
 	garuda = {
 		name = "Garuda",
-		origin = "Yuki",
+		origin = "Supernova",
 		nature = "wind",
 		cost = 17,
 		cd = 14,
@@ -3895,7 +3895,7 @@ return {
 	},
 	mass_kick = {
 		name = "Star Rage: Dive",
-		origin = "Yuki",
+		origin = "Supernova",
 		nature = "physical",
 		cost = 12,
 		cd = 5,
@@ -3910,7 +3910,7 @@ return {
 	},
 	star_guard = {
 		name = "Mass Guard",
-		origin = "Yuki",
+		origin = "Supernova",
 		nature = "physical",
 		cost = 12,
 		cd = 13,
@@ -3923,7 +3923,7 @@ return {
 	},
 	bomb_ultimate = {
 		name = "Bomb: Star Rage",
-		origin = "Yuki",
+		origin = "Supernova",
 		nature = "physical",
 		cost = 26,
 		cd = 10,
@@ -3936,7 +3936,7 @@ return {
 	},
 	bomb_maximum = {
 		name = "Bomb: Ultimate",
-		origin = "Yuki",
+		origin = "Supernova",
 		nature = "physical",
 		cost = 44,
 		cd = 36,
@@ -3950,7 +3950,7 @@ return {
 	},
 	eldritch_whip = {
 		name = "Eldritch Whip",
-		origin = "Strange",
+		origin = "Warden",
 		nature = "cursed",
 		cost = 8,
 		cd = 2,
@@ -3964,7 +3964,7 @@ return {
 	},
 	mandala_shield = {
 		name = "Shield of the Seraphim",
-		origin = "Strange",
+		origin = "Warden",
 		nature = "cursed",
 		cost = 14,
 		cd = 12,
@@ -3976,8 +3976,8 @@ return {
 		desc = "A mandala forms on the arm. Four hits go back through it.",
 	},
 	crimson_bands = {
-		name = "Crimson Bands of Cyttorak",
-		origin = "Strange",
+		name = "Crimson Bands",
+		origin = "Warden",
 		nature = "cursed",
 		cost = 16,
 		cd = 8,
@@ -3994,7 +3994,7 @@ return {
 	},
 	sling_ring = {
 		name = "Sling Ring",
-		origin = "Strange",
+		origin = "Warden",
 		nature = "cursed",
 		cost = 6,
 		cd = 2.4,
@@ -4005,8 +4005,8 @@ return {
 		desc = "A gate opens where he is looking and closes behind him.",
 	},
 	images_of_ikonn = {
-		name = "Images of Ikonn",
-		origin = "Strange",
+		name = "Mirror Images",
+		origin = "Warden",
 		nature = "cursed",
 		cost = 16,
 		cd = 14,
@@ -4020,7 +4020,7 @@ return {
 	},
 	mirror_dimension = {
 		name = "The Mirror Dimension",
-		origin = "Strange",
+		origin = "Warden",
 		nature = "cursed",
 		cost = 42,
 		cd = 36,
@@ -4039,7 +4039,7 @@ return {
 	},
 	pumpkin_bomb = {
 		name = "Pumpkin Bomb",
-		origin = "Goblin",
+		origin = "Cackler",
 		nature = "fire",
 		cost = 10,
 		cd = 2.8,
@@ -4057,7 +4057,7 @@ return {
 	},
 	razor_bats = {
 		name = "Razor Bats",
-		origin = "Goblin",
+		origin = "Cackler",
 		nature = "physical",
 		cost = 9,
 		cd = 2.4,
@@ -4071,7 +4071,7 @@ return {
 	},
 	glider_ram = {
 		name = "Glider Ram",
-		origin = "Goblin",
+		origin = "Cackler",
 		nature = "physical",
 		cost = 12,
 		cd = 5,
@@ -4084,8 +4084,8 @@ return {
 		desc = "The glider has blades on the front. That was not an accident.",
 	},
 	goblin_gas = {
-		name = "Goblin Gas",
-		origin = "Goblin",
+		name = "Grin Gas",
+		origin = "Cackler",
 		nature = "water",
 		cost = 13,
 		cd = 7,
@@ -4101,8 +4101,8 @@ return {
 		desc = "It hangs in the air and it does not lift.",
 	},
 	goblin_cackle = {
-		name = "Goblin Cackle",
-		origin = "Goblin",
+		name = "The Cackle",
+		origin = "Cackler",
 		nature = "sound",
 		cost = 12,
 		cd = 16,
@@ -4114,8 +4114,8 @@ return {
 		desc = "He laughs, and for sixteen seconds everything he throws lands harder.",
 	},
 	goblin_frenzy = {
-		name = "Goblin Frenzy",
-		origin = "Goblin",
+		name = "Glider Frenzy",
+		origin = "Cackler",
 		nature = "fire",
 		cost = 40,
 		cd = 34,
@@ -4133,8 +4133,8 @@ return {
 		desc = "He empties the satchel. All of it, everywhere, while flying.",
 	},
 	claw_slash = {
-		name = "Adamantium Claws",
-		origin = "Wolverine",
+		name = "Adamant Claws",
+		origin = "Clawback",
 		nature = "physical",
 		cost = 6,
 		cd = 1.6,
@@ -4151,7 +4151,7 @@ return {
 	},
 	berserker_spin = {
 		name = "Berserker Spin",
-		origin = "Wolverine",
+		origin = "Clawback",
 		nature = "physical",
 		cost = 14,
 		cd = 5.5,
@@ -4169,7 +4169,7 @@ return {
 	},
 	lunge = {
 		name = "Leaping Lunge",
-		origin = "Wolverine",
+		origin = "Clawback",
 		nature = "physical",
 		cost = 10,
 		cd = 4,
@@ -4181,7 +4181,7 @@ return {
 			chance = 0.25,
 			mul = 2,
 			ramp = 0.05,
-			tag = "SNIKT",
+			tag = "SHNK",
 			color = 0xdfe6f0,
 		},
 		onHit = {
@@ -4191,7 +4191,7 @@ return {
 	},
 	healing_factor_w = {
 		name = "Healing Factor",
-		origin = "Wolverine",
+		origin = "Clawback",
 		nature = "physical",
 		cost = 14,
 		cd = 12,
@@ -4200,8 +4200,8 @@ return {
 		desc = "The wound closes while you are still looking at it. Restores 35% HP.",
 	},
 	adamantium_guard = {
-		name = "Adamantium Skeleton",
-		origin = "Wolverine",
+		name = "Adamant Skeleton",
+		origin = "Clawback",
 		nature = "physical",
 		cost = 12,
 		cd = 14,
@@ -4215,7 +4215,7 @@ return {
 	},
 	berserker_rage = {
 		name = "Berserker Rage",
-		origin = "Wolverine",
+		origin = "Clawback",
 		nature = "physical",
 		cost = 36,
 		cd = 32,

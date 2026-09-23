@@ -173,9 +173,9 @@ return {
 		tophat = "other",
 	},
 	WORLD_LABEL = {
-		naruto = "Naruto",
-		jjk = "Jujutsu Kaisen",
-		marvel = "Marvel",
+		naruto = "Shinobi Lands",
+		jjk = "Sorcerer's Academy",
+		marvel = "Skyline City",
 		other = "Elsewhere",
 	},
 	MAP_IDS = { "times_square", "jujutsu_high", "star_corridor", "kyoto_academy", "culling_colony", "land_of_wind", "land_of_earth", "land_of_water", "land_of_lightning" },
@@ -196,7 +196,7 @@ return {
 		["0"] = { "THEN WE WILL TAKE IT." },
 		["15"] = { "FEED US.", "We will take it ourselves if you will not.", "Do not make us ask again." },
 		["30"] = { "Feed. Us.", "We can smell them from here.", "You are being selfish." },
-		["50"] = { "We are hungry, Peter.", "There is meat everywhere. Why do you wait?" },
+		["50"] = { "We are hungry, Theo.", "There is meat everywhere. Why do you wait?" },
 		["75"] = { "We are getting hungry.", "Feed us soon." },
 	},
 }

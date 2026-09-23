@@ -55,7 +55,7 @@ local function applyStyle(ps: Combat.PState, styleId: string, keepHealth: boolea
 	Combat.publish(ps)
 end
 
--- Transform ultimates (Venom, Anti-Venom, Sukuna) borrow another style's body
+-- Transform ultimates (Blackmaw, Antidote, Akuro) borrow another style's body
 -- and kit, and give it back.
 local function transform(ps: Combat.PState, into: string?)
 	local root = Combat.rootOf(ps.player)

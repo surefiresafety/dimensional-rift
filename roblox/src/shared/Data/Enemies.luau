@@ -137,7 +137,7 @@ return {
 		},
 	},
 	hanami = {
-		name = "Hanami",
+		name = "Thornbloom",
 		grade = "special",
 		nature = "earth",
 		hp = 620,
@@ -157,7 +157,7 @@ return {
 		},
 	},
 	jogo = {
-		name = "Jogo",
+		name = "Kazan",
 		grade = "special",
 		nature = "fire",
 		hp = 700,
@@ -176,7 +176,7 @@ return {
 		},
 	},
 	mahito_b = {
-		name = "Mahito",
+		name = "Patchwork",
 		grade = "special",
 		nature = "cursed",
 		hp = 820,
@@ -468,7 +468,7 @@ return {
 		},
 	},
 	dagon_b = {
-		name = "Dagon",
+		name = "Tidehollow",
 		grade = "special",
 		nature = "water",
 		hp = 900,
@@ -497,7 +497,7 @@ return {
 		},
 	},
 	kenjaku_b = {
-		name = "Kenjaku",
+		name = "Nuime",
 		grade = "special",
 		nature = "cursed",
 		hp = 1050,
@@ -525,7 +525,7 @@ return {
 		},
 	},
 	toji_b = {
-		name = "Toji Fushiguro",
+		name = "Zero",
 		grade = "special",
 		nature = "physical",
 		hp = 980,
@@ -679,7 +679,7 @@ return {
 		},
 	},
 	akatsuki_nin = {
-		name = "Akatsuki Cell",
+		name = "Red Cloud Cell",
 		grade = 2,
 		nature = "fire",
 		hp = 260,
@@ -766,7 +766,7 @@ return {
 		},
 	},
 	goblin_drone = {
-		name = "Goblin Drone",
+		name = "Glider Drone",
 		grade = 2,
 		nature = "fire",
 		hp = 230,
@@ -829,7 +829,7 @@ return {
 		},
 	},
 	boss_gojo = {
-		name = "Gojo",
+		name = "Aoi Hakumei",
 		grade = "special",
 		nature = "cursed",
 		hp = 1394,
@@ -857,7 +857,7 @@ return {
 		},
 	},
 	boss_naruto = {
-		name = "Naruto",
+		name = "Ren Tsumuji",
 		grade = "special",
 		nature = "fire",
 		hp = 1290,
@@ -885,7 +885,7 @@ return {
 		},
 	},
 	boss_sukuna = {
-		name = "Sukuna",
+		name = "Akuro",
 		grade = "special",
 		nature = "wind",
 		hp = 1342,
@@ -913,7 +913,7 @@ return {
 		},
 	},
 	boss_spiderman = {
-		name = "Spider-Man",
+		name = "Threadrunner",
 		grade = "special",
 		nature = "physical",
 		hp = 1043,
@@ -949,7 +949,7 @@ return {
 		},
 	},
 	boss_docock = {
-		name = "Doctor Octopus",
+		name = "Doctor Eightfold",
 		grade = "special",
 		nature = "earth",
 		hp = 1191,
@@ -985,7 +985,7 @@ return {
 		},
 	},
 	boss_nanami = {
-		name = "Nanami Kento",
+		name = "Overtime",
 		grade = "special",
 		nature = "cursed",
 		hp = 1306,
@@ -1013,7 +1013,7 @@ return {
 		},
 	},
 	boss_nobara = {
-		name = "Nobara Kugisaki",
+		name = "Hammer Maiden",
 		grade = "special",
 		nature = "cursed",
 		hp = 1233,
@@ -1041,7 +1041,7 @@ return {
 		},
 	},
 	boss_winter = {
-		name = "The Winter Soldier",
+		name = "Frost Arm",
 		grade = "special",
 		nature = "fire",
 		hp = 1285,
@@ -1069,7 +1069,7 @@ return {
 		},
 	},
 	boss_maki = {
-		name = "Maki Zen'in",
+		name = "Rin Hoshigane",
 		grade = "special",
 		nature = "physical",
 		hp = 1202,
@@ -1087,7 +1087,7 @@ return {
 		},
 	},
 	boss_toge = {
-		name = "Toge Inumaki",
+		name = "Kotodama",
 		grade = "special",
 		nature = "cursed",
 		hp = 1410,
@@ -1115,7 +1115,7 @@ return {
 		},
 	},
 	boss_carnage = {
-		name = "Carnage",
+		name = "Redmaw",
 		grade = "special",
 		nature = "physical",
 		hp = 1259,
@@ -1151,7 +1151,7 @@ return {
 		},
 	},
 	boss_antivenom = {
-		name = "Anti-Venom",
+		name = "Antidote",
 		grade = "special",
 		nature = "physical",
 		hp = 1207,
@@ -1187,7 +1187,7 @@ return {
 		},
 	},
 	boss_ironspider = {
-		name = "Iron Spider",
+		name = "Ironthread",
 		grade = "special",
 		nature = "physical",
 		hp = 1207,
@@ -1223,7 +1223,7 @@ return {
 		},
 	},
 	boss_insomniac = {
-		name = "Spider-Man",
+		name = "Threadrunner",
 		grade = "special",
 		nature = "physical",
 		hp = 1207,
@@ -1251,7 +1251,7 @@ return {
 		},
 	},
 	boss_miles = {
-		name = "Miles Morales",
+		name = "Voltstep",
 		grade = "special",
 		nature = "lightning",
 		hp = 1243,
@@ -1279,7 +1279,7 @@ return {
 		},
 	},
 	boss_venom = {
-		name = "Venom",
+		name = "Blackmaw",
 		grade = "special",
 		nature = "physical",
 		hp = 1576,
@@ -1315,7 +1315,7 @@ return {
 		},
 	},
 	boss_yuji = {
-		name = "Yuji",
+		name = "Haru Takane",
 		grade = "special",
 		nature = "cursed",
 		hp = 1087,
@@ -1343,7 +1343,7 @@ return {
 		},
 	},
 	boss_megumi = {
-		name = "Megumi",
+		name = "Kage Inukai",
 		grade = "special",
 		nature = "water",
 		hp = 1087,
@@ -1377,7 +1377,7 @@ return {
 		},
 	},
 	boss_toji = {
-		name = "Toji",
+		name = "Zero",
 		grade = "special",
 		nature = "physical",
 		hp = 1139,
@@ -1405,7 +1405,7 @@ return {
 		},
 	},
 	boss_kashimo = {
-		name = "Kashimo",
+		name = "Ikazuchi",
 		grade = "special",
 		nature = "lightning",
 		hp = 1129,
@@ -1433,7 +1433,7 @@ return {
 		},
 	},
 	boss_geto = {
-		name = "Geto",
+		name = "Hoshiro Genma",
 		grade = "special",
 		nature = "cursed",
 		hp = 1355,
@@ -1461,7 +1461,7 @@ return {
 		},
 	},
 	boss_kenjaku = {
-		name = "Kenjaku",
+		name = "Nuime",
 		grade = "special",
 		nature = "cursed",
 		hp = 1103,
@@ -1489,7 +1489,7 @@ return {
 		},
 	},
 	boss_choso = {
-		name = "Choso",
+		name = "Akagane",
 		grade = "special",
 		nature = "fire",
 		hp = 1446,
@@ -1517,7 +1517,7 @@ return {
 		},
 	},
 	boss_mahito = {
-		name = "Mahito",
+		name = "Patchwork",
 		grade = "special",
 		nature = "water",
 		hp = 1233,
@@ -1545,7 +1545,7 @@ return {
 		},
 	},
 	boss_jogo = {
-		name = "Jogo",
+		name = "Kazan",
 		grade = "special",
 		nature = "fire",
 		hp = 1420,
@@ -1573,7 +1573,7 @@ return {
 		},
 	},
 	boss_hanami = {
-		name = "Hanami",
+		name = "Thornbloom",
 		grade = "special",
 		nature = "earth",
 		hp = 1118,
@@ -1601,7 +1601,7 @@ return {
 		},
 	},
 	boss_dagon = {
-		name = "Dagon",
+		name = "Tidehollow",
 		grade = "special",
 		nature = "water",
 		hp = 1290,
@@ -1629,7 +1629,7 @@ return {
 		},
 	},
 	boss_eleven = {
-		name = "Eleven",
+		name = "Nosebleed",
 		grade = "special",
 		nature = "cursed",
 		hp = 1329,
@@ -1657,7 +1657,7 @@ return {
 		},
 	},
 	boss_jean = {
-		name = "Jean Grey",
+		name = "Mindflare",
 		grade = "special",
 		nature = "cursed",
 		hp = 1347,
@@ -1685,7 +1685,7 @@ return {
 		},
 	},
 	boss_ironman = {
-		name = "Iron Man",
+		name = "Arc Knight",
 		grade = "special",
 		nature = "lightning",
 		hp = 1355,
@@ -1741,7 +1741,7 @@ return {
 		},
 	},
 	boss_kakashi = {
-		name = "Kakashi",
+		name = "Hatsuyuki",
 		grade = "special",
 		nature = "lightning",
 		hp = 1238,
@@ -1759,7 +1759,7 @@ return {
 		},
 	},
 	boss_naoya = {
-		name = "Naoya Zen'in",
+		name = "Framerate",
 		grade = "special",
 		nature = "physical",
 		hp = 1150,
@@ -1777,7 +1777,7 @@ return {
 		},
 	},
 	boss_yuta = {
-		name = "Yuta Okkotsu",
+		name = "Rei Tsukiyo",
 		grade = "special",
 		nature = "cursed",
 		hp = 1243,
@@ -1805,7 +1805,7 @@ return {
 		},
 	},
 	boss_ishigori = {
-		name = "Ryu Ishigori",
+		name = "Gankyu",
 		grade = "special",
 		nature = "cursed",
 		hp = 1433,
@@ -1833,7 +1833,7 @@ return {
 		},
 	},
 	boss_uro = {
-		name = "Uro Takako",
+		name = "Skyfold",
 		grade = "special",
 		nature = "wind",
 		hp = 1243,
@@ -1861,7 +1861,7 @@ return {
 		},
 	},
 	boss_sasuke = {
-		name = "Sasuke",
+		name = "Kurobane",
 		grade = "special",
 		nature = "fire",
 		hp = 1082,
@@ -1889,7 +1889,7 @@ return {
 		},
 	},
 	boss_itachi = {
-		name = "Itachi",
+		name = "Karasu",
 		grade = "special",
 		nature = "fire",
 		hp = 1150,
@@ -1917,7 +1917,7 @@ return {
 		},
 	},
 	boss_might_guy = {
-		name = "Might Guy",
+		name = "Midori Tetsu",
 		grade = "special",
 		nature = "wind",
 		hp = 1581,
@@ -1945,7 +1945,7 @@ return {
 		},
 	},
 	boss_pain = {
-		name = "Pain",
+		name = "Gravewell",
 		grade = "special",
 		nature = "physical",
 		hp = 1222,
@@ -1973,7 +1973,7 @@ return {
 		},
 	},
 	boss_todo = {
-		name = "Aoi Todo",
+		name = "Tetsuo Hakushu",
 		grade = "special",
 		nature = "cursed",
 		hp = 1410,
@@ -1991,7 +1991,7 @@ return {
 		},
 	},
 	boss_hakari = {
-		name = "Hakari",
+		name = "Jackpot",
 		grade = "special",
 		nature = "physical",
 		hp = 1233,
@@ -2019,7 +2019,7 @@ return {
 		},
 	},
 	boss_yuki = {
-		name = "Yuki Tsukumo",
+		name = "Supernova",
 		grade = "special",
 		nature = "physical",
 		hp = 1456,
@@ -2047,7 +2047,7 @@ return {
 		},
 	},
 	boss_strange = {
-		name = "Doctor Strange",
+		name = "Warden of Mirrors",
 		grade = "special",
 		nature = "cursed",
 		hp = 1118,
@@ -2065,7 +2065,7 @@ return {
 		},
 	},
 	boss_goblin = {
-		name = "Green Goblin",
+		name = "Cackler",
 		grade = "special",
 		nature = "physical",
 		hp = 1243,
@@ -2093,7 +2093,7 @@ return {
 		},
 	},
 	boss_wolverine = {
-		name = "Wolverine",
+		name = "Clawback",
 		grade = "special",
 		nature = "physical",
 		hp = 1254,
@@ -2932,7 +2932,7 @@ return {
 		},
 	},
 	akatsuki_nin_alpha = {
-		name = "Alpha Akatsuki Cell",
+		name = "Alpha Red Cloud Cell",
 		grade = "special",
 		nature = "fire",
 		hp = 884,
@@ -3070,7 +3070,7 @@ return {
 		},
 	},
 	goblin_drone_alpha = {
-		name = "Alpha Goblin Drone",
+		name = "Alpha Glider Drone",
 		grade = "special",
 		nature = "fire",
 		hp = 782,

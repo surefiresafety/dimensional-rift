@@ -28,10 +28,10 @@ local query = ""
 
 local WORLDS = {
 	{ "all", "All" },
-	{ "naruto", "Naruto" },
-	{ "jjk", "Jujutsu Kaisen" },
-	{ "marvel", "Marvel" },
-	{ "other", "Elsewhere" },
+	{ "naruto", RulesData.WORLD_LABEL.naruto },
+	{ "jjk", RulesData.WORLD_LABEL.jjk },
+	{ "marvel", RulesData.WORLD_LABEL.marvel },
+	{ "other", RulesData.WORLD_LABEL.other },
 }
 
 local function refilter()

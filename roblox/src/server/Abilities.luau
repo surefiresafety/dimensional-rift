@@ -485,7 +485,7 @@ function Abilities.cast(ps: Combat.PState, which: number | string, aim: Vector3)
 		sendCooldown(ps, key, now + cd, cd)
 	end
 	if s.type == "domain" then
-		Combat.fx("banner", { text = "DOMAIN EXPANSION", color = s.edge or 0xffffff })
+		Combat.fx("banner", { text = "REALM UNFURL", color = s.edge or 0xffffff })
 	end
 	Combat.publish(ps)
 	return true
