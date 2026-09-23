@@ -147,6 +147,18 @@ return {
 		brow = 0x141418,
 		browAngle = 0.32,
 	},
+	grey = {
+		skin = 0xb9c7c2,
+		hair = 0xb9c7c2,
+		hairStyle = "none",
+		top = 0x9aa8a4,
+		bottom = 0x8a9894,
+		sleeves = 0xb9c7c2,
+		eye = 0x05050a,
+		bare = true,
+		headScale = 0.98,
+		brow = 0xb9c7c2,
+	},
 	kyoto_student = {
 		skin = 0xefd0b0,
 		hair = 0x2a1e18,

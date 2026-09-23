@@ -194,6 +194,16 @@
   #sense.on { box-shadow: inset 0 0 170px rgba(176, 108, 255, .78); }
   #flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
   #vignette { position: absolute; inset: 0; opacity: 0; box-shadow: inset 0 0 170px 44px rgba(198, 32, 44, .9); transition: opacity .28s ease-out; }
+  /* Visitors: a green cast from above while a craft is overhead. */
+  #visitors { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 1.4s;
+    background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(109, 255, 138, .22), transparent 70%); }
+  #visitors.on { opacity: 1; }
+  #abduct { position: absolute; left: 50%; top: 17%; transform: translateX(-50%); width: 360px; text-align: center; pointer-events: none; }
+  #abduct .tier { font-size: 22px; color: #6dff8a; text-shadow: 0 0 14px rgba(109, 255, 138, .8), 2px 2px 0 #000; margin-bottom: 5px; }
+  #abduct .track { height: 12px; border-radius: 999px; overflow: hidden; background: rgba(0, 0, 0, .7); box-shadow: 0 0 0 1px rgba(109, 255, 138, .4) inset; }
+  #abduct .fill { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #1c8a4a, #6dff8a); }
+  #abduct .hint { font-size: 11px; color: var(--dim); margin-top: 6px; text-shadow: 0 1px 3px #000; }
+  @media (max-width: 980px), (pointer: coarse) { #abduct { width: 60vw; top: 22%; } }
   #freeze { position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(120, 200, 255, .05), rgba(90, 169, 255, .35)); box-shadow: inset 0 0 200px rgba(140, 220, 255, .6); }
   #output { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); font-size: 16px;
     padding: 5px 18px; border: 1px solid rgba(255, 213, 74, .6); border-radius: var(--r-pill);
@@ -478,6 +488,8 @@
     <div id="basic"><b>LMB</b> Strike · <b>RMB / E</b> Signature · <b>C</b> Dodge · <b>Space</b> Jump<br><b>1–5</b> Techniques · <b>G</b> Ultimate · <b>V</b> Consume · <b>R</b> Auto<br>Hold <b>B</b> Output charge · <b>Shift</b> lock · <b>Ctrl</b> First person<br><b>Tab</b> Loadout · <b>M</b> Characters · <b>N</b> World map · <b>Q</b> Gate</div>
     <div id="log"></div>
     <div id="center"></div>
+    <div id="visitors"></div>
+    <div id="abduct" hidden><div class="tier display">TRACTOR BEAM</div><div class="track"><i class="fill"></i></div><div class="hint">Get out of the light: run, dodge (C), or shoot it down.</div></div>
     <div id="charge" hidden><div class="tier display"></div><div class="track"><i class="fill"></i><span class="mark" style="left:50%"></span><span class="mark" style="left:100%"></span></div><div class="hint">Hold B. Release to store it for your next ability.</div></div>
     <div id="freeze" hidden></div>
     <div id="speedlines"></div>
@@ -1064,6 +1076,9 @@ const SKILLS = {
   nue:             { name: 'Nue', origin: 'Megumi', nature: 'lightning', cost: 12, cd: 4, type: 'projectile', speed: 36, radius: 1.1, power: 62, onHit: { paralyze: 2 }, color: 0xffe45c, desc: 'The great bird dives with a lightning charge. Paralyzes.' },
   toad_s:          { name: 'Toad', origin: 'Megumi', nature: 'water', cost: 8, cd: 4, type: 'yank', range: 26, power: 34, desc: 'The toad\'s tongue drags an enemy to you.' },
   max_elephant:    { name: 'Max Elephant', origin: 'Megumi', nature: 'water', cost: 18, cd: 8, type: 'trap', range: 6, radius: 6.5, power: 72, color: 0x5aa9ff, onHit: { root: 1, knock: 10 }, desc: 'A flood-stomp. Everything nearby is crushed and soaked.' },
+  // --- Visitors: taken off whatever tried to take you ---
+  abduction_ray:   { name: 'Abduction Ray', origin: 'Visitors', nature: 'lightning', cost: 22, cd: 9, type: 'beam', range: 40, radius: 2.4, power: 190, color: 0x6dff8a, onHit: { root: 2.5, paralyze: 1.5 }, desc: 'Pulled off the craft that tried to pull you up. It holds whatever it touches in the light.' },
+  probe_pistol:    { name: 'Probe Pistol', origin: 'Visitors', nature: 'lightning', cost: 6, cd: 1.4, type: 'projectile', speed: 58, radius: .45, power: 44, color: 0x6dff8a, onHit: { paralyze: .8 }, desc: 'Small, quick, and nobody on Earth knows how it works.' },
   rabbit_escape:   { name: 'Rabbit Escape', origin: 'Megumi', nature: 'physical', cost: 10, cd: 14, type: 'evade', duration: 3, speedMul: 1.5, desc: 'A swarm of rabbits. Untouchable and fast for 3 seconds.' },
 
   // --- Itachi Uchiha: the Mangekyo ---
@@ -1441,6 +1456,11 @@ const ENEMIES = {
   thunder_ninja:{ name: 'Cloud Ninja',    grade: 2, nature: 'lightning', hp: 210, atk: 21, speed: 8.2, size: 1,    drops: 'arc_bolt',     shape: 'human',
                   ranged: { power: 16, speed: 52, cd: 3.6, min: 11, color: 0xffe45c } },
   kyoto_student:{ name: 'Kyoto Student',  grade: 2, nature: 'physical',  hp: 200, atk: 19, speed: 7.4, size: 1,    drops: 'shadow_clone', shape: 'human' },
+  // ---- Visitors: never in a wave table. They arrive with the abduction
+  // condition, which a run only rolls now and then.
+  ufo:          { name: 'Unidentified Craft', grade: 'special', nature: 'lightning', hp: 1600, atk: 0, speed: 5.5, size: 1.6, drops: 'abduction_ray', shape: 'ufo', visitor: true, armor: .2 },
+  grey:         { name: 'Grey',           grade: 2, nature: 'lightning', hp: 190, atk: 16, speed: 6.8, size: .82, drops: 'probe_pistol', shape: 'human', visitor: true,
+                  ranged: { power: 15, speed: 48, cd: 2.8, min: 8, color: 0x6dff8a } },
   tomb_guardian:{ name: 'Tomb Guardian',  grade: 1, nature: 'earth',     hp: 430, atk: 28, speed: 3.2, size: 1.55, drops: 'boulder_toss', shape: 'golem',  color: 0x8f7f6a,
                   ranged: { power: 24, speed: 22, cd: 4.8, min: 10, color: 0xb8a888 } },
 
@@ -3612,6 +3632,19 @@ const sfx = {
     f.frequency.exponentialRampToValueAtTime(5200, ctx.currentTime + .12);
     f.Q.value = 6; n.connect(f); env(ctx, f, .16, .002, .12); n.start(); n.stop(ctx.currentTime + .2);
   },
+  /** A theremin: a sine gliding up and down with a slow vibrato on it. */
+  ufo() {
+    if (!audio.on) return; const ctx = actx(); if (!ctx) return;
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(320, t);
+    o.frequency.linearRampToValueAtTime(880, t + 1.1);
+    o.frequency.linearRampToValueAtTime(520, t + 2.4);
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 6.5;
+    const depth = ctx.createGain(); depth.gain.value = 18;
+    lfo.connect(depth); depth.connect(o.frequency);
+    env(ctx, o, .12, .3, 2.2); o.start(t); lfo.start(t); o.stop(t + 2.6); lfo.stop(t + 2.6);
+  },
   whoosh() {
     if (!audio.on) return; const ctx = actx(); if (!ctx) return;
     const n = noise(ctx); const f = ctx.createBiquadFilter(); f.type = 'bandpass';
@@ -4292,6 +4325,8 @@ const ENEMY_LOOKS = {
   dagon_b:     { skin: 0xbfe0f0, hair: 0x2f6fb5, hairStyle: 'none', top: 0x2a6a8a, bottom: 0x1f4f6a, sleeves: 0xbfe0f0, eye: 0x6cd8ff, horns: true, markings: true },
   kenjaku_b:   { skin: 0xe8d8c0, hair: 0x1a1a22, hairStyle: 'bun', top: 0x3a4426, bottom: 0x1a1622, sleeves: 0x3a4426, eye: 0x8aa84a, stitches: true, collar: 0x2a3018 },
   toji_b:      { skin: 0xe8c8a0, hair: 0x141418, hairStyle: 'crop', top: 0x16161c, bottom: 0x141418, sleeves: 0x16161c, eye: 0x35502f, scar: true, bare: true, belt: 0x2a2a30, brow: 0x141418, browAngle: .32 },
+  // A grey: the head is most of it, and the eyes are all black.
+  grey:        { skin: 0xb9c7c2, hair: 0xb9c7c2, hairStyle: 'none', top: 0x9aa8a4, bottom: 0x8a9894, sleeves: 0xb9c7c2, eye: 0x05050a, bare: true, headScale: .98, brow: 0xb9c7c2 },
   kyoto_student:{ skin: 0xefd0b0, hair: 0x2a1e18, hairStyle: 'swept', top: 0x1e3a2a, bottom: 0x162a20, sleeves: 0x1e3a2a, eye: 0x6a8f5a, uniform: 0x16301f, cuff: 0x16301f, buckle: 0xc8a44a },
 };
 
@@ -4339,7 +4374,7 @@ const BOSS_IDS = [], ALPHA_IDS = [];
 
   // Alphas: an ordinary curse that kept eating.
   for (const [id, t] of Object.entries(ENEMIES)) {
-    if (t.boss || id.startsWith('boss_')) continue;
+    if (t.boss || t.visitor || id.startsWith('boss_')) continue;
     const aid = id + '_alpha';
     ENEMIES[aid] = {
       ...t, name: 'Alpha ' + t.name, grade: 'special', boss: true,
@@ -4511,6 +4546,35 @@ function makeWraith(t, col) {
   }
   return { vis, tatters, height: 2.4 * S };
 }
+/** A saucer: brushed hull, a green glass dome, a ring of running lights, and
+ *  the tractor beam hanging off its belly, sized every frame to the ground. */
+function makeUfo(t) {
+  const S = t.size, vis = new THREE.Group();
+  const hull = outlined(new THREE.Mesh(new THREE.SphereGeometry(2.4 * S, 28, 14), toon(0x9aa3ad, { metalness: .8, roughness: .3 })), .04);
+  hull.scale.set(1, .22, 1); vis.add(hull);
+  const skirt = outlined(new THREE.Mesh(new THREE.CylinderGeometry(1.5 * S, 2.2 * S, .5 * S, 28), toon(0x5a626c)), .05);
+  skirt.position.y = -.35 * S; vis.add(skirt);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(1.05 * S, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2),
+    new THREE.MeshBasicMaterial({ color: 0x6dff8a, transparent: true, opacity: .45 }));
+  dome.position.y = .3 * S; vis.add(dome);
+  const pilot = new THREE.Mesh(new THREE.SphereGeometry(.34 * S, 12, 10), toon(0xb9c7c2));
+  pilot.scale.set(1, 1.25, 1); pilot.position.y = .62 * S; vis.add(pilot);
+  const lights = [];
+  for (let i = 0; i < 12; i++) {
+    const a = i / 12 * Math.PI * 2;
+    const l = new THREE.Mesh(new THREE.SphereGeometry(.16 * S, 8, 6), new THREE.MeshBasicMaterial({ color: i % 2 ? 0x6dff8a : 0xffe45c }));
+    l.position.set(Math.cos(a) * 2.25 * S, -.02, Math.sin(a) * 2.25 * S); vis.add(l); lights.push(l);
+  }
+  const belly = new THREE.Mesh(new THREE.CircleGeometry(1.2 * S, 24), new THREE.MeshBasicMaterial({ color: 0x9dffb0, transparent: true, opacity: .8, side: THREE.DoubleSide }));
+  belly.rotation.x = Math.PI / 2; belly.position.y = -.62 * S; vis.add(belly);
+  // The beam and its footprint live on the craft's group, not the bobbing
+  // hull, so they are removed with it wherever it goes.
+  const beamMat = new THREE.MeshBasicMaterial({ color: 0x6dff8a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(.9 * S, 1, 1, 28, 1, true), beamMat);
+  const foot = new THREE.Mesh(new THREE.RingGeometry(.2, 1, 40), new THREE.MeshBasicMaterial({ color: 0x6dff8a, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }));
+  foot.rotation.x = -Math.PI / 2;
+  return { vis, height: 1.4 * S, noShadow: true, ufo: { lights, beam, foot, dome } };
+}
 function makeEnemyMesh(t) {
   const g = new THREE.Group();
   const col = t.color ?? NATURE[t.nature].color;
@@ -4533,6 +4597,7 @@ function makeEnemyMesh(t) {
   } else if (t.shape === 'toad') built = makeToad(t, col);
   else if (t.shape === 'imp') built = makeImp(t, col);
   else if (t.shape === 'golem') built = makeGolem(t, col);
+  else if (t.shape === 'ufo') built = makeUfo(t);
   else if (t.shape === 'wraith') built = makeWraith(t, col);
   else built = makeBlob(t, col);
 
@@ -4542,11 +4607,12 @@ function makeEnemyMesh(t) {
   g.userData.flame = built.flame ?? null;
   g.userData.tatters = built.tatters ?? null;
   g.userData.core = built.core ?? null;
+  if (built.ufo) { g.add(built.ufo.beam, built.ufo.foot); g.userData.ufo = built.ufo; }
   g.userData.height = built.height ?? 2.2 * t.size;
 
   // Shadow under everything, so floaters still read as standing somewhere.
   const shadow = new THREE.Mesh(new THREE.CircleGeometry(.85 * t.size, 20), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: .28, depthWrite: false }));
-  shadow.rotation.x = -Math.PI / 2; shadow.position.y = .03; g.add(shadow);
+  shadow.rotation.x = -Math.PI / 2; shadow.position.y = .03; if (!built.noShadow) g.add(shadow);
 
   const ring = new THREE.Mesh(new THREE.RingGeometry(1.6 * t.size, 2 * t.size, 32), new THREE.MeshBasicMaterial({ color: 0xff3b3b, side: THREE.DoubleSide, transparent: true, opacity: 0 }));
   ring.rotation.x = -Math.PI / 2; ring.position.y = .05; g.add(ring); g.userData.ring = ring;
@@ -4647,6 +4713,170 @@ function enemyTakeHit(e, power, nature, from, onHit = {}) {
   if (dmg > 60) shockwave(at, NATURE[nature].color, .5, 3.4, .26, 0);
   if (mine && e.hp <= 0) killEnemy(e);
 }
+// =============================================================================
+// Conditions
+//
+// Now and then a run rolls something that is not in any wave table. It is
+// rolled once per run (when you start, and when you rise again), and when it
+// lands it arrives partway through a later wave, never on top of a boss.
+// Add ?condition=<id> to the page address to force one, for testing.
+// =============================================================================
+const CONDITIONS = {
+  // Visitors: a craft comes down, drops a couple of greys, and tries to lift you
+  // into it. Stay in the light too long and you wake up somewhere else.
+  abduction: { name: 'Visitors', chance: .15, waves: [1, 5], delay: [10, 22], start: startAbduction, solo: true },
+};
+const condition = { id: null, atWave: -1, after: 0, fired: false };
+let waveStartedAt = 0;
+function rollCondition() {
+  Object.assign(condition, { id: null, atWave: -1, after: 0, fired: false });
+  let forced = null;
+  try { forced = new URLSearchParams(location.search).get('condition'); } catch (err) { void err; }
+  for (const [id, c] of Object.entries(CONDITIONS)) {
+    if (forced ? forced !== id : Math.random() >= c.chance) continue;
+    condition.id = id;
+    condition.atWave = forced ? wave : c.waves[0] + Math.floor(Math.random() * (c.waves[1] - c.waves[0] + 1));
+    condition.after = forced ? 6 : c.delay[0] + Math.random() * (c.delay[1] - c.delay[0]);
+    return;
+  }
+}
+function updateConditions() {
+  if (!condition.id || condition.fired || player.dead) return;
+  const c = CONDITIONS[condition.id];
+  if (c.solo && typeof net !== 'undefined' && net.on) return;   // one machine, one sky
+  if (wave < condition.atWave || now - waveStartedAt < condition.after) return;
+  // Never on a boss: that fight is enough. It waits for the next wave instead.
+  if (enemies.some((e) => !e.dead && e.t.boss)) { condition.atWave = wave + 1; return; }
+  condition.fired = true;
+  c.start();
+}
+
+function startAbduction() {
+  const a = Math.random() * Math.PI * 2;
+  const at = player.pos.clone().add(new THREE.Vector3(Math.sin(a) * 18, 0, Math.cos(a) * 18));
+  const e = spawnEnemy('ufo', at);
+  e.pos.y = 70;
+  e.ufo = { phase: 'arrive', t: 0, life: 0, lift: 0, touched: 0, cycle: 0 };
+  sfx.ufo();
+  center('SOMETHING IS WATCHING', 2400);
+  log('The sky over the rift goes green. Something is coming down, and it is not a curse.', true);
+  setTimeout(() => log('Spider-Man (over comms): "Is that a flying saucer? That is not even from MY universe."'), 2600);
+  $('#wave-sub').textContent = 'Visitors overhead';
+}
+
+const UFO_ALT = 10;       // how high it hunts
+const UFO_BEAM_R = 3.2;   // the beam's footprint
+function updateUfo(e, dt) {
+  const u = e.ufo ?? (e.ufo = { phase: 'arrive', t: 0, life: 0, lift: 0, touched: 0, cycle: 0 });
+  const parts = e.mesh.userData.ufo;
+  u.t += dt; u.life += dt; e.vel.set(0, 0, 0);
+  if (e.hitFlash > 0) e.hitFlash -= dt;
+  // Hull: a slow spin, a bob, and the running lights chasing round the rim.
+  if (e.vis) { e.vis.rotation.y += dt * 1.6; e.vis.position.y = Math.sin(now * 1.7) * .25; }
+  parts.lights.forEach((l, i) => l.material.color.setHex((Math.floor(now * 8) + i) % 3 ? 0x6dff8a : 0xffe45c));
+  const held = e.status.root || e.status.stun || e.status.paralyze || e.status.webbed;
+  const ground = groundAt(e.pos.x, e.pos.z);
+
+  // Where it wants to be: over you, lagging behind, slower while it beams.
+  const to = player.pos.clone().sub(e.pos).setY(0);
+  const speed = e.t.speed * (u.phase === 'beam' ? .55 : 1) * (held ? 0 : 1);
+  if (u.phase !== 'leave' && to.length() > .2) e.pos.addScaledVector(to.normalize(), Math.min(to.length(), speed * dt));
+  const wantY = u.phase === 'leave' ? e.pos.y + 30 : ground + UFO_ALT;
+  e.pos.y = THREE.MathUtils.lerp(e.pos.y, wantY, Math.min(1, dt * (u.phase === 'arrive' ? 1.2 : 2)));
+
+  // The phases: come down, hunt, warn, beam, cool off, and eventually leave.
+  if (u.phase === 'arrive' && e.pos.y < ground + UFO_ALT + 1) {
+    u.phase = 'hunt'; u.t = 0;
+    // It brings company.
+    for (let i = 0; i < 2; i++) {
+      const g = e.pos.clone().add(new THREE.Vector3((i ? 2.5 : -2.5), 0, 1.5));
+      g.y = groundAt(g.x, g.z);
+      spawnEnemy('grey', g);
+      shockwave(g.clone(), 0x6dff8a, .4, 4, .4, .5);
+    }
+    log('Two greys step out of the light.');
+  } else if (u.phase === 'hunt' && u.t > 2.6) { u.phase = 'warn'; u.t = 0; sfx.ufo(); }
+  else if (u.phase === 'warn' && u.t > 1.1) { u.phase = 'beam'; u.t = 0; }
+  else if (u.phase === 'beam' && u.t > 4.2) { u.phase = 'cool'; u.t = 0; }
+  else if (u.phase === 'cool' && u.t > 3) { u.phase = 'hunt'; u.t = 0; u.cycle++; }
+  if (u.life > 48 && u.phase !== 'leave' && u.phase !== 'arrive') {
+    u.phase = 'leave'; u.t = 0;
+    log('The craft lifts away. Whatever it came for, it will be back another day.');
+  }
+  if (u.phase === 'leave' && e.pos.y > ground + 60) {
+    // Gone, not beaten: no reward, no kill.
+    e.dead = true; e.bar.remove(); scene.remove(e.mesh);
+    return;
+  }
+
+  // The beam. A thin flicker is the warning; the full column is the danger.
+  const alt = Math.max(1, e.pos.y - ground);
+  const beaming = u.phase === 'beam' && !held;
+  const warn = u.phase === 'warn' && !held;
+  const r = beaming ? UFO_BEAM_R : warn ? .6 : 0;
+  parts.beam.scale.set(Math.max(.01, r), alt, Math.max(.01, r));
+  parts.beam.position.y = -alt / 2;
+  parts.beam.material.opacity = beaming ? .28 + .06 * Math.sin(now * 20) : warn ? (Math.sin(now * 40) > 0 ? .35 : .05) : 0;
+  parts.foot.scale.setScalar(Math.max(.01, beaming ? UFO_BEAM_R : warn ? UFO_BEAM_R : 0));
+  parts.foot.position.y = -alt + .06;
+  parts.foot.material.opacity = beaming ? .7 : warn ? .35 : 0;
+
+  // Is it lifting you?
+  const flat = Math.hypot(player.pos.x - e.pos.x, player.pos.z - e.pos.z);
+  const inside = beaming && !player.dead && flat < UFO_BEAM_R + .4 && player.pos.y < e.pos.y - .5;
+  if (inside) {
+    if (player.infinity || now < player.evadeUntil || now < player.graceUntil) {
+      if (now - u.touched > 1) { u.touched = now; floatText(player.pos, player.infinity ? 'INFINITY' : 'SLIPPED', 'heal'); }
+    } else {
+      u.lift = Math.min(1, u.lift + dt / 2.4);
+      if (u.lift > .3 && player.swinging) { releaseSwing(false); log('The beam tears you off your line.'); }
+      player.onGround = false;
+      player.vel.y = Math.max(player.vel.y, 2.5 + u.lift * 9);
+      const pull = new THREE.Vector3(e.pos.x - player.pos.x, 0, e.pos.z - player.pos.z);
+      player.vel.x += pull.x * dt * 2; player.vel.z += pull.z * dt * 2;
+    }
+  } else {
+    u.lift = Math.max(0, u.lift - dt * .8);
+  }
+  if (u.lift >= 1 || (inside && player.pos.y > e.pos.y - 2.4)) abduct(e);
+}
+
+/** How close the nearest craft is to taking you, for the HUD. */
+function updateVisitorHud() {
+  let lift = 0, any = false;
+  for (const e of enemies) if (!e.dead && e.ufo) { any = true; lift = Math.max(lift, e.ufo.lift); }
+  $('#visitors').classList.toggle('on', any);
+  const el = $('#abduct');
+  el.hidden = lift <= .02;
+  if (!el.hidden) el.querySelector('.fill').style.width = `${Math.round(lift * 100)}%`;
+}
+
+function abduct(e) {
+  e.ufo.lift = 0; e.ufo.phase = 'leave'; e.ufo.t = 0;
+  screenFlash(1); shake = 1.2; hitStop = Math.max(hitStop, .3);
+  center('ABDUCTED', 2200);
+  player.graceUntil = now + 6; player.vel.set(0, 0, 0);
+  const taken = Math.max(1, Math.round(player.maxHp * .15));
+  setTimeout(() => {
+    if (player.dead) return;
+    player.hp = Math.max(1, player.hp - taken);
+    // They put you back, just not where they found you.
+    const others = MAP_IDS.filter((id) => id !== currentMap);
+    const dest = others[Math.floor(Math.random() * others.length)];
+    if (!(typeof net !== 'undefined' && net.on) && dest && travelTo(dest, false)) {
+      log(`You wake up falling over ${MAPS[dest].name}, ${taken} health lighter, with no memory of the last few minutes.`, true);
+      center(MAPS[dest].name.toUpperCase(), 2000);
+    } else {
+      player.pos.copy(MAPS[currentMap].spawn);
+      log(`They put you back, ${taken} health lighter. You do not want to know what they checked.`, true);
+    }
+    player.pos.y += 34; player.vel.set(0, 0, 0); player.onGround = false;
+    player.graceUntil = now + 4;
+    floatText(player.pos, '-' + taken, 'hurt');
+  }, 1300);
+}
+
+const iRunConditions = () => (typeof net === 'undefined' || !net.on || net.host) && net.mode !== 'vs';
 function killEnemy(e) {
   if (e.pvp) return;                 // a player is never "killed" by my client
   e.dead = true; e.bar.remove();
@@ -4676,6 +4906,11 @@ function killEnemy(e) {
     log(`${e.t.name} defeated.`);
   }
   player.se = Math.min(player.maxSe, player.se + 8);
+  if (e.t.shape === 'ufo') {
+    player.se = player.maxSe;
+    center('CRAFT DOWN', 2200); screenFlash(.7); shake = 1.4;
+    log('The craft comes down in pieces. Whatever was flying it is not getting up.', true);
+  }
   scene.remove(e.mesh);
 }
 function animateCreature(e, dt, walking, moved) {
@@ -4777,6 +5012,7 @@ function updateEnemies(dt) {
     if (e.status.poison) { e.dotAcc2 = (e.dotAcc2 ?? 0) + dt; if (e.dotAcc2 > .5) { e.dotAcc2 = 0; e.hp -= 5; floatText(e.pos, 5, 'nve'); if (e.hp <= 0) { killEnemy(e); continue; } } }
     if (e.status.bleed) { e.dotAcc3 = (e.dotAcc3 ?? 0) + dt; if (e.dotAcc3 > .5) { e.dotAcc3 = 0; const d = Math.round(7 + (e.maxHp ?? e.hp) * .012); e.hp -= d; floatText(e.pos, d, 'nve'); if (e.hp <= 0) { killEnemy(e); continue; } } }
     if (e.pvp) continue;                                    // that is another player
+    if (e.t.shape === 'ufo') { updateUfo(e, dt); continue; }
     if (e.net && !(typeof net !== 'undefined' && net.host)) { // the host is driving this one
       animateCreature(e, dt, false, 0);
       if (e.hitFlash > 0) e.hitFlash -= dt;
@@ -5023,7 +5259,7 @@ function symbioteTakeover(duration) {
   center('THE SUIT TAKES OVER', 2000);
   log('It did not wait to be asked. The symbiote covers him and starts hitting back.', true);
   burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), 0xf0f0f0, 40);
-  for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() < 12) { e.pos.addScaledVector(to.normalize(), 4); e.status.stun = 1.2; } }
+  for (const e of enemies) { if (e.dead) continue; if (e.t.visitor && e.pos.y - player.pos.y > 4) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() < 12) { e.pos.addScaledVector(to.normalize(), 4); e.status.stun = 1.2; } }
 }
 function hurtPlayer(atk, nature, from) {
   if (player.dead) return;
@@ -5091,7 +5327,7 @@ function sukunaTakeover() {
   center('SUKUNA TAKES OVER', 2200); player.transform = null; camDist = 3.5;
   log('"Know your place, fool." Sukuna has taken the body. Full health, full energy, his techniques.', true);
   applyStyle(STYLES[player.style].takeover, false);
-  for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() < 16) { e.pos.addScaledVector(to.normalize(), 6); e.status.stun = 1.8; floatText(e.pos, '!', 'se'); } }
+  for (const e of enemies) { if (e.dead) continue; if (e.t.visitor && e.pos.y - player.pos.y > 4) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() < 16) { e.pos.addScaledVector(to.normalize(), 6); e.status.stun = 1.8; floatText(e.pos, '!', 'se'); } }
   burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), 0xff2d55, 40);
   scene.background.set(0x1a0406); scene.fog.color.set(0x2a0608);
   setTimeout(() => { if (!effects.some((f) => f.kind === 'domain')) applyTheme(MAPS[currentMap]); }, 2500);
@@ -5284,7 +5520,7 @@ function castSkill(id, opts = {}) {
     const cutCol = W?.color ?? s.color ?? NATURE[s.nature].color;
     slashArc(origin.clone().addScaledVector(dir, 1.4), dir, cutCol, Math.min(6, reach * .8));
     burst(origin.clone().addScaledVector(dir, 1.5), cutCol, 12); shake = .3;
-    for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() <= reach + e.t.size && (s.arc == null || to.normalize().dot(dir.clone().setY(0).normalize()) > s.arc)) {
+    for (const e of enemies) { if (e.dead) continue; if (e.t.visitor && e.pos.y - player.pos.y > 4) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() <= reach + e.t.size && (s.arc == null || to.normalize().dot(dir.clone().setY(0).normalize()) > s.arc)) {
       let power = (s.power * WM + (s.percentMax ? e.maxHp * s.percentMax : 0)) * B;
       if (s.bonusStatus && e.status[s.bonusStatus]) { power *= s.bonusMul ?? 1; center(s.bonusTag ?? 'LINKED!', 500); }
       if (s.finisher) power *= 1 + s.finisher * (1 - e.hp / e.maxHp);
@@ -5529,7 +5765,7 @@ function castSkill(id, opts = {}) {
     floatText(player.pos, '+' + amt, 'heal'); burst(origin, 0x56e39f, 18); center('REVERSE CURSED TECHNIQUE', 900);
   } else if (s.type === 'yank') {
     let target = null, best = s.range;
-    for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos); const d = to.length(); if (d < best && to.normalize().dot(dir) > .35) { best = d; target = e; } }
+    for (const e of enemies) { if (e.dead) continue; if (e.t.visitor && e.pos.y - player.pos.y > 4) continue; const to = e.pos.clone().sub(player.pos); const d = to.length(); if (d < best && to.normalize().dot(dir) > .35) { best = d; target = e; } }
     if (!target) { log(`${s.name}: nothing in reach.`); refundSkill(id, s); return true; }
     const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([origin, target.pos.clone().add(new THREE.Vector3(0, 1, 0))]), new THREE.LineBasicMaterial({ color: 0xffffff })); scene.add(line);
     effects.push({ kind: 'yank', e: target, line, t: 0, s, boost: B });
@@ -5589,7 +5825,7 @@ function castSkill(id, opts = {}) {
   } else if (s.type === 'teleport') {
     releaseSwing(false);
     let target = null, best = s.range;
-    for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos); const dd = to.length(); if (dd < best && to.clone().normalize().dot(dir) > .2) { best = dd; target = e; } }
+    for (const e of enemies) { if (e.dead) continue; if (e.t.visitor && e.pos.y - player.pos.y > 4) continue; const to = e.pos.clone().sub(player.pos); const dd = to.length(); if (dd < best && to.clone().normalize().dot(dir) > .2) { best = dd; target = e; } }
     const from = player.pos.clone();
     const dest = target ? target.pos.clone() : player.pos.clone().addScaledVector(dir.clone().setY(0).normalize(), s.range);
     player.pos.copy(dest); player.vel.set(0, 0, 0); resolveCollisions();
@@ -5621,7 +5857,7 @@ function castSkill(id, opts = {}) {
     log(`Reverse Time: you are where you were ${s.seconds} seconds ago${gained > 0 ? `, ${gained} HP back` : ''}.`, true);
   } else if (s.type === 'possess') {
     let target = null, best = s.range;
-    for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos); const dd = to.length(); if (dd < best && to.clone().normalize().dot(dir) > .1) { best = dd; target = e; } }
+    for (const e of enemies) { if (e.dead) continue; if (e.t.visitor && e.pos.y - player.pos.y > 4) continue; const to = e.pos.clone().sub(player.pos); const dd = to.length(); if (dd < best && to.clone().normalize().dot(dir) > .1) { best = dd; target = e; } }
     if (!target) { log('Nothing close enough to wear.'); refundSkill(id, s); return true; }
     target.dead = true; target.bar.remove();
     const worn = target.mesh;
@@ -5750,7 +5986,7 @@ function useUltimate() {
     hitStop = .3; screenFlash(1); shake = 1.2; center(u.title ?? 'SUKUNA POSSESSION', 2000); camDist = 3.5;
     log(u.log ?? `"Finally." Sukuna has the body for ${u.duration} seconds. Yuji returns when it ends.`, true);
     burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), u.color ?? 0xff2d55, 40);
-    for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() < 12) { e.pos.addScaledVector(to.normalize(), 4); e.status.stun = 1.2; } }
+    for (const e of enemies) { if (e.dead) continue; if (e.t.visitor && e.pos.y - player.pos.y > 4) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() < 12) { e.pos.addScaledVector(to.normalize(), 4); e.status.stun = 1.2; } }
   } else if (u.skill) {
     castSkill(u.skill, { free: true });
     // Cursed Speech charges the throat that used it.
@@ -5806,7 +6042,7 @@ function strike() {
   const S = player.style ? STYLES[player.style] : null;
   const m1 = W ? W.m1 : (S?.m1 ?? 16);
   const reach = 2.8 + (W ? 0 : S?.m1Range ?? 0);
-  for (const e of enemies) { if (e.dead) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() <= reach + e.t.size && to.normalize().dot(dir.clone().setY(0).normalize()) > .3) {
+  for (const e of enemies) { if (e.dead) continue; if (e.t.visitor && e.pos.y - player.pos.y > 4) continue; const to = e.pos.clone().sub(player.pos).setY(0); if (to.length() <= reach + e.t.size && to.normalize().dot(dir.clone().setY(0).normalize()) > .3) {
     if (blackFlash) { if (!hit) { player.blackFlashes++; center('BLACK FLASH', 700); hitStop = .16; screenFlash(.7); shake = .8; } burst(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), 0x120008, 16); burst(e.pos.clone().add(new THREE.Vector3(0, 1, 0)), 0xff2d55, 8); enemyTakeHit(e, 16 * 2.5, 'cursed', player.pos, { knock: 9 }); }
     else {
       enemyTakeHit(e, m1, 'physical', player.pos, { knock: 5 + (W?.knock ?? 0) * .4, ignoreDef: W?.ignoreDef });
@@ -6287,6 +6523,7 @@ function spawnWave() {
     const a = (i / Math.max(1, list.length)) * Math.PI * 2 + wave * .4;
     spawnEnemy(id, new THREE.Vector3(c.x + Math.sin(a) * 17, 0, c.z + Math.cos(a) * 17));
   });
+  waveStartedAt = now;
   $('#wave-title').textContent = `Wave ${wave + 1}`;
   const boss = list.map((id) => ENEMIES[id]).find((t) => t.boss);
   const weakTo = Object.keys(BEATS).find((k) => BEATS[k] === boss?.nature);
@@ -6753,6 +6990,8 @@ function frame(t) {
   updateEnemyProjectiles(worldDt);
   updateFxLights(real);
   pruneEnemies();
+  if (iRunConditions()) updateConditions();
+  updateVisitorHud();
   updateMahoraga(worldDt);
   if (player.transform && !player.transform.toggle && now > player.transform.until && !player.dead) { const back = player.transform.from; player.transform = null; applyStyle(back, false); center('YUJI IS BACK', 1200); log('Sukuna\'s time is up. Yuji has the body again.', true); burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), 0xff8a8a, 20); }
   for (const f of floats) { f.t += worldDt; f.pos.y += worldDt * 1.2; if (f.t > 1.1) { f.el.remove(); f.done = true; } }
@@ -6760,7 +6999,7 @@ function frame(t) {
   updateWorld(worldDt);
   updatePortals(real);
   const iRunWaves = typeof net === 'undefined' || !net.on || net.host;
-  if (iRunWaves && net.mode !== 'vs' && enemies.every((e) => e.dead || e.pvp) && !player.dead) {
+  if (iRunWaves && net.mode !== 'vs' && enemies.every((e) => e.dead || e.pvp || e.t.shape === 'ufo') && !player.dead) {
     wave++; player.hp = Math.min(player.maxHp, player.hp + 120); spawnWave();
   }
 
@@ -7155,7 +7394,7 @@ function useGate(to) {
 }
 buildMap('times_square');
 requestAnimationFrame(frame);
-window.__rift = { army, camera, scene, buildCharacter, CHARACTERS, GRADES, enemyTakeHit, strike, startEAction, endEAction, webLine, WEB_SLINGERS, startSwing, releaseSwing, killEnemy, get playerRig() { return playerRig; }, get firstPerson() { return firstPerson; }, get rasengan() { return rasengan; }, get chidori() { return chidori; }, spawnArmy, damageArmy, arcBolt, slashArc,
+window.__rift = { condition, CONDITIONS, rollCondition, startAbduction, get now() { return now; }, get waveStartedAt() { return waveStartedAt; }, army, camera, scene, buildCharacter, CHARACTERS, GRADES, enemyTakeHit, strike, startEAction, endEAction, webLine, WEB_SLINGERS, startSwing, releaseSwing, killEnemy, get playerRig() { return playerRig; }, get firstPerson() { return firstPerson; }, get rasengan() { return rasengan; }, get chidori() { return chidori; }, spawnArmy, damageArmy, arcBolt, slashArc,
   SKILLS, STYLES, ENEMIES, MAPS, MAP_IDS, NATURE, travelTo, buildMap, portals,
   net, setMode, useGate, setSolo, setTier, TIERS, get tier() { return tierName; },
   get currentMap() { return currentMap; }, get nearPortal() { return nearPortal; }, eprojectiles, spawnEnemy, player, enemies, buildings, debris, cars, civilians, damageBuildings, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, startCharge, releaseCharge, hurtPlayer, castSkill, OUTPUT_TIERS, ARSENALS, cycleWeapon, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
@@ -7168,7 +7407,7 @@ function start(styleId) {
     document.documentElement.requestFullscreen?.().catch(() => {});
     try { screen.orientation?.lock?.('landscape').catch(() => {}); } catch (e) { void e; }
   }
-  applyStyle(styleId, false); renderSlots(); spawnWave();
+  applyStyle(styleId, false); renderSlots(); rollCondition(); spawnWave();
   log(`Playing as ${STYLES[styleId].name}. Press 1-5 to use techniques.`, true);
   log('Spider-Man: "Kid, catch!" You equipped the Web-Shooter. Hold Right Mouse or E and aim high to swing.', true);
   canvas.requestPointerLock?.();
@@ -7463,7 +7702,7 @@ $('#retry').onclick = () => {
   for (const d of debris) scene.remove(d.m); debris.length = 0;
   for (const c of cars) { c.hp = 120; c.dead = false; c.g.rotation.z = 0; c.g.position.y = 0; }
   for (const b of buildings) { b.hp = b.maxHp; b.dead = false; b.collapse = undefined; b.mesh.scale.y = 1; b.mesh.rotation.z = 0; if (b.strip) b.strip.visible = true; reshapeBuilding(b); } $('#charge').hidden = true; $('#freeze').hidden = true; if (mahoraga) { scene.remove(mahoraga.m); mahoraga = null; } setLook(player.style);
-  $('#dead').hidden = true; spawnWave(); canvas.requestPointerLock?.();
+  $('#dead').hidden = true; rollCondition(); spawnWave(); canvas.requestPointerLock?.();
 };
 })();
 </script>
