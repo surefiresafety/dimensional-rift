@@ -40,7 +40,7 @@ return {
 		desc = "Crow-clan signature. May burn.",
 	},
 	chidori = {
-		name = "Lightning Lance",
+		name = "Chidori",
 		origin = "Ren",
 		nature = "lightning",
 		cost = 14,
@@ -54,7 +54,7 @@ return {
 		desc = "Lightning dash. Hits everything in the line.",
 	},
 	rasengan = {
-		name = "Spiral Core",
+		name = "Rasengan",
 		origin = "Ren",
 		nature = "wind",
 		cost = 12,
@@ -204,7 +204,7 @@ return {
 		desc = "Repulsion blast. Sends enemies flying.",
 	},
 	hollow_purple = {
-		name = "Void Violet",
+		name = "Hollow Purple",
 		origin = "Hakumei",
 		nature = "cursed",
 		cost = 30,
@@ -217,7 +217,7 @@ return {
 		desc = "Blue and Red collide. Erases everything in a line.",
 	},
 	unlimited_void = {
-		name = "Realm: Unlimited Void",
+		name = "Domain: Unlimited Void",
 		origin = "Hakumei",
 		nature = "cursed",
 		cost = 40,
@@ -246,7 +246,7 @@ return {
 		desc = "Nothing reaches you, for as long as you leave it up. Press 4 again to drop it.",
 	},
 	rasengan_n = {
-		name = "Spiral Core",
+		name = "Rasengan",
 		origin = "Ren",
 		nature = "wind",
 		cost = 10,
@@ -268,7 +268,7 @@ return {
 		count = 4,
 		duration = 18,
 		power = 14,
-		desc = "Uncharged it makes three to five clones. Charge it with B first for the real thing: Minimum Output 1,000, Medium 5,000, Maximum 10,000. Ten HP each, and they throw their own Spiral Core and Rasenshuriken.",
+		desc = "Uncharged it makes three to five clones. Charge it with B first for the real thing: Minimum Output 1,000, Medium 5,000, Maximum 10,000. Ten HP each, and they throw their own Rasengan and Rasenshuriken.",
 	},
 	rasenshuriken = {
 		name = "Rasenshuriken",
@@ -369,7 +369,7 @@ return {
 		desc = "Space itself is cut. Everything in the line is halved.",
 	},
 	malevolent_shrine = {
-		name = "Realm: Malevolent Shrine",
+		name = "Domain: Malevolent Shrine",
 		origin = "Akuro",
 		nature = "wind",
 		cost = 40,
@@ -433,7 +433,7 @@ return {
 		desc = "Yank an enemy to you and stagger it. Also moves boulders, apparently.",
 	},
 	spider_sense_t = {
-		name = "Danger Sense",
+		name = "Spider-Sense",
 		origin = "Threadrunner",
 		nature = "physical",
 		cost = 12,
@@ -477,7 +477,7 @@ return {
 		desc = "The cursed energy lands a beat after the punch. Two hits.",
 	},
 	black_flash = {
-		name = "Dark Spark",
+		name = "Black Flash",
 		origin = "Haru",
 		nature = "cursed",
 		cost = 9,
@@ -687,7 +687,7 @@ return {
 		desc = "Rewind yourself six seconds. Your health, energy and position all come back.",
 	},
 	amaterasu = {
-		name = "Black Sun",
+		name = "Amaterasu",
 		origin = "Kurobane",
 		nature = "fire",
 		cost = 18,
@@ -704,7 +704,7 @@ return {
 		desc = "Black flames that will not go out.",
 	},
 	susanoo = {
-		name = "Perfect Spectral Titan",
+		name = "Perfect Susanoo",
 		origin = "Kurobane",
 		nature = "lightning",
 		cost = 40,
@@ -759,7 +759,7 @@ return {
 		desc = "A serpent of cursed energy tears down the street.",
 	},
 	uzumaki = {
-		name = "Maximum: Tsumuji",
+		name = "Maximum: Uzumaki",
 		origin = "Hoshiro",
 		nature = "cursed",
 		cost = 34,
@@ -776,7 +776,7 @@ return {
 		desc = "Crushes every curse he owns into one sphere and drops it.",
 	},
 	geto_domain = {
-		name = "Realm: Coffin of the Curses",
+		name = "Domain: Coffin of the Curses",
 		origin = "Hoshiro",
 		nature = "cursed",
 		cost = 40,
@@ -840,7 +840,7 @@ return {
 		desc = "Rips gravity out from under them and holds them there.",
 	},
 	kenjaku_domain = {
-		name = "Realm: Womb Profusion",
+		name = "Domain: Womb Profusion",
 		origin = "Nuime",
 		nature = "cursed",
 		cost = 40,
@@ -973,7 +973,7 @@ return {
 		desc = "Throws a transfigured human that bursts into rot.",
 	},
 	mahito_domain = {
-		name = "Realm: Self-Embodiment of Perfection",
+		name = "Domain: Self-Embodiment of Perfection",
 		origin = "Patchwork",
 		nature = "cursed",
 		cost = 40,
@@ -1036,7 +1036,7 @@ return {
 		desc = "Drops a meteor. Nothing under it survives.",
 	},
 	jogo_domain = {
-		name = "Realm: Coffin of the Molten Mountain",
+		name = "Domain: Coffin of the Molten Mountain",
 		origin = "Kazan",
 		nature = "fire",
 		cost = 40,
@@ -1095,7 +1095,7 @@ return {
 		desc = "Pulls life out of the ground and back into himself.",
 	},
 	chimera_garden = {
-		name = "Realm: Chimera Shadow Garden",
+		name = "Domain: Chimera Shadow Garden",
 		origin = "Kage",
 		nature = "earth",
 		cost = 34,
@@ -1114,7 +1114,7 @@ return {
 		desc = "The ground turns to shadow and every shikigami he has can rise out of it.",
 	},
 	hanami_domain = {
-		name = "Realm: Garden of Rot",
+		name = "Domain: Garden of Rot",
 		origin = "Thornbloom",
 		nature = "earth",
 		cost = 40,
@@ -1187,7 +1187,7 @@ return {
 		desc = "Sends the whole shoal at once.",
 	},
 	dagon_domain = {
-		name = "Realm: Horizon of the Captivating Skandha",
+		name = "Domain: Horizon of the Captivating Skandha",
 		origin = "Tidehollow",
 		nature = "water",
 		cost = 40,
@@ -1347,7 +1347,7 @@ return {
 		desc = "A lance of psychic force straight down the road.",
 	},
 	phoenix_flare = {
-		name = "Ember Flare",
+		name = "Phoenix Flare",
 		origin = "Mindflare",
 		nature = "fire",
 		cost = 26,
@@ -1363,7 +1363,7 @@ return {
 		desc = "A bird of fire that bursts over them.",
 	},
 	phoenix_force = {
-		name = "The Ember Force",
+		name = "The Phoenix Force",
 		origin = "Mindflare",
 		nature = "fire",
 		cost = 40,
@@ -1548,7 +1548,7 @@ return {
 		desc = "The panel holds. He keeps moving; nothing else does.",
 	},
 	chidori_k = {
-		name = "Lightning Lance",
+		name = "Chidori",
 		origin = "Hatsuyuki",
 		nature = "lightning",
 		cost = 14,
@@ -1563,7 +1563,7 @@ return {
 		desc = "His own technique. He runs it straight through whatever is in the way.",
 	},
 	rasengan_k = {
-		name = "Spiral Core",
+		name = "Rasengan",
 		origin = "Hatsuyuki",
 		nature = "wind",
 		cost = 12,
@@ -1573,7 +1573,7 @@ return {
 		arc = 0.25,
 		power = 95,
 		knock = 20,
-		desc = "Copied with the copy eye and driven in at close range.",
+		desc = "Copied with the Sharingan and driven in at close range.",
 	},
 	raikiri = {
 		name = "Lightning Blade",
@@ -1588,7 +1588,7 @@ return {
 			paralyze = 3,
 			knock = 18,
 		},
-		desc = "Lightning Lance sharpened until it cuts clean through.",
+		desc = "Chidori sharpened until it cuts clean through.",
 	},
 	water_dragon_k = {
 		name = "Water Dragon Jutsu",
@@ -1633,7 +1633,7 @@ return {
 		desc = "The pack comes up out of the ground and pins whatever it catches.",
 	},
 	kamui = {
-		name = "Rift Step",
+		name = "Kamui",
 		origin = "Hatsuyuki",
 		nature = "cursed",
 		cost = 12,
@@ -1644,7 +1644,7 @@ return {
 		desc = "Sends part of the world somewhere else, himself included.",
 	},
 	kamui_raikiri = {
-		name = "Rift Step Lightning Blade",
+		name = "Kamui Lightning Blade",
 		origin = "Hatsuyuki",
 		nature = "lightning",
 		cost = 38,
@@ -1886,7 +1886,7 @@ return {
 		desc = "She puts herself in front of him and bites back.",
 	},
 	authentic_love = {
-		name = "Realm: Authentic Mutual Love",
+		name = "Domain: Authentic Mutual Love",
 		origin = "Rei",
 		nature = "cursed",
 		cost = 42,
@@ -3060,7 +3060,7 @@ return {
 		desc = "Everything inside nine metres is stuck to everything else.",
 	},
 	spider_arms = {
-		name = "Iron Arms",
+		name = "Spider-Arms",
 		origin = "Nightshift",
 		nature = "physical",
 		cost = 11,
@@ -3281,7 +3281,7 @@ return {
 		desc = "Everything he has, all at once, in every direction. The street will not forget it.",
 	},
 	spider_verse = {
-		name = "Multiverse Assist",
+		name = "Spider-Verse Assist",
 		origin = "Threadrunner",
 		nature = "physical",
 		cost = 32,
@@ -3414,7 +3414,7 @@ return {
 		desc = "The Crow-clan signature, at the size the clan actually uses it.",
 	},
 	amaterasu_i = {
-		name = "Black Sun",
+		name = "Amaterasu",
 		origin = "Karasu",
 		nature = "fire",
 		cost = 22,
@@ -3458,7 +3458,7 @@ return {
 		desc = "The body you hit was never the body. Three of them break apart into crows and hunt.",
 	},
 	susanoo_guard = {
-		name = "Spectral Titan: Yata Mirror",
+		name = "Susanoo: Yata Mirror",
 		origin = "Karasu",
 		nature = "cursed",
 		cost = 16,
@@ -3471,7 +3471,7 @@ return {
 		desc = "The ribcage closes. Three hits come back the way they arrived.",
 	},
 	totsuka_blade = {
-		name = "Spectral Titan: Totsuka Blade",
+		name = "Susanoo: Totsuka Blade",
 		origin = "Karasu",
 		nature = "cursed",
 		cost = 40,
@@ -3593,7 +3593,7 @@ return {
 		desc = "The eighth gate. It costs him his leg and it is worth it.",
 	},
 	shinra_tensei = {
-		name = "Repulse",
+		name = "Shinra Tensei",
 		origin = "Gravewell",
 		nature = "physical",
 		cost = 16,
@@ -3708,7 +3708,7 @@ return {
 		desc = "Close-range boxing from a man built like a wall.",
 	},
 	black_flash_t = {
-		name = "Dark Spark",
+		name = "Black Flash",
 		origin = "Hakushu",
 		nature = "cursed",
 		cost = 18,
@@ -3720,7 +3720,7 @@ return {
 			chance = 0.45,
 			mul = 2.6,
 			ramp = 0.08,
-			tag = "DARK SPARK",
+			tag = "BLACK FLASH",
 			color = 0xd4142a,
 		},
 		color = 0xd4142a,
@@ -3848,7 +3848,7 @@ return {
 		desc = "Cursed energy poured into staying upright. Four hits, and each one pays.",
 	},
 	idle_death_gamble = {
-		name = "Realm: Idle Death Gamble",
+		name = "Domain: Idle Death Gamble",
 		origin = "Jackpot",
 		nature = "cursed",
 		cost = 42,
@@ -3976,7 +3976,7 @@ return {
 		desc = "A mandala forms on the arm. Four hits go back through it.",
 	},
 	crimson_bands = {
-		name = "Crimson Bands",
+		name = "Crimson Bands of Cyttorak",
 		origin = "Warden",
 		nature = "cursed",
 		cost = 16,
@@ -4005,7 +4005,7 @@ return {
 		desc = "A gate opens where he is looking and closes behind him.",
 	},
 	images_of_ikonn = {
-		name = "Mirror Images",
+		name = "Images of Ikonn",
 		origin = "Warden",
 		nature = "cursed",
 		cost = 16,
@@ -4133,7 +4133,7 @@ return {
 		desc = "He empties the satchel. All of it, everywhere, while flying.",
 	},
 	claw_slash = {
-		name = "Adamant Claws",
+		name = "Adamantium Claws",
 		origin = "Clawback",
 		nature = "physical",
 		cost = 6,
@@ -4181,7 +4181,7 @@ return {
 			chance = 0.25,
 			mul = 2,
 			ramp = 0.05,
-			tag = "SHNK",
+			tag = "SNIKT",
 			color = 0xdfe6f0,
 		},
 		onHit = {
@@ -4200,7 +4200,7 @@ return {
 		desc = "The wound closes while you are still looking at it. Restores 35% HP.",
 	},
 	adamantium_guard = {
-		name = "Adamant Skeleton",
+		name = "Adamantium Skeleton",
 		origin = "Clawback",
 		nature = "physical",
 		cost = 12,

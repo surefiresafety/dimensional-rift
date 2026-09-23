@@ -18,7 +18,7 @@ return {
 		slots = { "blue", "red", "hollow_purple", "infinity", "rct_heal" },
 		ultimate = {
 			skill = "unlimited_void",
-			name = "Realm: Unlimited Void",
+			name = "Domain: Unlimited Void",
 			cost = 40,
 			cd = 34,
 			duration = 5,
@@ -26,7 +26,7 @@ return {
 	},
 	naruto = {
 		name = "Ren Tsumuji: Whirlwind Shinobi",
-		blurb = "Clones, Spiral Core, Sage Mode. Relentless and mobile.",
+		blurb = "Clones, Rasengan, Sage Mode. Relentless and mobile.",
 		passives = { "Sage Mode regenerates Spirit Energy while active." },
 		pool = { "rasengan_n", "multi_clone", "rasenshuriken", "sage_mode", "tailed_beast_bomb" },
 		slots = { "rasengan_n", "multi_clone", "rasenshuriken", "sage_mode", "tailed_beast_bomb" },
@@ -46,7 +46,7 @@ return {
 		slots = { "dismantle_s", "cleave", "fuga", "world_slash", "incomplete_shrine" },
 		ultimate = {
 			skill = "malevolent_shrine",
-			name = "Realm: Malevolent Shrine",
+			name = "Domain: Malevolent Shrine",
 			cost = 45,
 			cd = 38,
 			duration = 6,
@@ -54,7 +54,7 @@ return {
 	},
 	spiderman = {
 		name = "Threadrunner",
-		blurb = "Webs, kicks, Danger Sense. Control the fight, then punish.",
+		blurb = "Webs, kicks, Spider-Sense. Control the fight, then punish.",
 		passives = { "Webbed enemies move at 40% speed and take 25% more damage.", "The symbiote rides on him: two black tendrils strike on their own inside seven metres, no input needed.", "It armours him too — it eats 30% of every hit, paid out of its own 260-point health bar. Tear that open and it stops covering him until it mends.", "It gets hungry, and it tells you so. Let the hunger bar hit zero and it takes the body and feeds itself.", "Fire and sound strip the Bond bar — noise twice as fast as flame. Empty it and the suit comes off you: stand on it and hold F to get it back, or walk away and keep the Ironthread arms instead.", "Under 100 health it stops asking: the suit covers him on its own, and stays until you press G." },
 		autoLimbs = {
 			count = 100,
@@ -300,7 +300,7 @@ return {
 	insomniac = {
 		name = "Threadrunner: Nightshift",
 		blurb = "Theo on the night shift. Gadgets, web tricks and four arms out of the back of the suit — and G puts the white one on.",
-		passives = { "Everything he throws sticks: three to four and a half seconds of root on the webbing, and softer targets afterwards.", "Iron Arms takes a seven-metre arc.", "G is WE ARE ANTIDOTE. It stays on until you press G again." },
+		passives = { "Everything he throws sticks: three to four and a half seconds of root on the webbing, and softer targets afterwards.", "Spider-Arms takes a seven-metre arc.", "G is WE ARE ANTIDOTE. It stays on until you press G again." },
 		autoWeb = {
 			skill = "adv_web",
 			cd = 1.6,
@@ -342,7 +342,7 @@ return {
 	venom = {
 		name = "Blackmaw",
 		blurb = "The black suit, and it is not a costume. Everything Theo does, it does harder and enjoys more.",
-		passives = { "No Danger Sense and none of Theo's techniques, but the symbiote spins its own webbing: hold E to swing on a black line, and V to eat.", "Three tendrils fight on their own, picking their own targets inside eight metres while you do something else.", "Worn properly it eats 45% of every hit out of a 420-point suit bar, and mends faster than it does on Theo.", "It also gets hungry twice as fast. Feed has no cooldown — only a full stomach stops it.", "Bare hands hit for 34 with the reach of the tendrils behind them.", "G puts the suit on and G takes it off. No timer, no cooldown — stay Blackmaw as long as you like." },
+		passives = { "No Spider-Sense and none of Theo's techniques, but the symbiote spins its own webbing: hold E to swing on a black line, and V to eat.", "Three tendrils fight on their own, picking their own targets inside eight metres while you do something else.", "Worn properly it eats 45% of every hit out of a 420-point suit bar, and mends faster than it does on Theo.", "It also gets hungry twice as fast. Feed has no cooldown — only a full stomach stops it.", "Bare hands hit for 34 with the reach of the tendrils behind them.", "G puts the suit on and G takes it off. No timer, no cooldown — stay Blackmaw as long as you like." },
 		m1 = 34,
 		m1Range = 1.4,
 		autoLimbs = {
@@ -379,8 +379,8 @@ return {
 	},
 	yuji = {
 		name = "Haru Takane: The Vessel",
-		blurb = "Fists, Dark Spark, blood. G lets Akuro out; die once and he takes the wheel.",
-		passives = { "Left click: 70% of strikes are Dark Spark (x2.5, Cursed).", "First death: Akuro takes over at full health with his set." },
+		blurb = "Fists, Black Flash, blood. G lets Akuro out; die once and he takes the wheel.",
+		passives = { "Left click: 70% of strikes are Black Flash (x2.5, Cursed).", "First death: Akuro takes over at full health with his set." },
 		pool = { "divergent_fist", "black_flash", "manji_kick", "piercing_blood", "rct_heal" },
 		slots = { "divergent_fist", "black_flash", "manji_kick", "piercing_blood", "rct_heal" },
 		takeover = "sukuna",
@@ -444,7 +444,7 @@ return {
 		slots = { "spirit_barrage", "spirit_summon", "rainbow_dragon", "uzumaki", "rct_heal" },
 		ultimate = {
 			skill = "geto_domain",
-			name = "Realm: Coffin of the Curses",
+			name = "Domain: Coffin of the Curses",
 			cost = 40,
 			cd = 34,
 			duration = 6,
@@ -458,7 +458,7 @@ return {
 		slots = { "body_swap", "curse_womb", "antigravity", "spirit_summon", "rct_heal" },
 		ultimate = {
 			skill = "kenjaku_domain",
-			name = "Realm: Womb Profusion",
+			name = "Domain: Womb Profusion",
 			cost = 40,
 			cd = 34,
 			duration = 6,
@@ -486,7 +486,7 @@ return {
 		slots = { "idle_transfig", "body_repel", "soul_multiplicity", "polymorphic", "rct_heal" },
 		ultimate = {
 			skill = "mahito_domain",
-			name = "Realm: Self-Embodiment of Perfection",
+			name = "Domain: Self-Embodiment of Perfection",
 			cost = 40,
 			cd = 34,
 			duration = 6,
@@ -500,7 +500,7 @@ return {
 		slots = { "disaster_flames", "ember_insects", "volcano_head", "maximum_meteor", "rct_heal" },
 		ultimate = {
 			skill = "jogo_domain",
-			name = "Realm: Coffin of the Molten Mountain",
+			name = "Domain: Coffin of the Molten Mountain",
 			cost = 40,
 			cd = 34,
 			duration = 6,
@@ -514,7 +514,7 @@ return {
 		slots = { "hanami_roots", "flower_field", "wood_spikes", "drain_life", "rct_heal" },
 		ultimate = {
 			skill = "hanami_domain",
-			name = "Realm: Garden of Rot",
+			name = "Domain: Garden of Rot",
 			cost = 40,
 			cd = 34,
 			duration = 6,
@@ -528,7 +528,7 @@ return {
 		slots = { "water_shikigami", "tidal_wave", "whirlpool", "death_swarm", "rct_heal" },
 		ultimate = {
 			skill = "dagon_domain",
-			name = "Realm: Horizon of the Captivating Skandha",
+			name = "Domain: Horizon of the Captivating Skandha",
 			cost = 40,
 			cd = 34,
 			duration = 6,
@@ -556,7 +556,7 @@ return {
 		slots = { "tk_blast", "psi_stun", "psi_shield", "psi_bolt", "phoenix_flare" },
 		ultimate = {
 			skill = "phoenix_force",
-			name = "The Ember Force",
+			name = "The Phoenix Force",
 			cost = 40,
 			cd = 36,
 			duration = 24,
@@ -593,12 +593,12 @@ return {
 	kakashi = {
 		name = "Hatsuyuki: The Copycat",
 		blurb = "One eye, a thousand jutsu, and a book he would rather be reading.",
-		passives = { "Lightning Lance paralyses whatever it passes through.", "He copied Spiral Core and the Shadow Clone Jutsu. Uncharged it is three to five clones; charge B first for a thousand or more.", "Lightning Blade, Water Dragon and Mud Wall are in his pool: swap them in with Tab." },
+		passives = { "Chidori paralyses whatever it passes through.", "He copied Rasengan and the Shadow Clone Jutsu. Uncharged it is three to five clones; charge B first for a thousand or more.", "Lightning Blade, Water Dragon and Mud Wall are in his pool: swap them in with Tab." },
 		pool = { "chidori_k", "rasengan_k", "multi_clone", "ninja_hounds_k", "kamui", "raikiri", "water_dragon_k", "mud_wall_k" },
 		slots = { "chidori_k", "rasengan_k", "multi_clone", "ninja_hounds_k", "kamui" },
 		ultimate = {
 			skill = "kamui_raikiri",
-			name = "Rift Step Lightning Blade",
+			name = "Kamui Lightning Blade",
 			cost = 38,
 			cd = 30,
 			duration = 1,
@@ -626,7 +626,7 @@ return {
 		slots = { "pure_love", "rika_manifest", "cursed_speech_y", "rika_guard", "rct_heal" },
 		ultimate = {
 			skill = "authentic_love",
-			name = "Realm: Authentic Mutual Love",
+			name = "Domain: Authentic Mutual Love",
 			cost = 42,
 			cd = 34,
 			duration = 6,
@@ -663,12 +663,12 @@ return {
 	sasuke = {
 		name = "Kurobane: The Stormeye",
 		blurb = "Space and time bend around him. Teleport, stop the clock, take it back.",
-		passives = { "Work in progress: more ringed eye techniques to come." },
+		passives = { "Work in progress: more Rinnegan techniques to come." },
 		pool = { "amenotejikara", "time_freeze", "frozen_world", "reverse_time", "amaterasu" },
 		slots = { "amenotejikara", "time_freeze", "frozen_world", "reverse_time", "amaterasu" },
 		ultimate = {
 			skill = "susanoo",
-			name = "Perfect Spectral Titan",
+			name = "Perfect Susanoo",
 			cost = 40,
 			cd = 36,
 			duration = 25,
@@ -677,12 +677,12 @@ return {
 	itachi = {
 		name = "Karasu: The Black Flame",
 		blurb = "Black flame in one eye, three days of nightmare in the other. He was never trying.",
-		passives = { "Black Sun ignores armour and burns for twelve seconds; nothing puts it out.", "Yata Mirror eats three hits and sends them back." },
+		passives = { "Amaterasu ignores armour and burns for twelve seconds; nothing puts it out.", "Yata Mirror eats three hits and sends them back." },
 		pool = { "amaterasu_i", "tsukuyomi", "crow_clones", "susanoo_guard", "great_fireball", "fireball" },
 		slots = { "amaterasu_i", "tsukuyomi", "crow_clones", "susanoo_guard", "great_fireball" },
 		ultimate = {
 			skill = "totsuka_blade",
-			name = "Spectral Titan: Totsuka Blade",
+			name = "Susanoo: Totsuka Blade",
 			cost = 40,
 			cd = 34,
 			duration = 1,
@@ -719,7 +719,7 @@ return {
 	todo = {
 		name = "Tetsuo Hakushu: The Swap",
 		blurb = "He claps, you are somewhere else, and his fist is already there.",
-		passives = { "Boogie Woogie swaps you with whatever you are looking at, and you arrive swinging.", "Dark Spark lands as a critical nearly half the time." },
+		passives = { "Boogie Woogie swaps you with whatever you are looking at, and you arrive swinging.", "Black Flash lands as a critical nearly half the time." },
 		pool = { "boogie_woogie", "black_flash_t", "brother_barrage", "clap_step", "takada_chant" },
 		slots = { "boogie_woogie", "black_flash_t", "brother_barrage", "clap_step", "takada_chant" },
 		ultimate = {
@@ -738,7 +738,7 @@ return {
 		slots = { "jackpot_gamble", "overwhelm_fist", "door_open", "idle_guard", "cursed_slot" },
 		ultimate = {
 			skill = "idle_death_gamble",
-			name = "Realm: Idle Death Gamble",
+			name = "Domain: Idle Death Gamble",
 			cost = 42,
 			cd = 36,
 			duration = 6,

@@ -129,7 +129,7 @@ return {
 				mul = 1,
 				range = 1,
 				knock = 5,
-				note = "Bare hands, and 70% of them come out as Dark Spark.",
+				note = "Bare hands, and 70% of them come out as Black Flash.",
 			},
 			knife = {
 				name = "Cursed Knife",

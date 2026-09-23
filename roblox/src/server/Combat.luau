@@ -294,7 +294,7 @@ function Combat.hurtPlayer(ps: PState, atk: number, nature: string, from: Enemy?
 		return say("INFINITY")
 	end
 	if now < ps.evadeUntil then
-		return say("DANGER SENSE")
+		return say("SPIDER-SENSE")
 	end
 	if ps.shield > 0 and now < ps.shieldUntil then
 		ps.shield -= 1
