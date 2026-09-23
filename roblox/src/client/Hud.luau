@@ -1,0 +1,345 @@
+--!strict
+-- The HUD: vitals, the ability rail with its cooldowns, the wave chip, the
+-- combat log and the big centre banner. Thin, corner-pinned and unlit, like
+-- the web build's.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Palette = require(Shared.Palette)
+local Remotes = require(Shared.Remotes)
+local RulesData = require(Shared.Data.Rules)
+local Skills = require(Shared.Data.Skills)
+local Styles = require(Shared.Data.Styles)
+local Maps = require(Shared.Data.Maps)
+
+local Ui = require(script.Parent.Ui)
+
+local player = Players.LocalPlayer
+local Hud = {}
+
+local gui: ScreenGui
+local hpFill: Frame, hpText: TextLabel, seFill: Frame, seText: TextLabel, nameText: TextLabel
+local waveTitle: TextLabel, waveSub: TextLabel, mapName: TextLabel
+local rail: Frame
+local logBox: Frame
+local banner: TextLabel
+local tiles: { { frame: Frame, cd: Frame, key: string } } = {}
+local cooldowns: { [string]: { readyAt: number, duration: number } } = {}
+
+local function bar(parent: Instance, y: number, colour: Color3): (Frame, TextLabel, TextLabel)
+	local label = Ui.label({
+		Position = UDim2.fromOffset(0, y),
+		Size = UDim2.new(1, 0, 0, 14),
+		TextSize = 11,
+		TextColor3 = Ui.DIM,
+		Font = Ui.BOLD,
+		Parent = parent,
+	})
+	local value = Ui.label({
+		Position = UDim2.fromOffset(0, y),
+		Size = UDim2.new(1, 0, 0, 14),
+		TextSize = 11,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		Font = Ui.BOLD,
+		Parent = parent,
+	})
+	local track = Ui.make("Frame", {
+		Position = UDim2.fromOffset(0, y + 17),
+		Size = UDim2.new(1, 0, 0, 9),
+		BackgroundColor3 = Color3.new(0, 0, 0),
+		BackgroundTransparency = 0.35,
+		Parent = parent,
+	}, { Ui.corner(5) })
+	local fill = Ui.make(
+		"Frame",
+		{ Size = UDim2.fromScale(1, 1), BackgroundColor3 = colour, BorderSizePixel = 0, Parent = track },
+		{ Ui.corner(5) }
+	)
+	return fill, label, value
+end
+
+local function renderRail()
+	for _, c in rail:GetChildren() do
+		if c:IsA("Frame") then
+			c:Destroy()
+		end
+	end
+	table.clear(tiles)
+	local styleId = player:GetAttribute("Style") :: string?
+	local slotsAttr = (player:GetAttribute("Slots") :: string?) or ""
+	if not styleId or slotsAttr == "" then
+		return
+	end
+	local entries = {}
+	for i, id in string.split(slotsAttr, ",") do
+		local s = Skills[id]
+		if s then
+			table.insert(entries, {
+				key = id,
+				label = tostring(i),
+				name = s.name,
+				sub = RulesData.NATURE[s.nature].label,
+				cost = s.cost,
+				color = RulesData.NATURE[s.nature].color,
+				ult = false,
+			})
+		end
+	end
+	local u = Styles[styleId].ultimate
+	table.insert(
+		entries,
+		{ key = "ult", label = "G", name = u.name, sub = "Ultimate", cost = u.cost, color = 0xffd54a, ult = true }
+	)
+	for i, en in entries do
+		local f = Ui.make("Frame", {
+			LayoutOrder = i,
+			Size = UDim2.fromOffset(88, 86),
+			BackgroundColor3 = Ui.PANEL,
+			BackgroundTransparency = 0.12,
+			ClipsDescendants = true,
+			Parent = rail,
+		}, { Ui.corner(14), Ui.stroke(if en.ult then Ui.GOLD else Ui.LINE, 1, if en.ult then 0.2 else 0.4) })
+		Ui.label({
+			Text = en.label,
+			Font = Ui.BOLD,
+			TextSize = 11,
+			Position = UDim2.fromOffset(8, 6),
+			Size = UDim2.fromOffset(20, 14),
+			Parent = f,
+		})
+		Ui.label({
+			Text = `{en.cost} SE`,
+			TextSize = 10,
+			TextColor3 = Ui.SE,
+			TextXAlignment = Enum.TextXAlignment.Right,
+			Position = UDim2.new(1, -58, 0, 6),
+			Size = UDim2.fromOffset(50, 14),
+			Parent = f,
+		})
+		Ui.label({
+			Text = en.name,
+			Font = Ui.BOLD,
+			TextSize = 12,
+			Position = UDim2.fromOffset(8, 24),
+			Size = UDim2.new(1, -14, 0, 42),
+			TextYAlignment = Enum.TextYAlignment.Bottom,
+			Parent = f,
+		})
+		Ui.label({
+			Text = string.upper(en.sub),
+			TextSize = 9,
+			TextColor3 = Palette.color(en.color),
+			Position = UDim2.new(0, 8, 1, -18),
+			Size = UDim2.new(1, -14, 0, 12),
+			Parent = f,
+		})
+		local cd = Ui.make("Frame", {
+			AnchorPoint = Vector2.new(0, 1),
+			Position = UDim2.fromScale(0, 1),
+			Size = UDim2.fromScale(1, 0),
+			BackgroundColor3 = Color3.new(0, 0, 0),
+			BackgroundTransparency = 0.35,
+			BorderSizePixel = 0,
+			ZIndex = 5,
+			Parent = f,
+		})
+		table.insert(tiles, { frame = f, cd = cd, key = en.key })
+	end
+end
+
+function Hud.log(text: string, tone: string?)
+	local line = Ui.label({
+		Text = text,
+		TextSize = 14,
+		Font = if tone == "gold" then Ui.BOLD else Ui.BODY,
+		TextColor3 = if tone == "gold" then Ui.GOLD else Ui.TEXT,
+		TextStrokeTransparency = 0.5,
+		AutomaticSize = Enum.AutomaticSize.Y,
+		Size = UDim2.new(1, 0, 0, 0),
+		LayoutOrder = math.floor(os.clock() * 1000),
+		Parent = logBox,
+	})
+	local lines = {}
+	for _, c in logBox:GetChildren() do
+		if c:IsA("TextLabel") then
+			table.insert(lines, c)
+		end
+	end
+	if #lines > 6 then
+		table.sort(lines, function(a, b)
+			return a.LayoutOrder < b.LayoutOrder
+		end)
+		lines[1]:Destroy()
+	end
+	task.delay(9, function()
+		if line.Parent then
+			TweenService:Create(line, TweenInfo.new(0.6), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+			task.wait(0.6)
+			line:Destroy()
+		end
+	end)
+end
+
+function Hud.banner(text: string, colour: number?)
+	banner.Text = text
+	banner.TextColor3 = Palette.color(colour or 0xffd54a)
+	banner.TextTransparency = 0
+	banner.TextStrokeTransparency = 0.2
+	TweenService:Create(
+		banner,
+		TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 1.1),
+		{ TextTransparency = 1, TextStrokeTransparency = 1 }
+	):Play()
+end
+
+function Hud.build()
+	gui = Ui.make("ScreenGui", {
+		Name = "Hud",
+		ResetOnSpawn = false,
+		IgnoreGuiInset = true,
+		DisplayOrder = 5,
+		Parent = player:WaitForChild("PlayerGui"),
+	})
+
+	local vitals = Ui.make("Frame", {
+		Position = UDim2.fromOffset(20, 18),
+		Size = UDim2.fromOffset(292, 84),
+		BackgroundColor3 = Ui.PANEL,
+		BackgroundTransparency = 0.4,
+		Parent = gui,
+	}, { Ui.corner(14), Ui.stroke(), Ui.pad(12) })
+	local hpLabel, seLabel
+	hpFill, hpLabel, hpText = bar(vitals, 0, Ui.HP)
+	seFill, seLabel, seText = bar(vitals, 32, Ui.SE)
+	hpLabel.Text = "HEALTH"
+	seLabel.Text = "SPIRIT ENERGY"
+	nameText = hpLabel
+
+	local wave = Ui.make("Frame", {
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -20, 0, 18),
+		Size = UDim2.fromOffset(240, 72),
+		BackgroundColor3 = Ui.PANEL,
+		BackgroundTransparency = 0.4,
+		Parent = gui,
+	}, { Ui.corner(14), Ui.stroke(), Ui.pad(10) })
+	mapName = Ui.label({
+		Text = "",
+		Font = Ui.BOLD,
+		TextSize = 10,
+		TextColor3 = Ui.ACCENT,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		Size = UDim2.new(1, 0, 0, 12),
+		Parent = wave,
+	})
+	waveTitle = Ui.label({
+		Text = "",
+		Font = Ui.DISPLAY,
+		TextSize = 28,
+		TextColor3 = Ui.GOLD,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		Position = UDim2.fromOffset(0, 12),
+		Size = UDim2.new(1, 0, 0, 30),
+		Parent = wave,
+	})
+	waveSub = Ui.label({
+		Text = "",
+		TextSize = 11,
+		TextColor3 = Ui.DIM,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		Position = UDim2.fromOffset(0, 40),
+		Size = UDim2.new(1, 0, 0, 14),
+		Parent = wave,
+	})
+
+	rail = Ui.make("Frame", {
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -24),
+		Size = UDim2.fromOffset(600, 86),
+		BackgroundTransparency = 1,
+		Parent = gui,
+	}, {
+		Ui.make("UIListLayout", {
+			FillDirection = Enum.FillDirection.Horizontal,
+			HorizontalAlignment = Enum.HorizontalAlignment.Center,
+			Padding = UDim.new(0, 8),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	})
+
+	logBox = Ui.make("Frame", {
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 20, 1, -28),
+		Size = UDim2.fromOffset(360, 160),
+		BackgroundTransparency = 1,
+		Parent = gui,
+	}, {
+		Ui.make("UIListLayout", {
+			VerticalAlignment = Enum.VerticalAlignment.Bottom,
+			SortOrder = Enum.SortOrder.LayoutOrder,
+			Padding = UDim.new(0, 2),
+		}),
+	})
+
+	banner = Ui.label({
+		Text = "",
+		Font = Ui.DISPLAY,
+		TextSize = 56,
+		TextColor3 = Ui.GOLD,
+		TextTransparency = 1,
+		TextStrokeColor3 = Color3.new(0, 0, 0),
+		TextStrokeTransparency = 1,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.3),
+		Size = UDim2.fromOffset(900, 70),
+		Parent = gui,
+	})
+
+	player:GetAttributeChangedSignal("Slots"):Connect(renderRail)
+	player:GetAttributeChangedSignal("Style"):Connect(renderRail)
+	renderRail()
+
+	Remotes.get("Cooldown").OnClientEvent:Connect(function(key: string, readyAt: number, duration: number)
+		cooldowns[key] = { readyAt = readyAt, duration = duration }
+	end)
+	Remotes.get("Notice").OnClientEvent:Connect(Hud.log)
+	Remotes.get("Wave").OnClientEvent:Connect(function(mapId: string, n: number, left: number)
+		local m = Maps[mapId]
+		mapName.Text = string.upper(if m then m.name else mapId)
+		waveTitle.Text = `Wave {n}`
+		waveSub.Text = `{left} enemies`
+	end)
+
+	RunService.RenderStepped:Connect(function()
+		local character = player.Character
+		local hum = character and character:FindFirstChildOfClass("Humanoid")
+		if hum then
+			hpFill.Size = UDim2.fromScale(math.clamp(hum.Health / hum.MaxHealth, 0, 1), 1)
+			hpText.Text = `{math.floor(hum.Health)} / {math.floor(hum.MaxHealth)}`
+		end
+		local se = (player:GetAttribute("SE") :: number?) or 0
+		local maxSe = (player:GetAttribute("MaxSE") :: number?) or 1000
+		if maxSe < 0 then -- infinite
+			seFill.Size = UDim2.fromScale(1, 1)
+			seText.Text = "∞"
+		else
+			seFill.Size = UDim2.fromScale(math.clamp(se / maxSe, 0, 1), 1)
+			seText.Text = `{math.floor(se)} / {maxSe}`
+		end
+		local styleId = player:GetAttribute("Style") :: string?
+		nameText.Text = if styleId then string.upper(string.split(Styles[styleId].name, ":")[1]) else "HEALTH"
+		local now = workspace:GetServerTimeNow()
+		for _, t in tiles do
+			local c = cooldowns[t.key]
+			local k = if c and c.duration > 0 then math.clamp((c.readyAt - now) / c.duration, 0, 1) else 0
+			t.cd.Size = UDim2.fromScale(1, k)
+		end
+	end)
+end
+
+return Hud

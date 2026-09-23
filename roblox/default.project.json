@@ -1,0 +1,75 @@
+{
+  "name": "DimensionalRift",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "Server": {
+        "$path": "src/server"
+      }
+    },
+    "StarterPlayer": {
+      "$properties": {
+        "CharacterWalkSpeed": 22,
+        "CameraMaxZoomDistance": 60,
+        "EnableMouseLockOption": true
+      },
+      "StarterPlayerScripts": {
+        "Client": {
+          "$path": "src/client"
+        }
+      }
+    },
+    "Workspace": {
+      "Baseplate": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "Locked": true,
+          "Size": [
+            1024,
+            4,
+            1024
+          ],
+          "Position": [
+            0,
+            -2,
+            0
+          ],
+          "Color": [
+            0.16,
+            0.14,
+            0.22
+          ],
+          "Material": "Concrete",
+          "TopSurface": "Smooth"
+        }
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "ClockTime": 20.5,
+        "Brightness": 2,
+        "Ambient": [
+          0.35,
+          0.3,
+          0.5
+        ],
+        "OutdoorAmbient": [
+          0.45,
+          0.4,
+          0.6
+        ]
+      }
+    },
+    "Players": {
+      "$properties": {
+        "CharacterAutoLoads": false
+      }
+    }
+  }
+}

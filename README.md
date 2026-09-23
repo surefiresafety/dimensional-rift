@@ -9,8 +9,9 @@ No build step, no dependencies. Plain HTML + ES modules.
 
 ```bash
 npm start          # http://localhost:8080  (2D tutorial) and /web3d/rift3d.html (3D action build)
-npm test           # 19 combat-engine tests (node --test)
+npm test           # combat-engine, 3D data-integrity and Roblox export tests (node --test)
 npm run export:rpgmaker   # build/rpgmaker/*.json for an RPG Maker MZ project
+npm run export:roblox     # roblox/src/shared/Data/*.luau from the 3D build (see roblox/README.md)
 ```
 
 Controls: **Arrows / WASD** move · **Space / Enter / E** interact · **Tab** skill loadout.
@@ -31,6 +32,7 @@ Controls: **Arrows / WASD** move · **Space / Enter / E** interact · **Tab** sk
 | `docs/3D_ANIME_ARPG_GUIDE.md` | The 3D action-RPG track: UE5 architecture, cel-shaded lighting/post setup, VFX techniques, Unity HDRP appendix. |
 | `unreal/` | UE5 C++ module: character, web-swing movement component, 4-slot ability manager, Spirit Energy, nature-weakness damage, Spider-Sense; cel-shade + outline HLSL; rendering config. |
 | `unity/` | HDRP port of the web swing and ability loadout (C#). |
+| `roblox/` | The Roblox rebuild: a Rojo project with the 3D build's data exported to Luau, the combat rules ported and tested under Lune, and a playable first slice (select, waves, 16 technique types, HUD, web-swing). See `roblox/README.md`. |
 | `web3d/rift3d.html` | Playable 3D browser build (Three.js): cel-shaded city, physics web-swinging, real-time combat with Spider-Sense, 4-slot loadout, extraction waves. Open it via `npm start` at `/web3d/rift3d.html`. |
 | `docs/TUTORIAL_SCRIPT.md` | The minute-by-minute opening (0–15 min) as implemented. |
 | `tools/export-rpgmaker.js` | Converts skills, summons, enemies and the element chart into RPG Maker MZ data shapes. |

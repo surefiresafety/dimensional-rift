@@ -1,0 +1,5 @@
+std = "roblox"
+
+[lints]
+# The data modules are generated and deliberately exhaustive.
+unused_variable = "warn"
