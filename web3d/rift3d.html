@@ -3637,24 +3637,36 @@ let shiftLock = false, shoulder = 0;
 // First person. The camera sits where the eyes are and the body is hidden from
 // it, except the arms, which are the whole point of looking down.
 let firstPerson = false;
+/** Hide everything the camera would be standing inside, and nothing else.
+ *  The arms stay: they are the only part of yourself worth seeing, and they
+ *  hang off the chest group, so the torso has to be hidden piece by piece
+ *  rather than by hiding the group that carries them. */
+function setBodyHidden(hide) {
+  if (!playerRig) return;
+  const keep = new Set(Object.values(playerRig.arms).map((a) => a.shoulder));
+  playerRig.neck.visible = !hide;
+  for (const c of playerRig.chest.children) if (!keep.has(c)) c.visible = !hide;
+  for (const l of Object.values(playerRig.legs)) l.hip.visible = !hide;
+  for (const c of playerRig.pelvis.children) if (c !== playerRig.chest && !Object.values(playerRig.legs).some((l) => l.hip === c)) c.visible = !hide;
+  if (sigRing) sigRing.visible = !hide;
+}
 function toggleFirstPerson(on) {
   firstPerson = on ?? !firstPerson;
   $('#fp-tag').hidden = !firstPerson;
-  // His own head and hair would fill the frame from the inside.
-  if (playerRig) {
-    playerRig.neck.visible = !firstPerson;
-    playerRig.chest.children.forEach((c) => { if (c.isMesh && c !== playerRig.neck) c.visible = true; });
-  }
-  if (body) body.traverse((o) => { if (o.isMesh && o.userData.fpHide) o.visible = !firstPerson; });
-  if (sigRing) sigRing.visible = !firstPerson;
+  setBodyHidden(firstPerson);
   camDist = firstPerson ? 0 : 6.2;
+  syncPointerLock();
+  if (firstPerson) grabPointer();
   log(firstPerson ? 'First person. Ctrl to come back out.' : 'Third person.');
   center(firstPerson ? 'FIRST PERSON' : 'THIRD PERSON', 900);
 }
 function updateFirstPerson(dt) {
   // Eye height, and half a head forward so the near plane clears his own face.
   const fwd = new THREE.Vector3(Math.sin(camYaw), 0, Math.cos(camYaw));
-  const eye = player.pos.clone().add(new THREE.Vector3(0, 1.62, 0)).addScaledVector(fwd, .12);
+  // Scaled by the character's own height, or Gojo and Venom look out of their
+  // sternum while Nobara looks out of the top of her head.
+  const h = (CHARACTERS[player.style] ?? CHARACTERS.default).height ?? 1;
+  const eye = player.pos.clone().add(new THREE.Vector3(0, 1.62 * h, 0)).addScaledVector(fwd, .12 * h);
   camera.position.lerp(eye, Math.min(1, 26 * dt));
   if (shake > 0) {
     camera.position.add(new THREE.Vector3(Math.random() - .5, Math.random() - .5, Math.random() - .5).multiplyScalar(shake * .35));
@@ -3675,10 +3687,10 @@ function syncPointerLock() {
   // a mouselook game either way and an arrow sitting over the reticle is noise.
   // The cursor only disappears in shift lock. Outside it the mouse is yours:
   // you can see it, and you hold a button to look around.
-  canvas.classList.toggle('nocursor', shiftLock && running && !IS_TOUCH);
+  canvas.classList.toggle('nocursor', (shiftLock || firstPerson) && running && !IS_TOUCH);
   const el = $('#lock-hint');
   if (el) {
-    el.hidden = !(shiftLock && running && !locked && !IS_TOUCH);
+    el.hidden = !((shiftLock || firstPerson) && running && !locked && !IS_TOUCH);
     el.textContent = 'Nudge the mouse off centre to turn — it stays where you leave it.';
   }
 }
@@ -5843,14 +5855,16 @@ let sukunaAura = null, sukunaEmber = 0;
 let sigRing = null;
 function setLook(style) {
   const L = CHARACTERS[style] ?? CHARACTERS.default;
+  // Whatever this function rebuilds — rig, ring, aura — has to come back in
+  // whichever view we are actually in, so the hide is re-applied at the end.
   if (playerRig) body.remove(playerRig.root);
   playerRig = buildCharacter(L);
   body.add(playerRig.root);
-  if (firstPerson) playerRig.neck.visible = false;   // keep his head out of the lens
   // A ring in the character's own colour, so you can tell who you are at a glance.
   if (sigRing) body.remove(sigRing);
   sigRing = new THREE.Mesh(new THREE.RingGeometry(.58, .76, 40), new THREE.MeshBasicMaterial({ color: L.sig ?? 0xffe45c, side: THREE.DoubleSide, transparent: true, opacity: .62, depthWrite: false }));
   sigRing.rotation.x = -Math.PI / 2; sigRing.position.y = .04; body.add(sigRing);
+  if (firstPerson) setBodyHidden(true);   // the new rig and ring come back hidden
   if (sukunaAura) { body.remove(sukunaAura); sukunaAura = null; }
   if (L.markings) {
     sukunaAura = new THREE.Mesh(new THREE.RingGeometry(.8, 1.5, 32), new THREE.MeshBasicMaterial({ color: 0xff2d55, side: THREE.DoubleSide, transparent: true, opacity: .55 }));
@@ -5972,7 +5986,7 @@ function findAnchorCached() { if (now - anchorCache.t > .15) anchorCache = { t: 
 // Input
 // =============================================================================
 let locked = false, dragging = false, last = null;
-canvas.addEventListener('click', () => { if (!running || !shiftLock) return; grabPointer(); });
+canvas.addEventListener('click', () => { if (!running || !(shiftLock || firstPerson)) return; grabPointer(); });
 document.addEventListener('pointerlockchange', () => { locked = document.pointerLockElement === canvas; syncPointerLock(); });
 document.addEventListener('pointerlockerror', () => { locked = false; syncPointerLock(); });
 canvas.addEventListener('mousedown', (e) => { if (!running) return; if (e.button === 0) { dragging = true; last = [e.clientX, e.clientY]; strike(); } if (e.button === 2) startEAction(); });
@@ -5993,23 +6007,26 @@ canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 // and you stop. It never has to travel more than a couple of centimetres, so it
 // never leaves the frame.
 let lookRate = { x: 0, y: 0 }, pointerIn = false;
+// The orbit camera only needs to swing between a shallow dip and looking down
+// at him. From inside his head you have to be able to look up at a rooftop.
+const clampPitch = (v) => THREE.MathUtils.clamp(v, firstPerson ? -1.2 : -.45, firstPerson ? 1.2 : 1.25);
 const LOOK_DEAD = .1;          // fraction of the half-screen that does nothing
 const LOOK_SPEED = 2.6;        // radians per second at full deflection
 addEventListener('mousemove', (e) => {
   if (!running) return;
   if (locked) {
     camYaw -= (e.movementX ?? 0) * .0032;
-    camPitch = THREE.MathUtils.clamp(camPitch + (e.movementY ?? 0) * .0025, -.45, 1.25);
+    camPitch = clampPitch(camPitch + (e.movementY ?? 0) * .0025);
     lookRate.x = lookRate.y = 0;
     return;
   }
   // Shift lock off: the cursor is yours. Hold a button and drag to look, and the
   // camera does not move on its own while you are reading the screen.
-  if (!shiftLock) {
+  if (!shiftLock && !firstPerson) {
     lookRate.x = lookRate.y = 0;
     if (dragging && last) {
       camYaw -= (e.clientX - last[0]) * .0032;
-      camPitch = THREE.MathUtils.clamp(camPitch + (e.clientY - last[1]) * .0025, -.45, 1.25);
+      camPitch = clampPitch(camPitch + (e.clientY - last[1]) * .0025);
     }
     last = [e.clientX, e.clientY];
     return;
@@ -6031,9 +6048,9 @@ addEventListener('mousemove', (e) => {
 canvas.addEventListener('mouseleave', () => { lookRate.x = lookRate.y = 0; pointerIn = false; });
 canvas.addEventListener('mouseenter', () => { pointerIn = true; });
 function updateFreeLook(dt) {
-  if (locked || !running || !pointerIn || !shiftLock) return;
+  if (locked || !running || !pointerIn || !(shiftLock || firstPerson)) return;
   camYaw -= lookRate.x * LOOK_SPEED * dt;
-  camPitch = THREE.MathUtils.clamp(camPitch + lookRate.y * LOOK_SPEED * .55 * dt, -.45, 1.25);
+  camPitch = clampPitch(camPitch + lookRate.y * LOOK_SPEED * .55 * dt);
 }
 // =============================================================================
 // Touch controls
@@ -6149,11 +6166,12 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyL' && !e.repeat) toggleShiftLock();   // alias for Shift
   // Consume moved off E when E went back to swinging. It is on V now, and it
   // is still in every symbiote's pool if you would rather slot it.
-  // Ctrl toggles the view. While you are on a web-line it keeps its old job of
-  // reeling in, since nobody changes camera halfway through an arc.
-  if ((e.code === 'ControlLeft' || e.code === 'ControlRight') && !e.repeat && !player.swinging) {
-    e.preventDefault(); toggleFirstPerson();
-  }
+  // Ctrl toggles the view — but only Ctrl on its own. Ctrl+C, Ctrl+Tab and
+  // Ctrl+Shift+I all begin with a bare Ctrl keydown, so acting on that would
+  // flip the camera every time you copied something. Wait for the key to come
+  // back up and make sure nothing else was pressed while it was held.
+  if (e.code === 'ControlLeft' || e.code === 'ControlRight') { if (!e.repeat) ctrlAlone = true; }
+  else ctrlAlone = false;
   if (e.code === 'KeyP' && !e.repeat) toggleFirstPerson();
   if (e.code === 'KeyV' && !e.repeat) {
     if (STYLES[player.style]?.symbiote) castSkill('symbiote_feed', {});
@@ -6166,7 +6184,12 @@ addEventListener('keydown', (e) => {
     else log('Nothing to swap on R for this character.');
   }
 });
+let ctrlAlone = false;
 addEventListener('keyup', (e) => {
+  if ((e.code === 'ControlLeft' || e.code === 'ControlRight') && ctrlAlone) {
+    ctrlAlone = false;
+    if (running && !player.swinging && $('#movesets').hidden && $('#loadout').hidden && $('#worldmap').hidden) toggleFirstPerson();
+  }
   keys.delete(e.code);
   // Let go of Space early and the jump is cut short: you choose the height.
   if (e.code === 'Space' && player.jumpHeld) { player.jumpHeld = false; if (player.vel.y > 4) player.vel.y *= PHYS.cutJump; }
@@ -6646,7 +6669,7 @@ function useGate(to) {
 }
 buildMap('times_square');
 requestAnimationFrame(frame);
-window.__rift = { army, camera, scene, buildCharacter, CHARACTERS, GRADES, enemyTakeHit, strike, startEAction, endEAction, webLine, WEB_SLINGERS, startSwing, releaseSwing, killEnemy, get rasengan() { return rasengan; }, get chidori() { return chidori; }, spawnArmy, damageArmy, arcBolt, slashArc,
+window.__rift = { army, camera, scene, buildCharacter, CHARACTERS, GRADES, enemyTakeHit, strike, startEAction, endEAction, webLine, WEB_SLINGERS, startSwing, releaseSwing, killEnemy, get playerRig() { return playerRig; }, get firstPerson() { return firstPerson; }, get rasengan() { return rasengan; }, get chidori() { return chidori; }, spawnArmy, damageArmy, arcBolt, slashArc,
   SKILLS, STYLES, ENEMIES, MAPS, MAP_IDS, NATURE, travelTo, buildMap, portals,
   net, setMode, useGate, setSolo, setTier, TIERS, get tier() { return tierName; },
   get currentMap() { return currentMap; }, get nearPortal() { return nearPortal; }, eprojectiles, spawnEnemy, player, enemies, buildings, debris, cars, civilians, damageBuildings, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, startCharge, releaseCharge, hurtPlayer, castSkill, OUTPUT_TIERS, ARSENALS, cycleWeapon, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
