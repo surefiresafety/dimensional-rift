@@ -2819,7 +2819,7 @@ const CHARACTERS = {
   // Pain: Akatsuki cloak, orange hair, the Rinnegan's grey rings.
   pain:      { sig: 0x9a9ab0, skin: 0xf2e2d0, hair: 0xf66c2d, hairStyle: 'spiky', top: 0x15151d, bottom: 0x15151d, sleeves: 0x15151d, eye: 0xb8b8cc, rinnegan: true, collar: 0xb03a3a, cape: 0x15151d, brow: 0xf66c2d, hairLen: 1.05 },
   // Todo: Jujutsu High black, and built like a door.
-  todo:      { sig: 0xd4142a, height: 1.16, headScale: .82, skin: 0x8a6244, hair: 0x14141c, hairStyle: 'crop', top: 0x1b1b24, bottom: 0x1b1b24, sleeves: 0x1b1b24, eye: 0x2a2018, uniform: 0x1b1b24, cuff: 0x1b1b24, clasps: true, brow: 0x14141c, browAngle: .3 },
+  todo:      { sig: 0xd4142a, height: 1.16, headScale: .63, skin: 0x8a6244, hair: 0x14141c, hairStyle: 'crop', top: 0x1b1b24, bottom: 0x1b1b24, sleeves: 0x1b1b24, eye: 0x2a2018, uniform: 0x1b1b24, cuff: 0x1b1b24, clasps: true, brow: 0x14141c, browAngle: .3 },
   // Hakari: bleached hair, the long dark coat, gold at the collar.
   hakari:    { sig: 0xffd54a, height: 1.08, skin: 0xf0d2b8, hair: 0xf2ecd8, hairStyle: 'swept', top: 0x1a1a24, bottom: 0x1a1a24, sleeves: 0x1a1a24, eye: 0x6cd8c0, collar: 0xffd54a, buckle: 0xffd54a, cape: 0x14141c, brow: 0xf2ecd8, browAngle: .2 },
   // Yuki: blonde, the open jacket, star-orange sig.
@@ -2829,7 +2829,7 @@ const CHARACTERS = {
   // Goblin: the green plate, the purple hood and satchel, the grin.
   goblin:    { sig: 0x6ad84a, skin: 0x5aa83a, hair: 0x3a7a2a, hairStyle: 'none', top: 0x4a9a3a, bottom: 0x4a9a3a, sleeves: 0x4a9a3a, eye: 0xffd54a, hood: 0x6a3ab0, uniform: 0x4a9a3a, mask: true, fangs: true, horns: true, belt: 0x6a3ab0, buckle: 0xffd54a },
   // Wolverine: the tan-and-brown suit, the cowl points, the claws.
-  wolverine: { sig: 0xffd54a, height: .94, headScale: .92, skin: 0xe8b88a, hair: 0x2a1a12, hairStyle: 'spiky', top: 0xd8a83a, bottom: 0x6a3a1a, sleeves: 0xd8a83a, eye: 0x3a5a3a, mask: true, horns: true, claws: true, belt: 0x6a3a1a, buckle: 0xd8a83a, brow: 0x2a1a12, browAngle: .34 },
+  wolverine: { sig: 0xffd54a, height: .94, headScale: .71, skin: 0xe8b88a, hair: 0x2a1a12, hairStyle: 'spiky', top: 0xd8a83a, bottom: 0x6a3a1a, sleeves: 0xd8a83a, eye: 0x3a5a3a, mask: true, horns: true, claws: true, belt: 0x6a3a1a, buckle: 0xd8a83a, brow: 0x2a1a12, browAngle: .34 },
 };
 CHARACTERS.jogo = CHARACTERS.jogoC; CHARACTERS.hanami = CHARACTERS.hanamiC; CHARACTERS.dagon = CHARACTERS.dagonC;
 
@@ -2846,47 +2846,71 @@ function buildCharacter(L) {
   const ink = new THREE.MeshBasicMaterial({ color: 0x07030a });
 
   const pelvis = new THREE.Group(); pelvis.position.y = .98; root.add(pelvis);
-  const hips = outlined(new THREE.Mesh(new THREE.BoxGeometry(.44, .24, .3), toon(L.bottom)), .08);
-  hips.castShadow = true; pelvis.add(hips);
+  // Hips turned from a profile too: they carry on from the waist and round
+  // off into the legs, rather than being a crate the legs hang from.
+  const hips = outlined(new THREE.Mesh(new THREE.LatheGeometry(
+    [[0, -.155], [.08, -.15], [.19, -.12], [.228, -.04], [.222, .05], [.2, .14], [0, .14]].map(([r, y]) => new THREE.Vector2(r, y)), 20),
+    toon(L.bottom)), .08);
+  hips.scale.set(1.04, 1, .78); hips.castShadow = true; pelvis.add(hips);
 
   const chest = new THREE.Group(); chest.position.y = .12; pelvis.add(chest);
-  const chestMesh = outlined(new THREE.Mesh(new THREE.CapsuleGeometry(.27, .4, 6, 16), toon(L.top)), .08);
-  chestMesh.scale.set(1.08, 1, .88);   // shoulders wider than the ribs are deep
-  chestMesh.position.y = .3; chestMesh.castShadow = true; chest.add(chestMesh);
+  // The torso is turned from a profile rather than being a capsule. A capsule's
+  // dome rose higher than the shoulders and swallowed the head whole: the face
+  // was being drawn on the chest. This one narrows at the waist, fills out at
+  // the ribs, and slopes off the shoulders into a neck base, so the head has
+  // somewhere to sit above it.
+  const TORSO_PROFILE = [[0, -.1], [.205, -.1], [.2, .02], [.225, .14], [.255, .26], [.262, .33],
+                         [.245, .4], [.2, .455], [.13, .49], [.085, .505], [0, .51]];
+  const TORSO_SX = 1.04, TORSO_SZ = .9;   // shoulders wider than the ribs are deep
+  const chestMesh = outlined(new THREE.Mesh(new THREE.LatheGeometry(TORSO_PROFILE.map(([r, y]) => new THREE.Vector2(r, y)), 22), toon(L.top)), .08);
+  chestMesh.scale.set(TORSO_SX, 1, TORSO_SZ);
+  /** The torso's radius at height y, for anything that has to wrap it. */
+  const torsoR = (y) => {
+    for (let i = 1; i < TORSO_PROFILE.length; i++) {
+      const [r0, y0] = TORSO_PROFILE[i - 1], [r1, y1] = TORSO_PROFILE[i];
+      if (y <= y1) return y1 === y0 ? r1 : r0 + (r1 - r0) * Math.max(0, (y - y0) / (y1 - y0));
+    }
+    return 0;
+  };
+  chestMesh.castShadow = true; chest.add(chestMesh);
+  // Everything added from here to the neck was placed against the old capsule,
+  // which ran from -.17 to .77. It is refitted onto this torso further down.
+  const deco0 = chest.children.length, noFit = new Set();
   if (L.shoulders) for (const sx of [-1, 1]) {   // Naruto's black shoulder panels
-    const pad = outlined(new THREE.Mesh(new THREE.SphereGeometry(.16, 10, 8), toon(L.shoulders)), .08);
-    pad.scale.set(1, .8, 1); pad.position.set(sx * .22, .48, 0); chest.add(pad);
+    const pad = outlined(new THREE.Mesh(new THREE.SphereGeometry(.14, 10, 8), toon(L.shoulders)), .08);
+    pad.scale.set(1, .8, 1); pad.position.set(sx * .23, .42, 0); chest.add(pad); noFit.add(pad);
   }
-  if (L.belt) { const bl = new THREE.Mesh(new THREE.TorusGeometry(.27, .045, 6, 18), toon(L.belt)); bl.rotation.x = Math.PI / 2; bl.position.y = .07; chest.add(bl); }
+  if (L.belt) { const bl = new THREE.Mesh(new THREE.TorusGeometry(.27, .045, 6, 18), toon(L.belt)); bl.rotation.x = Math.PI / 2; bl.position.y = .07; bl.userData.hug = .012; chest.add(bl); }
   if (L.sash) { const sa = new THREE.Mesh(new THREE.BoxGeometry(.5, .14, .34), toon(L.sash)); sa.position.y = .1; chest.add(sa);
     const knot = new THREE.Mesh(new THREE.BoxGeometry(.14, .3, .12), toon(L.sash)); knot.position.set(.2, -.02, .16); chest.add(knot); }
   if (L.cape) { const cp = outlined(new THREE.Mesh(new THREE.BoxGeometry(.62, .95, .09), toon(L.cape)), .05); cp.position.set(0, .22, -.24); chest.add(cp); }
-  if (L.hood) { const hd = outlined(new THREE.Mesh(new THREE.SphereGeometry(.27, 12, 9, 0, Math.PI * 2, 0, Math.PI * .55), toon(L.hood)), .06); hd.rotation.x = 1.5; hd.position.set(0, .5, -.2); chest.add(hd); }
+  if (L.hood) { const hd = outlined(new THREE.Mesh(new THREE.SphereGeometry(.2, 12, 9, 0, Math.PI * 2, 0, Math.PI * .55), toon(L.hood)), .06); hd.rotation.x = 1.5; hd.position.set(0, .44, -.17); chest.add(hd); noFit.add(hd); }
   if (L.reactor) { const rc = new THREE.Mesh(new THREE.CylinderGeometry(.11, .11, .06, 16), new THREE.MeshBasicMaterial({ color: 0xdff6ff })); rc.rotation.x = Math.PI / 2; rc.position.set(0, .36, .24); chest.add(rc);
     const glow = new THREE.Mesh(new THREE.TorusGeometry(.14, .022, 6, 18), new THREE.MeshBasicMaterial({ color: 0x9fe0ff })); glow.position.set(0, .36, .24); chest.add(glow); }
   if (L.markStripe) { const st = new THREE.Mesh(new THREE.BoxGeometry(.06, .5, .3), new THREE.MeshBasicMaterial({ color: 0x9b1a2a })); st.position.set(0, .34, .16); chest.add(st); }
   if (L.stitches) for (let i = 0; i < 4; i++) { const th = new THREE.Mesh(new THREE.BoxGeometry(.3, .02, .02), new THREE.MeshBasicMaterial({ color: 0x2a2a2a })); th.position.set(0, .18 + i * .12, .25); th.rotation.z = i % 2 ? .2 : -.2; chest.add(th); }
-  if (L.collar) { const c = new THREE.Mesh(new THREE.CylinderGeometry(.26, .22, .22, 14, 1, true), toon(L.collar)); c.position.y = .58; chest.add(c); }
+  // A collar goes round the neck, not round the ribs.
+  if (L.collar) { const c = outlined(new THREE.Mesh(new THREE.CylinderGeometry(.118, .15, .12, 14, 1, true), toon(L.collar)), .05); c.position.y = .52; chest.add(c); noFit.add(c); }
   if (L.uniform) {
     // The Jujutsu High gakuran: a standing collar that clears the jaw, a row of
     // brass buttons down the placket, and a hem line at the waist.
     const trim = L.uniform === true ? L.top : L.uniform;
-    const stand = outlined(new THREE.Mesh(new THREE.CylinderGeometry(.245, .262, .3, 16, 1, true), toon(trim)), .06);
-    stand.position.y = .61; chest.add(stand);
-    const lip = new THREE.Mesh(new THREE.TorusGeometry(.246, .016, 6, 20), toon(trim));
-    lip.rotation.x = Math.PI / 2; lip.position.y = .755; chest.add(lip);
+    const stand = outlined(new THREE.Mesh(new THREE.CylinderGeometry(.105, .125, .12, 16, 1, true), toon(trim)), .06);
+    stand.position.y = .53; chest.add(stand); noFit.add(stand);
+    const lip = new THREE.Mesh(new THREE.TorusGeometry(.106, .012, 6, 20), toon(trim));
+    lip.rotation.x = Math.PI / 2; lip.position.y = .59; chest.add(lip); noFit.add(lip);
     for (let i = 0; i < 4; i++) {
       const btn = new THREE.Mesh(new THREE.SphereGeometry(.028, 8, 6), toon(L.buckle ?? 0xc8a44a));
       btn.scale.z = .6; btn.position.set(.055, .48 - i * .13, .245); chest.add(btn);
     }
     const placket = new THREE.Mesh(new THREE.BoxGeometry(.05, .56, .02), toon(L.top));
     placket.position.set(.03, .3, .248); chest.add(placket);
-    const hem = new THREE.Mesh(new THREE.BoxGeometry(.56, .035, .5), toon(trim));
-    hem.position.y = .03; chest.add(hem);
+    const hem = new THREE.Mesh(new THREE.TorusGeometry(.27, .022, 5, 22), toon(trim));
+    hem.rotation.x = Math.PI / 2; hem.position.y = .03; hem.userData.hug = .006; chest.add(hem);
   }
   if (L.clasps) for (const sx of [-1, 1]) {   // Yuji's two big collar discs
-    const disc = new THREE.Mesh(new THREE.CylinderGeometry(.05, .05, .03, 12), toon(L.buckle ?? 0xe8e0d0));
-    disc.rotation.x = Math.PI / 2; disc.position.set(sx * .095, .56, .24); chest.add(disc);
+    const disc = new THREE.Mesh(new THREE.CylinderGeometry(.026, .026, .02, 12), toon(L.buckle ?? 0xe8e0d0));
+    disc.rotation.x = Math.PI / 2; disc.position.set(sx * .045, .545, .116); chest.add(disc); noFit.add(disc);
   }
   // A seam down the front reads as a jacket rather than a painted torso.
   if (!L.mask && !L.bare) {
@@ -2902,9 +2926,9 @@ function buildCharacter(L) {
   }
   if (L.sword) {                     // Sasuke carries the Kusanagi on his back
     const sheath = outlined(new THREE.Mesh(new THREE.CylinderGeometry(.045, .045, 1.15, 8), toon(0x14141c)), .07);
-    sheath.position.set(-.16, .3, -.26); sheath.rotation.set(.2, 0, .5); chest.add(sheath);
+    sheath.position.set(-.16, .2, -.26); sheath.rotation.set(.2, 0, .5); chest.add(sheath); noFit.add(sheath);
     const hilt = new THREE.Mesh(new THREE.CylinderGeometry(.035, .035, .28, 8), toon(L.sash ?? 0x7a4fbf));
-    hilt.position.set(-.42, .78, -.31); hilt.rotation.set(.2, 0, .5); chest.add(hilt);
+    hilt.position.set(-.42, .68, -.31); hilt.rotation.set(.2, 0, .5); chest.add(hilt); noFit.add(hilt);
   }
   if (L.pouch) {                     // ninja hip pouch
     const pch = outlined(new THREE.Mesh(new THREE.BoxGeometry(.2, .17, .12), toon(0x3a2a1a)), .07);
@@ -2913,19 +2937,29 @@ function buildCharacter(L) {
   if (L.necktie) {
     const tm = toon(L.necktie);
     const knot = new THREE.Mesh(new THREE.BoxGeometry(.07, .07, .05), tm);
-    knot.position.set(0, .52, .245); chest.add(knot);
+    knot.position.set(0, .45, .19); chest.add(knot); noFit.add(knot);
     const blade = new THREE.Mesh(new THREE.BoxGeometry(.085, .34, .035), tm);
-    blade.position.set(0, .33, .25); chest.add(blade);
+    blade.position.set(0, .26, .24); blade.rotation.x = -.08; chest.add(blade); noFit.add(blade);
     if (L.tieSpots) for (let i = 0; i < 7; i++) {   // the leopard print
       const sp = new THREE.Mesh(new THREE.CircleGeometry(.014, 6), new THREE.MeshBasicMaterial({ color: 0x3a2a18 }));
-      sp.position.set(((i % 3) - 1) * .026, .45 - Math.floor(i / 3) * .07, .269); chest.add(sp);
+      sp.position.set(((i % 3) - 1) * .026, .38 - Math.floor(i / 3) * .07, .262); chest.add(sp); noFit.add(sp);
     }
   }
   if (L.tie) for (const sx of [-1, 1]) {   // hanging sash tails
     const t2 = new THREE.Mesh(new THREE.BoxGeometry(.08, .42, .04), toon(L.tie));
     t2.position.set(sx * .12, -.18, -.18); t2.rotation.z = sx * .12; pelvis.add(t2);
   }
-  if (L.webs) for (let i = 0; i < 4; i++) { const w = new THREE.Mesh(new THREE.TorusGeometry(.09 + i * .055, .012, 4, 14), ink); w.rotation.x = Math.PI / 2 - .35; w.position.set(0, .32, .18); chest.add(w); }
+  if (L.webs) {
+    for (const y of [.04, .16, .28, .39]) {
+      const w = new THREE.Mesh(new THREE.TorusGeometry(.27, .008, 4, 28), ink);
+      w.rotation.x = Math.PI / 2; w.position.y = y; w.userData.hug = .003; chest.add(w); noFit.add(w);
+    }
+    for (const a of [-.9, -.45, 0, .45, .9]) {
+      const st = new THREE.Mesh(new THREE.BoxGeometry(.012, .42, .012), ink);
+      st.position.set(Math.sin(a) * .245 * TORSO_SX, .22, Math.cos(a) * .245 * TORSO_SZ + .006);
+      st.rotation.y = a; chest.add(st); noFit.add(st);
+    }
+  }
   if (L.spider) {                    // the big symbiote spider, front and back
     const sm = new THREE.MeshBasicMaterial({ color: L.spider });
     for (const [z, flip] of [[.245, 1], [-.245, -1]]) {
@@ -2934,13 +2968,13 @@ function buildCharacter(L) {
       const head2 = new THREE.Mesh(new THREE.SphereGeometry(.045, 8, 6), sm);
       head2.scale.set(1, 1, .3); head2.position.set(0, .47, z); chest.add(head2);
       for (let i = 0; i < 4; i++) for (const sx of [-1, 1]) {
-        const leg = new THREE.Mesh(new THREE.BoxGeometry(.026, .3 + i * .07, .02), sm);
-        leg.position.set(sx * (.09 + i * .05), .33 - i * .02, z);
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(.024, (.3 + i * .07) * .62, .02), sm);
+        leg.position.set(sx * (.07 + i * .035), .33 - i * .02, z);
         leg.rotation.z = sx * flip * (.5 + i * .28); chest.add(leg);
       }
     }
   }
-  if (L.markings) for (const y of [.5, .3, .12]) { const b = new THREE.Mesh(new THREE.TorusGeometry(.28, .022, 6, 20), ink); b.rotation.x = Math.PI / 2; b.position.y = y; chest.add(b); }
+  if (L.markings) for (const y of [.5, .3, .12]) { const b = new THREE.Mesh(new THREE.TorusGeometry(.28, .022, 6, 20), ink); b.rotation.x = Math.PI / 2; b.position.y = y; b.userData.hug = .004; chest.add(b); }
   if (L.streaks) {                   // symbiote veining, crawling over the torso
     const sm = new THREE.MeshBasicMaterial({ color: L.streaks });
     for (let i = 0; i < 9; i++) {
@@ -2990,7 +3024,30 @@ function buildCharacter(L) {
     t3.rotation.set(-.9 - k * .25, 0, sx * (.5 + k * .3)); chest.add(t3);
   }
 
-  const neck = new THREE.Group(); neck.position.y = .58; chest.add(neck);
+  // Refit the decorations: same place on the body, proportionally, on a torso
+  // that is now .61 tall instead of .94. Upright pieces are shortened with it;
+  // anything tilted keeps its shape and only moves, so nothing shears.
+  const FIT = .61 / .94;
+  for (const c of chest.children.slice(deco0)) {
+    if (noFit.has(c)) continue;
+    c.position.y = -.1 + (c.position.y + .17) * FIT;
+    if (c.isMesh && c.rotation.x === 0 && c.rotation.z === 0) c.scale.y *= FIT;
+  }
+  for (const c of chest.children.slice(deco0)) {
+    if (c.userData.hug == null) continue;
+    const r = torsoR(c.position.y) + c.userData.hug, r0 = c.geometry.parameters.radius;
+    c.scale.set(TORSO_SX * r / r0, TORSO_SZ * r / r0, 1);   // a ring lying flat: its local y is depth
+  }
+
+  // The neck: narrower than the head, and long enough to be seen between the
+  // jaw and the collarbones. It belongs to the body, so it keeps its size when
+  // a character's head is scaled.
+  const neckCol = outlined(new THREE.Mesh(new THREE.CylinderGeometry(.072, .088, .24, 14), toon(L.skin)), .07);
+  neckCol.position.set(0, .56, -.012); neckCol.castShadow = true; chest.add(neckCol);
+
+  // The head sits on top of that, chin just above the neck's visible top.
+  const HEAD = L.headScale ?? .67, CHIN = .6;
+  const neck = new THREE.Group(); neck.position.y = CHIN + .268 * HEAD; chest.add(neck);
   const head = outlined(new THREE.Mesh(new THREE.SphereGeometry(.235, 22, 16), toon(L.skin)), .11);
   head.scale.set(1, 1.14, .97); head.castShadow = true; neck.add(head);
   // A jaw taper stops the head reading as a ball on a stick.
@@ -3002,8 +3059,6 @@ function buildCharacter(L) {
   }
   const nose = new THREE.Mesh(new THREE.ConeGeometry(.03, .07, 6), toon(L.skin));
   nose.rotation.x = Math.PI / 2; nose.position.set(0, -.015, .235); neck.add(nose);
-  const neckCol = new THREE.Mesh(new THREE.CylinderGeometry(.095, .115, .18, 10), toon(L.skin));
-  neckCol.position.y = -.25; neck.add(neckCol);
 
   if (!L.mask && !L.blindfold) {
     // Anime eyes are large and layered: white, iris, pupil, highlight.
@@ -3267,13 +3322,19 @@ function buildCharacter(L) {
   if (L.volcano) { const v = outlined(new THREE.Mesh(new THREE.ConeGeometry(.3, .5, 10, 1, true), toon(0x4a1a12)), .06); v.position.y = .3; neck.add(v);
     const lava = new THREE.Mesh(new THREE.CircleGeometry(.2, 12), new THREE.MeshBasicMaterial({ color: 0xff6b3d })); lava.rotation.x = -Math.PI / 2; lava.position.y = .5; neck.add(lava); }
   const arms = {};
-  const armRows = L.fourArms ? [{ y: .46, key: '' }, { y: .16, key: '2' }] : [{ y: .46, key: '' }];
+  const armRows = L.fourArms ? [{ y: .39, key: '' }, { y: .12, key: '2' }] : [{ y: .39, key: '' }];
   for (const row of armRows) for (const side of [-1, 1]) {
-    const sh = new THREE.Group(); sh.position.set(side * .31, row.y, 0); chest.add(sh);
+    const sh = new THREE.Group(); sh.position.set(side * .275, row.y, 0); chest.add(sh);
+    // The deltoid: rounds the join so the arm grows out of the shoulder
+    // instead of hanging beside it.
+    if (!row.key) {
+      const delt = outlined(new THREE.Mesh(new THREE.SphereGeometry(.098, 12, 10), toon(L.bare ? L.skin : L.top)), .08);
+      delt.scale.set(1, .92, 1); delt.position.set(side * -.01, -.01, 0); sh.add(delt);
+    }
     // One arm can be someone else's work entirely.
     const metal = L.metalArm && side < 0;
-    const upper = limbSeg(.34, metal ? .1 : .088, metal ? L.metalArm : (L.bare ? L.skin : L.top)); sh.add(upper);
-    const elbow = new THREE.Group(); elbow.position.y = -.44; upper.add(elbow);
+    const upper = limbSeg(.37, metal ? .1 : .084, metal ? L.metalArm : (L.bare ? L.skin : L.top)); sh.add(upper);
+    const elbow = new THREE.Group(); elbow.position.y = -.47; upper.add(elbow);
     const fore = limbSeg(.32, metal ? .09 : .078, metal ? L.metalArm : (L.sleeves ?? L.skin)); elbow.add(fore);
     if (metal) {
       for (let pl = 0; pl < 3; pl++) {          // overlapping plates down the arm
@@ -3321,10 +3382,10 @@ function buildCharacter(L) {
     foot.position.set(0, -.54, .06); knee.add(foot);
     legs[side < 0 ? 'l' : 'r'] = { hip, knee, foot };
   }
-  // A head this size against those legs lands around six heads tall, which is
-  // where the poster art sits. Scaling the whole neck group keeps the face,
-  // the hair and every hat and horn on it in proportion with each other.
-  neck.scale.setScalar(L.headScale ?? .87);
+  // Seven heads tall, near enough: a person, not a mascot. It was four and a
+  // bit. Scaling the whole neck group keeps the face, the hair and every hat
+  // and horn on it in proportion with each other.
+  neck.scale.setScalar(HEAD);
   if (L.height) root.scale.setScalar(L.height);
   return { root, pelvis, chest, neck, arms, legs, look: L, baseY: 1.14 };
 }
@@ -4067,7 +4128,11 @@ function updateFirstPerson(dt) {
   // Scaled by the character's own height, or Gojo and Venom look out of their
   // sternum while Nobara looks out of the top of her head.
   const h = (CHARACTERS[player.style] ?? CHARACTERS.default).height ?? 1;
-  const eye = player.pos.clone().add(new THREE.Vector3(0, 1.62 * h, 0)).addScaledVector(fwd, .12 * h);
+  // Wherever the rig's head actually is, so it follows the body's own height,
+  // proportions and pose instead of a guessed number.
+  const eye = new THREE.Vector3();
+  if (playerRig) playerRig.neck.getWorldPosition(eye); else eye.copy(player.pos).y += 2 * h;
+  eye.addScaledVector(fwd, .16 * h);
   camera.position.lerp(eye, Math.min(1, 26 * dt));
   if (shake > 0) {
     camera.position.add(new THREE.Vector3(Math.random() - .5, Math.random() - .5, Math.random() - .5).multiplyScalar(shake * .35));
@@ -4457,11 +4522,11 @@ function makeEnemyMesh(t) {
     const vis = new THREE.Group(); vis.add(rig.root);
     if (look.bark) for (let i = 0; i < 5; i++) {   // Hanami: bark plates and a bloom
       const plate = new THREE.Mesh(new THREE.BoxGeometry(.3, .12, .1), toon(0x4a3a24));
-      plate.position.set((Math.random() - .5) * .5, .3 + i * .16, .27); rig.chest.add(plate);
+      plate.position.set((Math.random() - .5) * .42, .02 + i * .095, .225); rig.chest.add(plate);
     }
     if (look.bark) {
       const bloom = new THREE.Mesh(new THREE.CircleGeometry(.24, 8), glowMat(0xffb0c8));
-      bloom.position.set(-.34, .5, .1); bloom.rotation.set(-.6, -.5, 0); rig.chest.add(bloom);
+      bloom.position.set(-.3, .4, .1); bloom.rotation.set(-.6, -.5, 0); rig.chest.add(bloom);
     }
     built = { vis, rig, height: 2.5 * t.size };
     g.userData.rig = rig;
@@ -7183,7 +7248,7 @@ function previewInit() {
     const disc = new THREE.Mesh(new THREE.CircleGeometry(1.15, 32), new THREE.MeshBasicMaterial({ color: 0x1a1230, transparent: true, opacity: .8 }));
     disc.rotation.x = -Math.PI / 2; disc.position.y = .01; sc.add(disc);
     const cam = new THREE.PerspectiveCamera(30, PREVIEW_W / PREVIEW_H, .1, 40);
-    cam.position.set(0, 1.55, 7.2); cam.lookAt(0, 1.3, 0);
+    cam.position.set(0, 1.45, 6.1); cam.lookAt(0, 1.22, 0);   // a person fills the case now, not a mascot
     preview.r = r; preview.scene = sc; preview.cam = cam;
     return true;
   } catch (err) { preview.failed = true; return false; }
