@@ -21,7 +21,7 @@ export type OnHit = {
 
 export type Crit = { chance: number?, mul: number?, ramp: number?, tag: string?, color: number? }
 
-export type Status = { [string]: number }
+export type Status = { [string]: number? }
 
 local Rules = {}
 Rules.__index = Rules
@@ -90,7 +90,7 @@ end
 export type CostArgs = { weaponCostMul: number?, outputCostMul: number?, buffCostMul: number? }
 
 function Rules.castCost(skill: { cost: number }, a: CostArgs?): number
-	local m = a or {}
+	local m: CostArgs = a or {}
 	return math.ceil(skill.cost * (m.weaponCostMul or 1) * (m.outputCostMul or 1) * (m.buffCostMul or 1))
 end
 
@@ -170,7 +170,7 @@ end
 --- to deal this frame.
 function Rules.tickStatuses(status: Status, clock: DotClock, dt: number, maxHp: number): number
 	for k, v in status do
-		local left = v - dt
+		local left = (v :: number) - dt
 		status[k] = if left <= 0 then nil else left
 	end
 	local dmg = 0

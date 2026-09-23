@@ -132,8 +132,13 @@ end
 local function clearPath(c: Ctx, from: Vector3, to: Vector3): Vector3
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
-	params.FilterDescendantsInstances =
-		{ c.ps.player.Character :: Instance, workspace:FindFirstChild("Enemies") :: Instance }
+	local ignore: { Instance } = {}
+	for _, inst in { c.ps.player.Character :: Instance?, workspace:FindFirstChild("Enemies") } do
+		if inst then
+			table.insert(ignore, inst)
+		end
+	end
+	params.FilterDescendantsInstances = ignore
 	local r = workspace:Raycast(from, to - from, params)
 	if r then
 		return r.Position - (to - from).Unit * 2

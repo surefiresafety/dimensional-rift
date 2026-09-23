@@ -25,7 +25,8 @@ function Ui.make(className: string, props: { [string]: any }, children: { Instan
 			(inst :: any)[k] = v
 		end
 	end
-	for _, c in children or {} do
+	local list: { Instance } = children or {}
+	for _, c in list do
 		c.Parent = inst
 	end
 	if parent then
@@ -34,11 +35,11 @@ function Ui.make(className: string, props: { [string]: any }, children: { Instan
 	return inst
 end
 
-function Ui.corner(r: number): UICorner
+function Ui.corner(r: number): Instance
 	return Ui.make("UICorner", { CornerRadius = UDim.new(0, r) })
 end
 
-function Ui.stroke(color: Color3?, thickness: number?, transparency: number?): UIStroke
+function Ui.stroke(color: Color3?, thickness: number?, transparency: number?): Instance
 	return Ui.make("UIStroke", {
 		Color = color or Ui.LINE,
 		Thickness = thickness or 1,
@@ -47,7 +48,7 @@ function Ui.stroke(color: Color3?, thickness: number?, transparency: number?): U
 	})
 end
 
-function Ui.pad(px: number): UIPadding
+function Ui.pad(px: number): Instance
 	local u = UDim.new(0, px)
 	return Ui.make("UIPadding", { PaddingTop = u, PaddingBottom = u, PaddingLeft = u, PaddingRight = u })
 end

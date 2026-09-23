@@ -3,7 +3,6 @@
 -- enemy, and the two functions everything else calls to hurt them. The
 -- arithmetic lives in Shared.Rules; this file applies it to Roblox objects.
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")

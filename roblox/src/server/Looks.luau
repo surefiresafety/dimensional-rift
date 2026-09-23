@@ -127,7 +127,7 @@ end
 --- Respawns the player in the look for `styleId`.
 function Looks.dressPlayer(player: Player, styleId: string)
 	local look = Looks.lookFor(styleId)
-	player:LoadCharacterWithHumanoidDescription(Looks.description(look, styleId))
+	player:LoadCharacterWithHumanoidDescriptionAsync(Looks.description(look, styleId))
 	local character = player.Character
 	if character then
 		Looks.dressHair(character, look)

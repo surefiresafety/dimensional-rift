@@ -69,10 +69,10 @@ rojo serve             # then, in Studio: Plugins > Rojo > Connect
 | | |
 | --- | --- |
 | Characters | All 46, with their five techniques, pools, passives' numbers, energy and ultimates |
-| Technique types | 16 of 21, which covers 272 of the 280 techniques: projectile, melee, dash, beam, trap, pull, yank, teleport, buff, heal, shield, evade, freeze, clones, domain, toggle |
+| Technique types | 16 of 21, which covers 274 of the 282 techniques: projectile, melee, dash, beam, trap, pull, yank, teleport, buff, heal, shield, evade, freeze, clones, domain, toggle |
 | Ultimates | All technique ultimates, plus the Venom / Anti-Venom / Sukuna transforms and Mahoraga |
 | Combat rules | Nature wheel, armour, defence-down, buffs, lifesteal (including Berserker Rage's), crits and their ramp, knockback, enrage, burn/poison/bleed, root/paralyse/webbed/stun, shields with reflect and heal, Infinity, evasion |
-| Enemies | All 116, including the 46 character bosses and 32 alphas, with melee, ranged bursts and arcs, summons and enrage |
+| Enemies | All 118, including the 46 character bosses and 32 alphas, with melee, ranged bursts and arcs, summons and enrage |
 | Worlds | All 9 worlds' waves, boss ladders and filler, their lighting and fog, and a placeholder skyline |
 | Screens | HUD (health, energy, ability rail with cooldowns, wave, log, banner) and Select Character |
 | Controls | 1–5, G, E / right mouse (signature), M. ContextActionService also adds touch buttons for phones. |
@@ -100,9 +100,13 @@ Rough priority order:
    is the next step).
 7. **Enemy shapes.** Toads, blobs, wraiths, golems and imps are a body shape over a
    hidden R15 walker. It works, but proper models or MeshParts would look better.
-8. **Multiplayer modes.** Co-op works by default: everyone on a server shares the
+8. **Conditions.** In the web build a run sometimes rolls a random event. The first
+   one is Visitors: a UFO tries to abduct you. The two greys, the craft, and the
+   Abduction Ray and Probe Pistol they drop are already in the exported data. The
+   craft's behaviour (tracking, warning, beam, lift, abduction) is not ported yet.
+9. **Multiplayer modes.** Co-op works by default: everyone on a server shares the
    waves. Versus does not exist yet.
-9. **Saving** (DataStoreService): unlocked techniques and progress.
+10. **Saving** (DataStoreService): unlocked techniques and progress.
 
 ## Keeping the two builds in step
 
@@ -119,8 +123,16 @@ npm run test:roblox     # the Luau rules and data checks
 
 - `rojo build` produces the place file.
 - `stylua --check` passes on all hand-written code.
-- `luau-lsp analyze` type-checks every script against Roblox's API definitions, in
-  strict mode.
+- `luau-lsp analyze` (1.70.0) type-checks every script in strict mode against
+  Roblox's full API definitions: no errors, no warnings. It catches misspelled
+  properties and deprecated calls; it caught one of each here.
+
+  ```bash
+  rojo sourcemap default.project.json -o sourcemap.json
+  luau-lsp analyze --platform roblox --sourcemap sourcemap.json --definitions @roblox=globalTypes.d.luau src
+  ```
+
+  `globalTypes.d.luau` comes from the luau-lsp repository (`scripts/`).
 - 22 Lune tests pass. They check the ported rules against the web build's own formulas
   (damage over time matches to the point over several seconds at 60 fps), and check
   that every exported reference resolves.

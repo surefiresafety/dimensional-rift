@@ -262,9 +262,9 @@ function Select.build()
 			SortOrder = Enum.SortOrder.LayoutOrder,
 		}),
 	})
-	local ids = {}
+	local ids: { string } = {}
 	for id in Styles do
-		table.insert(ids, id)
+		table.insert(ids, id :: string)
 	end
 	-- Grouped by universe, then by name, so the grid reads in a stable order.
 	table.sort(ids, function(a, b)
