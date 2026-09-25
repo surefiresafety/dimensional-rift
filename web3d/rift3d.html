@@ -3564,8 +3564,9 @@ function findAnchor() {
 }
 // E is a signature action, not a universal one. Only Spider-Man carries
 // web-shooters; the fliers take off; Naruto winds up a Rasengan; Sukuna's
-// technique leaks out of Yuji.
-const E_ACTION = { spiderman: 'swing', venom: 'swing', carnage: 'swing', antivenom: 'swing', insomniac: 'swing', miles: 'swing', ironspider: 'swing', ironman: 'fly', jean: 'fly', eleven: 'fly', gojo: 'fly', naruto: 'rasengan', sasuke: 'chidori', yuji: 'dismantle', megumi: 'garden',
+// technique leaks out of Yuji; Karasu looks at something and it catches
+// black fire.
+const E_ACTION = { spiderman: 'swing', venom: 'swing', carnage: 'swing', antivenom: 'swing', insomniac: 'swing', miles: 'swing', ironspider: 'swing', ironman: 'fly', jean: 'fly', eleven: 'fly', gojo: 'fly', naruto: 'rasengan', sasuke: 'chidori', yuji: 'dismantle', megumi: 'garden', itachi: 'amaterasu',
   // The glider, the Cloak of Levitation and the Deva Path all hold themselves up.
   goblin: 'fly', strange: 'fly', pain: 'fly' };
 const eActionOf = () => E_ACTION[player.style] ?? null;
@@ -3577,6 +3578,7 @@ function startEAction() {
   else if (a === 'chidori') startChidori();
   else if (a === 'dismantle') castSkill('dismantle_s', {});
   else if (a === 'garden') castSkill('chimera_garden', {});
+  else if (a === 'amaterasu') castSkill('amaterasu_i', {});
   else if (a === 'consume') castSkill('symbiote_feed', {});   // the sixth move: eat
   else log('No web-shooters. Only Threadrunner swings.');
 }
