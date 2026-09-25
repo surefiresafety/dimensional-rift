@@ -4,6 +4,7 @@
 -- ServerStorage.Maps and it is used instead of the built one.
 
 local Lighting = game:GetService("Lighting")
+local SoundService = game:GetService("SoundService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
@@ -53,6 +54,29 @@ function World.load(mapId: string): any
 	arena.Name = "Arena"
 	arena.Parent = workspace
 	World.current = mapId
+	-- The world's music, if one is set in Config.MUSIC.
+	local id = Config.MUSIC[mapId]
+	if not id or id == "" then
+		id = Config.MUSIC.default
+	end
+	local music = SoundService:FindFirstChild("Music") :: Sound?
+	if id and id ~= "" then
+		if not music then
+			local s = Instance.new("Sound")
+			s.Name = "Music"
+			s.Looped = true
+			s.Parent = SoundService
+			music = s
+		end
+		local m = music :: Sound
+		if m.SoundId ~= id then
+			m.SoundId = id
+			m.Volume = Config.MUSIC_VOLUME
+			m:Play()
+		end
+	elseif music then
+		music:Stop()
+	end
 	return map
 end
 

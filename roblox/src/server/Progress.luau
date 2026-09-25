@@ -85,6 +85,7 @@ function Progress.snapshot(player: Player, p: Progression.Profile): { [string]: 
 		best = p.best,
 		cleared = sortedKeys(p.cleared),
 		upgrades = p.upgrades,
+		tutorial = p.badges.tutorial == true,
 		lastStyle = p.lastStyle,
 		daily = {
 			ready = Progression.canClaimDaily(p, day),
@@ -423,6 +424,14 @@ end
 -- The client is listening: send it the state now.
 asks.sync = function(player, _p)
 	mark(player)
+	return answer(true)
+end
+
+asks.tutorialDone = function(player, p)
+	if not p.badges.tutorial then
+		p.badges.tutorial = true
+		mark(player)
+	end
 	return answer(true)
 end
 

@@ -57,6 +57,23 @@ Config.SOUNDS = {
 	click = { id = "rbxasset://sounds/button.wav", volume = 0.4 },
 }
 
+-- Music for each world, looped. Roblox ships no music, so these start empty:
+-- paste a sound's id from the Creator Store ("rbxassetid://123...") for a
+-- world, or for `default` to use it everywhere else.
+Config.MUSIC = {
+	default = "",
+	times_square = "",
+	jujutsu_high = "",
+	star_corridor = "",
+	kyoto_academy = "",
+	culling_colony = "",
+	land_of_wind = "",
+	land_of_earth = "",
+	land_of_water = "",
+	land_of_lightning = "",
+} :: { [string]: string }
+Config.MUSIC_VOLUME = 0.3
+
 -- Badges. Create them on the Creator Dashboard and paste each id here; 0 means
 -- the badge is not set up and is skipped. Progress is tracked either way.
 Config.BADGES = {

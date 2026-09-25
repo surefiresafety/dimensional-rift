@@ -7,6 +7,7 @@ local Fx = require(script.Fx)
 local Hub = require(script.Hub)
 local Loadout = require(script.Loadout)
 local Input = require(script.Input)
+local Tips = require(script.Tips)
 
 Hud.build()
 Select.build()
@@ -16,3 +17,4 @@ Hud.onMenu = Hub.toggle
 Fx.start()
 Input.start()
 Select.show() -- nobody spawns until they have picked someone
+Tips.start()
