@@ -261,6 +261,8 @@ Action.OnServerEvent:Connect(function(player, name, aim)
 		end
 	elseif name == "rebond" then
 		Symbiote.rebond(ps)
+	elseif name == "auto" then
+		Abilities.toggleAuto(ps)
 	elseif name == "dodge" then
 		if okAim(aim) then
 			Abilities.dodge(ps, aim)
@@ -282,11 +284,17 @@ Profiles.start()
 World.load(Config.START_MAP) -- the waves start when the first player picks a character
 
 local thinkAcc = 0
+local autoAcc = 0
 RunService.Heartbeat:Connect(function(dt)
 	Projectiles.step(dt)
 	Combat.step(dt)
 	Symbiote.step(dt)
 	Pickups.step(dt)
+	autoAcc += dt
+	if autoAcc >= 0.1 then
+		Abilities.stepAuto(autoAcc)
+		autoAcc = 0
+	end
 	thinkAcc += dt
 	if thinkAcc >= Config.ENEMY_THINK_INTERVAL then
 		thinkAcc = 0

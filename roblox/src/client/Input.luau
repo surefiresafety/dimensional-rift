@@ -13,6 +13,7 @@ local Remotes = require(Shared.Remotes)
 local Signature = require(Shared.Signature)
 local Config = require(Shared.Config)
 local Arsenals = require(Shared.Data.Arsenals)
+local Styles = require(Shared.Data.Styles)
 
 local Movement = require(script.Parent.Movement)
 local Select = require(script.Parent.Select)
@@ -204,13 +205,20 @@ function Input.start()
 		return Enum.ContextActionResult.Sink
 	end, false, Enum.KeyCode.B, Enum.KeyCode.ButtonB)
 
-	-- R: the next weapon, for a set that lives on R.
+	-- R: the next weapon, for a set that lives on R; or, for a style with
+	-- limbs or webbing of its own, hand the fight to them.
 	ContextActionService:BindAction("Cycle", function(_, state)
 		local style = player:GetAttribute("Style") :: string?
 		local a = style and (Arsenals :: any)[style]
-		if state == Enum.UserInputState.Begin and a and a.key == "r" then
-			act("cycle")
-			return Enum.ContextActionResult.Sink
+		local st = style and Styles[style]
+		if state == Enum.UserInputState.Begin then
+			if a and a.key == "r" then
+				act("cycle")
+				return Enum.ContextActionResult.Sink
+			elseif st and (st.autoLimbs or st.autoWeb) then
+				act("auto")
+				return Enum.ContextActionResult.Sink
+			end
 		end
 		return Enum.ContextActionResult.Pass
 	end, false, Enum.KeyCode.R)

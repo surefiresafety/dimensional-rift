@@ -168,4 +168,17 @@ H.test("signature casts name real techniques in that character's pool", function
 	end
 end)
 
+H.test("auto-attack: every limb set is sane and every auto-web technique exists", function()
+	for id, st in Styles :: any do
+		local l = st.autoLimbs
+		if l then
+			assert(l.count > 0 and l.reach > 0 and l.power > 0 and l.cd > 0, id .. " has a broken autoLimbs")
+		end
+		local w = st.autoWeb
+		if w then
+			assert(Skills[w.skill], id .. " auto-webs an unknown technique: " .. tostring(w.skill))
+		end
+	end
+end)
+
 return H

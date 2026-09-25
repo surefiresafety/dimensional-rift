@@ -837,6 +837,103 @@ function Abilities.strike(ps: Combat.PState, aim: Vector3)
 	end
 end
 
+--- R, for a style with limbs or webbing of its own: hands the fight to them.
+function Abilities.toggleAuto(ps: Combat.PState)
+	local st = ps.style and Styles[ps.style]
+	if not st or not (st.autoLimbs or st.autoWeb) then
+		return
+	end
+	ps.autoAttack = not ps.autoAttack
+	Combat.notice(
+		ps.player,
+		if ps.autoAttack then "The suit fights on its own now (R to stop)." else "You have the fight back."
+	)
+	Combat.publish(ps)
+end
+
+--- Auto-attack, ten times a second: every limb that is ready lashes the
+--- nearest enemy in its reach (each limb its own, so a crowd is spread
+--- between them), rationed so a hundred tendrils do not flood the screen;
+--- and the webbing fires its technique at the nearest enemy in range.
+function Abilities.stepAuto(dt: number)
+	for _, ps in Combat.states do
+		local st = ps.style and Styles[ps.style]
+		local root = Combat.rootOf(ps.player)
+		local hum = Combat.humanoidOf(ps.player)
+		if not ps.autoAttack or not st or not root or not hum or hum.Health <= 0 then
+			continue
+		end
+		local cfg = st.autoLimbs
+		if cfg then
+			local budget = 2
+			local reach = cfg.reach * STUDS
+			for i = 1, cfg.count do
+				ps.limbCd[i] = (ps.limbCd[i] or (i * cfg.cd / cfg.count)) - dt
+				if ps.limbCd[i] > 0 then
+					continue
+				end
+				local best: Combat.Enemy? = nil
+				local n = #Combat.enemies
+				for k = 0, n - 1 do
+					local e = Combat.enemies[((k + i) % n) + 1]
+					if
+						e
+						and not e.dead
+						and Combat.groundReachable(e, root.Position)
+						and (e.root.Position - root.Position).Magnitude < reach
+					then
+						best = e
+						break
+					end
+				end
+				if not best then
+					ps.limbCd[i] = 0.25
+					continue
+				end
+				if budget <= 0 then
+					ps.limbCd[i] = 0.05
+					continue
+				end
+				budget -= 1
+				ps.limbCd[i] = cfg.cd * (0.85 + math.random() * 0.3)
+				local back = -root.CFrame.LookVector * 0.35 * STUDS
+				local side = root.CFrame.RightVector * math.sin(i * 2.7) * 0.5 * STUDS
+				Combat.fx("beam", {
+					from = root.Position + Vector3.new(0, 0.6 * STUDS, 0) + back + side,
+					to = best.root.Position,
+					color = cfg.color or 0x2a2a34,
+					width = 0.35,
+					life = 0.3,
+				})
+				local o: any = table.clone(cfg.onHit or {})
+				o.knock = cfg.knock or 4
+				Combat.hitEnemy(best, cfg.power, cfg.nature or "physical", root.Position, o, ps)
+			end
+		end
+		local w = st.autoWeb
+		if w then
+			ps.webCd -= dt
+			if ps.webCd <= 0 then
+				local best, bestD = nil, (w.range or 24) * STUDS
+				for _, e in Combat.enemies do
+					if not e.dead then
+						local d = (e.root.Position - root.Position).Magnitude
+						if d > 4 * STUDS and d < bestD then
+							best, bestD = e, d
+						end
+					end
+				end
+				if best then
+					ps.webCd = w.cd or 2.2
+					Abilities.cast(ps, w.skill, (best.root.Position - root.Position).Unit, { free = true })
+				else
+					ps.webCd = 0.4
+				end
+			end
+		end
+	end
+end
+
 --- Q: the dodge. The client moves its own character (it owns its physics);
 --- the server decides whether it is off cooldown and grants the moment of
 --- invulnerability, and everyone else sees the streak.
