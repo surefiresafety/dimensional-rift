@@ -6,6 +6,8 @@ local process = require("@lune/process")
 local H = require("./harness")
 require("./rules.spec")
 require("./data.spec")
+require("./progression.spec")
+require("./profiles.spec")
 
 local passes, failures = H.results()
 print(`\n{passes} passed, {failures} failed`)

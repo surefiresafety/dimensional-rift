@@ -97,6 +97,7 @@ local function crit(c: Ctx, e: Combat.Enemy, power: number): number
 	local mul, ramp, landed = Rules.rollCrit(c.s.crit, c.ps.flashRamp, math.random())
 	c.ps.flashRamp = ramp
 	if landed then
+		Combat.emit(c.ps, "crit")
 		Combat.fx("banner", { text = c.s.crit.tag or "BLACK FLASH", color = c.s.crit.color or 0xff2d55 })
 		Combat.fx("burst", { at = e.root.Position, color = c.s.crit.color or 0xff2d55, count = 24 })
 	end
@@ -588,8 +589,10 @@ local transformInto: (ps: Combat.PState, into: string?) -> () = function() end
 Abilities.setTransform = function(fn: (Combat.PState, string?) -> ())
 	transformInto = fn
 end
+--- A transform from inside the frame loop (the symbiote's takeover): on its
+--- own thread, since reloading the body yields.
 function Abilities.transform(ps: Combat.PState, into: string?)
-	transformInto(ps, into)
+	task.spawn(transformInto, ps, into)
 end
 
 local function sendCooldown(ps: Combat.PState, key: string, readyAt: number, duration: number)
@@ -640,6 +643,19 @@ function Abilities.cast(ps: Combat.PState, which: number | string, aim: Vector3,
 	end
 	local now = Combat.now()
 	local style = Styles[ps.style]
+	-- G in a toggle transform (Venom, Antivenom) takes it off again, once the
+	-- ultimate's cooldown has settled (useUltimate in the web build).
+	if which == "ult" and ps.baseStyle and not free then
+		local baseUlt = Styles[ps.baseStyle].ultimate
+		if baseUlt and baseUlt.toggle then
+			if ps.ultReadyAt > now then
+				Combat.notice(ps.player, `The suit is still settling ({string.format("%.1f", ps.ultReadyAt - now)}s).`)
+				return false
+			end
+			transformInto(ps, nil)
+			return true
+		end
+	end
 	local id: string?, ult: any = nil, nil
 	if which == "ult" then
 		ult = style.ultimate
@@ -758,6 +774,12 @@ function Abilities.cast(ps: Combat.PState, which: number | string, aim: Vector3,
 	if s.type == "domain" then
 		Combat.fx("banner", { text = "DOMAIN EXPANSION", color = s.edge or 0xffffff })
 	end
+	if not free then
+		Combat.emit(ps, "cast")
+		if stored then
+			Combat.emit(ps, "output")
+		end
+	end
 	Combat.publish(ps)
 	return true
 end
@@ -805,6 +827,12 @@ function Abilities.strike(ps: Combat.PState, aim: Vector3)
 				end
 			end
 			landed = true
+		end
+	end
+	if landed then
+		Combat.emit(ps, "strike")
+		if st.blackFlash then
+			Combat.emit(ps, "crit")
 		end
 	end
 end

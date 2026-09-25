@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Palette = require(Shared.Palette)
@@ -19,6 +20,7 @@ local Arsenals = require(Shared.Data.Arsenals)
 local Rules = require(Shared.Rules)
 
 local Ui = require(script.Parent.Ui)
+local Profile = require(script.Parent.Profile)
 
 local player = Players.LocalPlayer
 local Hud = {}
@@ -26,6 +28,7 @@ local Hud = {}
 local gui: ScreenGui
 local hpFill: Frame, hpText: TextLabel, seFill: Frame, seText: TextLabel, nameText: TextLabel
 local status: TextLabel
+local levelText: TextLabel, xpFill: Frame, shardText: TextLabel, menuDot: Frame
 local waveTitle: TextLabel, waveSub: TextLabel, mapName: TextLabel
 local rail: Frame
 local logBox: Frame
@@ -66,6 +69,8 @@ local function bar(parent: Instance, y: number, colour: Color3): (Frame, TextLab
 end
 
 local SYM = Color3.fromRGB(255, 107, 122)
+-- Roblox's own top bar (menu, chat) sits over the first 58 pixels.
+local TOP = 66
 
 --- One line under the vitals for whatever this character carries: the drawn
 --- weapon, a stored or building charge, and the symbiote's three bars.
@@ -196,6 +201,15 @@ local function renderRail()
 	end
 end
 
+--- How much of a technique's cooldown is left, 0 (ready) to 1.
+function Hud.cooldownLeft(key: string): number
+	local c = cooldowns[key]
+	if not c or c.duration <= 0 then
+		return 0
+	end
+	return math.clamp((c.readyAt - workspace:GetServerTimeNow()) / c.duration, 0, 1)
+end
+
 function Hud.log(text: string, tone: string?)
 	local line = Ui.label({
 		Text = text,
@@ -241,6 +255,28 @@ function Hud.banner(text: string, colour: number?)
 	):Play()
 end
 
+--- Set by the client's entry point: what the MENU button opens.
+Hud.onMenu = function() end
+
+local function renderProfile(d: { [string]: any }?)
+	if not d then
+		levelText.Text = "LOADING SAVE"
+		xpFill.Size = UDim2.fromScale(0, 1)
+		shardText.Text = ""
+		menuDot.Visible = false
+		return
+	end
+	levelText.Text = `LV {d.level}`
+	xpFill.Size = UDim2.fromScale(if d.need > 0 then math.clamp(d.into / d.need, 0, 1) else 1, 1)
+	shardText.Text = `{Profile.shards(d.shards)} SHARDS`
+	-- A dot on the menu button when something is waiting to be claimed.
+	local waiting = d.daily.ready
+	for _, q in d.quests do
+		waiting = waiting or (q.progress >= q.goal and not q.claimed)
+	end
+	menuDot.Visible = waiting
+end
+
 function Hud.build()
 	gui = Ui.make("ScreenGui", {
 		Name = "Hud",
@@ -251,7 +287,7 @@ function Hud.build()
 	})
 
 	local vitals = Ui.make("Frame", {
-		Position = UDim2.fromOffset(20, 18),
+		Position = UDim2.fromOffset(20, TOP),
 		Size = UDim2.fromOffset(292, 84),
 		BackgroundColor3 = Ui.PANEL,
 		BackgroundTransparency = 0.4,
@@ -261,7 +297,7 @@ function Hud.build()
 	hpFill, hpLabel, hpText = bar(vitals, 0, Ui.HP)
 	seFill, seLabel, seText = bar(vitals, 32, Ui.SE)
 	status = Ui.label({
-		Position = UDim2.fromOffset(20, 106),
+		Position = UDim2.fromOffset(20, TOP + 88),
 		Size = UDim2.fromOffset(520, 16),
 		TextSize = 11,
 		Font = Ui.BOLD,
@@ -276,7 +312,7 @@ function Hud.build()
 
 	local wave = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -20, 0, 18),
+		Position = UDim2.new(1, -20, 0, TOP),
 		Size = UDim2.fromOffset(240, 72),
 		BackgroundColor3 = Ui.PANEL,
 		BackgroundTransparency = 0.4,
@@ -311,6 +347,76 @@ function Hud.build()
 		Parent = wave,
 	})
 
+	-- Level, experience and shards, under the wave chip, with the menu button.
+	local chip = Ui.make("Frame", {
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -20, 0, TOP + 78),
+		Size = UDim2.fromOffset(240, 46),
+		BackgroundColor3 = Ui.PANEL,
+		BackgroundTransparency = 0.4,
+		Parent = gui,
+	}, { Ui.corner(14), Ui.stroke(), Ui.pad(8) })
+	levelText = Ui.label({
+		Text = "",
+		Font = Ui.DISPLAY,
+		TextSize = 20,
+		TextColor3 = Ui.GOLD,
+		Size = UDim2.fromOffset(110, 18),
+		Parent = chip,
+	})
+	shardText = Ui.label({
+		Text = "",
+		Font = Ui.BOLD,
+		TextSize = 10,
+		TextColor3 = Ui.ACCENT,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		Position = UDim2.fromOffset(0, 2),
+		Size = UDim2.new(1, -66, 0, 14),
+		Parent = chip,
+	})
+	local xpTrack = Ui.make("Frame", {
+		Position = UDim2.fromOffset(0, 24),
+		Size = UDim2.new(1, -66, 0, 6),
+		BackgroundColor3 = Color3.new(0, 0, 0),
+		BackgroundTransparency = 0.35,
+		Parent = chip,
+	}, { Ui.corner(3) })
+	xpFill = Ui.make("Frame", {
+		Size = UDim2.fromScale(0, 1),
+		BackgroundColor3 = Ui.GOLD,
+		BorderSizePixel = 0,
+		Parent = xpTrack,
+	}, { Ui.corner(3) })
+	local menu = Ui.make("TextButton", {
+		Text = "MENU",
+		Font = Ui.BOLD,
+		TextSize = 12,
+		TextColor3 = Color3.new(1, 1, 1),
+		BackgroundColor3 = Ui.ACCENT,
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, 0, 0.5, 0),
+		Size = UDim2.fromOffset(58, 28),
+		Parent = chip,
+	}, { Ui.corner(14) })
+	menuDot = Ui.make("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(1, -4, 0, 4),
+		Size = UDim2.fromOffset(10, 10),
+		BackgroundColor3 = Color3.fromRGB(255, 70, 90),
+		Visible = false,
+		Parent = menu,
+	}, { Ui.corner(5) })
+	menu.Activated:Connect(function()
+		Hud.onMenu()
+	end)
+	renderProfile(Profile.data)
+	Profile.changed:Connect(function(new: any, old: any)
+		renderProfile(new)
+		if old and new.level > old.level then
+			Hud.banner(`LEVEL {new.level}`, 0xffd54a)
+		end
+	end)
+
 	rail = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(0.5, 1),
 		Position = UDim2.new(0.5, 0, 1, -24),
@@ -326,10 +432,11 @@ function Hud.build()
 		}),
 	})
 
+	-- Above the ability rail, so the two never overlap on a narrow screen.
 	logBox = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(0, 1),
-		Position = UDim2.new(0, 20, 1, -28),
-		Size = UDim2.fromOffset(360, 160),
+		Position = UDim2.new(0, 20, 1, -124),
+		Size = UDim2.fromOffset(340, 150),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	}, {
@@ -354,6 +461,13 @@ function Hud.build()
 		Size = UDim2.fromOffset(900, 70),
 		Parent = gui,
 	})
+
+	-- On a phone the TouchPad shows the techniques; the rail would sit under it.
+	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
+		rail.Visible = false
+		logBox.Position = UDim2.new(0, 20, 1, -16)
+		logBox.Size = UDim2.fromOffset(300, 110)
+	end
 
 	player:GetAttributeChangedSignal("Slots"):Connect(renderRail)
 	player:GetAttributeChangedSignal("Style"):Connect(renderRail)

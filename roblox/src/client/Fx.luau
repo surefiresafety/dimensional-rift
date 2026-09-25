@@ -59,6 +59,8 @@ handlers.shot = function(d)
 	halo.Anchored = false
 	w.Part0, w.Part1 = p, halo
 	w.Parent = halo
+	halo.Massless = true
+	halo.Parent = p -- goes when the shot goes
 	shots[d.id] = { part = p, pos = d.pos, vel = d.vel, gravity = d.gravity, life = d.life }
 end
 

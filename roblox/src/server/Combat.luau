@@ -131,6 +131,21 @@ function Combat.onKilled(fn: (Enemy, PState?) -> ())
 	table.insert(killedHandlers, fn)
 end
 
+-- Things a player did, for quests and stats: "cast", "output", "crit",
+-- "strike" and "damage" (with the amount).
+local eventHandlers: { (PState, string, number) -> () } = {}
+function Combat.onEvent(fn: (PState, string, number) -> ())
+	table.insert(eventHandlers, fn)
+end
+function Combat.emit(ps: PState?, kind: string, amount: number?)
+	if not ps then
+		return
+	end
+	for _, fn in eventHandlers do
+		fn(ps, kind, amount or 1)
+	end
+end
+
 -- Anything leaving the fight: killed, or taken (Body Swap wears it).
 local goneHandlers: { (Enemy) -> () } = {}
 function Combat.onGone(fn: (Enemy) -> ())
@@ -340,6 +355,7 @@ function Combat.hitEnemy(e: Enemy, power: number, nature: string, from: Vector3?
 		hungerMul = hungerMul,
 		roll = math.random(),
 	})
+	Combat.emit(by, "damage", math.min(dmg, e.hum.Health))
 	e.hum.Health = math.max(0, e.hum.Health - dmg)
 
 	-- Lifesteal, from the technique or from a rage that feeds.
@@ -499,6 +515,9 @@ local function stepWorn(now: number)
 	end
 end
 
+-- The HUD's numbers go out ten times a second, not every frame.
+local nextPublish: { [PState]: number } = setmetatable({}, { __mode = "k" }) :: any
+
 --- Status effects, regen, buffs and anything else that runs on the clock.
 function Combat.step(dt: number)
 	local now = Combat.now()
@@ -590,7 +609,10 @@ function Combat.step(dt: number)
 			ps.transformUntil = nil
 			Combat.revert(ps)
 		end
-		Combat.publish(ps)
+		if now >= (nextPublish[ps] or 0) then
+			nextPublish[ps] = now + 0.1
+			Combat.publish(ps)
+		end
 	end
 end
 

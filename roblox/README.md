@@ -42,10 +42,11 @@ rojo serve             # then, in Studio: Plugins > Rojo > Connect
 | `src/shared/Data/*.luau` | `ReplicatedStorage.Shared.Data` | **Generated** by `npm run export:roblox`. Every technique, character, enemy, boss and world. Do not edit these by hand. |
 | `src/shared/Rules.luau` | `ReplicatedStorage.Shared.Rules` | The combat maths: the nature wheel, damage, armour, crits, cost, cooldowns, status effects, waves. No Roblox APIs, so it runs under Lune. |
 | `src/shared/Config.luau` | | Roblox-only tuning. Holds `STUDS_PER_UNIT = 2.4`, the conversion from web-build units to studs. |
-| `src/shared/Remotes.luau` | | The seven RemoteEvents and what each carries. |
+| `src/shared/Progression.luau` | | What a player keeps: levels, Rift Shards, the roster, loadouts, the daily streak, quests, best waves. No Roblox APIs, so it runs under Lune. |
+| `src/shared/Remotes.luau` | | The eight RemoteEvents, the one RemoteFunction (`Ask`), and what each carries. |
 | `src/shared/Signature.luau` | | The E key for the characters whose signature is a technique. |
-| `src/server/` | `ServerScriptService.Server` | `Combat` (state, hitting enemies and players), `Abilities` (one handler per technique type, the basic attack, output charge), `Symbiote` (suit, hunger, bond, detaching), `Projectiles` (swept hits), `Enemies` (spawning and AI), `Waves`, `World` (lighting and a placeholder arena), `Looks` (bodies and hair). |
-| `src/client/` | `StarterPlayerScripts.Client` | `Hud`, `Select` (character select with universe filters and search), `Fx` (draws what the server reports), `Input`, `Movement` (web-swing and flight). |
+| `src/server/` | `ServerScriptService.Server` | `Combat` (state, hitting enemies and players), `Abilities` (one handler per technique type, the basic attack, output charge), `Symbiote` (suit, hunger, bond, detaching), `Projectiles` (swept hits), `Enemies` (spawning and AI), `Waves` (and the world rotation), `World` (lighting and a placeholder arena), `Looks` (bodies and hair), `ProfileStore` and `Profiles` (saving), `Progress` (rewards, quests, unlocks, boards, badges). |
+| `src/client/` | `StarterPlayerScripts.Client` | `Hud`, `Select` (character select with universe filters, search, locks and unlocking), `Hub` (the J menu), `Loadout` (L), `Profile` (the client's copy of its progress), `Fx` (draws what the server reports), `Input`, `TouchPad` (phones), `Movement` (web-swing and flight). |
 | `tests/` | | Lune tests: `lune run tests/run` (or `npm run test:roblox`). |
 
 ## How it fits together
@@ -79,7 +80,27 @@ rojo serve             # then, in Studio: Plugins > Rojo > Connect
 | Enemies | All 118, including the 46 character bosses and 32 alphas, with melee, ranged bursts and arcs, summons and enrage |
 | Worlds | All 9 worlds' waves, boss ladders and filler, their lighting and fog, and a placeholder skyline |
 | Screens | HUD (health, energy, a status line for the drawn weapon, stored charge, suit, hunger and bond, ability rail with cooldowns, wave, log, banner) and Select Character |
-| Controls | Left click (basic attack), 1–5, G, E (signature), B (hold to charge), R (Yuji's weapons), F (put the symbiote back on), M. ContextActionService also adds touch buttons for phones. |
+| Controls | Left click (basic attack), 1–5, G, E (signature), B (hold to charge), R (Yuji's weapons), F (put the symbiote back on), J (menu), L (loadout), M (characters). Gamepad: R2 hit, L2 signature, Y ultimate, B charge. Phones get a touch pad of nine buttons with cooldowns. |
+
+## Keeping players coming back
+
+Everything below is saved per player in a DataStore (`RiftProfiles_v1`) and checked
+by the server; clients only ever ask.
+
+| | |
+| --- | --- |
+| Saving | Loaded on join, saved every 90 s, on leaving and on shutdown. A session lock stops two servers writing the same player: a second server waits for the first to let go, takes over a lock more than 30 minutes old, and a server that lost the lock can never overwrite newer progress. Failed reads and writes are retried. In Studio without API access it falls back to memory and says so. |
+| Levels and Rift Shards | Experience and shards from every kill (more for alphas, story bosses and character bosses), every wave cleared and every world cleared (much more the first time). Each level pays shards. |
+| The roster | Six starters from all three universes (Threadrunner, Ren Tsumuji, Kurobane, Haru Takane, Kage Inukai, Hammer Maiden). Everyone else joins when you beat their boss in the rift, or for 350 Rift Shards (900 for the ten premium characters). Locked cards say how to win them. "Continue as …" puts you straight back in as your last character. |
+| Absorbed techniques and loadouts | Techniques absorbed from enemies are kept, and the loadout screen (L) puts any of them in any character's five slots. Saved per character. |
+| Daily reward | A seven-day calendar that grows every day in a row (day 7 is the big one) and starts again after a missed day. The menu opens on it when one is waiting. |
+| Daily quests | Three a day, the same for a player on every server that day, from eight kinds (defeat enemies, alphas and bosses, clear waves, use techniques, land Black Flashes, deal damage, basic attacks, charged techniques). One swap a day for 25 shards. A red dot on MENU when something can be claimed. |
+| Worlds | Clearing a world's last wave (its boss ladder) moves everyone through the rift to the next world, in order. Best wave per world is kept. |
+| Global boards | Best wave and total experience, top ten, in the menu (OrderedDataStores). |
+| Badges | Seven: first visit, first character boss, first world cleared, levels 10 and 25, a seven-day streak, fifteen characters. Create them on the Creator Dashboard and paste the ids into `Config.BADGES`; an id of 0 is skipped. |
+| Friends | +10% experience for each friend on the same server, up to three. |
+| Stats | Kills, bosses, waves, worlds, techniques, crits, damage, time played, per-world bests, in the menu. |
+| Player list | `leaderstats` shows Level and Best Wave. |
 
 ## What is not ported yet
 
@@ -97,8 +118,8 @@ Rough priority order:
 4. **The real arenas.** `World` builds a ring of blocks. Build each world in Studio as
    a Model named after its map id (`times_square`, `jujutsu_high`, …) under
    `ServerStorage.Maps`, and it replaces the placeholder automatically.
-5. **Gates between worlds (Q), the world map (N) and the loadout screen (Tab).**
-   Absorbed techniques are recorded (`learned`) but cannot be slotted yet.
+5. **A world map (N) and choosing a world.** Worlds come in order, one after the
+   other; there is no picking one yet.
 6. **Looks.** Bodies are R15 in each character's colours with a hair shape made from
    parts. For real hair and clothes, put catalog asset ids in `Looks.ACCESSORIES`. The
    select screen shows colour strips rather than spinning 3D previews (`ViewportFrame`
@@ -111,7 +132,11 @@ Rough priority order:
    craft's behaviour (tracking, warning, beam, lift, abduction) is not ported yet.
 9. **Multiplayer modes.** Co-op works by default: everyone on a server shares the
    waves. Versus does not exist yet.
-10. **Saving** (DataStoreService): unlocked techniques and progress.
+10. **Enemy behaviour.** Charge lunges, the melee wind-up telegraph and the aggro
+    range are not ported, and the Visitors' craft walks like a person.
+11. **Yuji's one save per life, and dodging.** Their state exists (`takeoverUsed`,
+    `nextDodge`, `invulnUntil`); nothing sets it yet.
+12. **Monetisation.** No game passes or developer products. Shards are earned only.
 
 ## Keeping the two builds in step
 
@@ -138,9 +163,12 @@ npm run test:roblox     # the Luau rules and data checks
   ```
 
   `globalTypes.d.luau` comes from the luau-lsp repository (`scripts/`).
-- 31 Lune tests pass. They check the ported rules against the web build's own formulas
-  (damage over time matches to the point over several seconds at 60 fps), and check
-  that every exported reference resolves.
+- 52 Lune tests pass. They check the ported rules against the web build's own formulas
+  (damage over time matches to the point over several seconds at 60 fps), check
+  that every exported reference resolves, check the progression rules (levels,
+  rewards, the streak across a missed day, quests, loadouts, unlocks), and run the
+  save system against a fake DataStore (locks held, stolen, released, a store that
+  keeps failing, an old save repaired).
 - The repo's node suite, including the export freshness test.
 
 **Not checked:** anything that needs the Roblox engine to be running: physics, the

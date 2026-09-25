@@ -16,6 +16,9 @@ local Arsenals = require(Shared.Data.Arsenals)
 local Movement = require(script.Parent.Movement)
 local Select = require(script.Parent.Select)
 local Hud = require(script.Parent.Hud)
+local Hub = require(script.Parent.Hub)
+local Loadout = require(script.Parent.Loadout)
+local TouchPad = require(script.Parent.TouchPad)
 
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
@@ -38,15 +41,20 @@ local function aim(): Vector3
 	return cam.CFrame.LookVector
 end
 
+--- A screen is up: keys and clicks go to it, not to the fight.
+local function menuOpen(): boolean
+	return Select.isOpen() or Hub.isOpen() or Loadout.isOpen()
+end
+
 local function cast(which: number | string)
-	if Select.isOpen() then
+	if menuOpen() then
 		return
 	end
 	CastRemote:FireServer(which, aim())
 end
 
 local function act(name: string)
-	if Select.isOpen() or not player:GetAttribute("Style") then
+	if menuOpen() or not player:GetAttribute("Style") then
 		return
 	end
 	ActionRemote:FireServer(name, aim())
@@ -54,55 +62,83 @@ end
 
 local KEYS = { Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four, Enum.KeyCode.Five }
 
+--- E: swing, fly, or the character's signature technique.
+local function signature(down: boolean)
+	local kind = Movement.kind()
+	if down then
+		if menuOpen() then
+			return
+		end
+		if kind == "swing" then
+			if not Movement.startSwing() then
+				Hud.log("No anchor in reach. Aim higher.")
+			end
+		elseif kind == "fly" then
+			Movement.startFlight()
+		else
+			local style = player:GetAttribute("Style") :: string?
+			local id = style and Signature[style]
+			if id then
+				cast(id)
+			end
+		end
+	elseif kind == "swing" then
+		Movement.releaseSwing()
+	elseif kind == "fly" then
+		Movement.endFlight()
+	end
+end
+
+--- B: hold to power up, let go to store it for the next technique.
+local function charge(down: boolean)
+	if down then
+		act("chargeStart")
+	else
+		ActionRemote:FireServer("chargeEnd")
+	end
+end
+
 function Input.start()
 	-- 1 to 5 are techniques here, not the tool hotbar.
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Backpack, false)
+	-- Touch screens get the TouchPad instead of ContextActionService's buttons.
+	local touch = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+	if touch then
+		TouchPad.build({
+			cast = cast,
+			strike = function()
+				act("strike")
+			end,
+			signature = signature,
+			charge = charge,
+		})
+	end
 	for i, key in KEYS do
 		ContextActionService:BindAction("Slot" .. i, function(_, state)
 			if state == Enum.UserInputState.Begin then
 				cast(i)
 			end
 			return Enum.ContextActionResult.Sink
-		end, true, key)
-		ContextActionService:SetTitle("Slot" .. i, tostring(i))
+		end, false, key)
 	end
 	ContextActionService:BindAction("Ultimate", function(_, state)
 		if state == Enum.UserInputState.Begin then
 			cast("ult")
 		end
 		return Enum.ContextActionResult.Sink
-	end, true, Enum.KeyCode.G)
-	ContextActionService:SetTitle("Ultimate", "G")
+	end, false, Enum.KeyCode.G, Enum.KeyCode.ButtonY)
 
 	ContextActionService:BindAction("Signature", function(_, state)
-		local kind = Movement.kind()
 		if state == Enum.UserInputState.Begin then
-			if kind == "swing" then
-				if not Movement.startSwing() then
-					Hud.log("No anchor in reach. Aim higher.")
-				end
-			elseif kind == "fly" then
-				Movement.startFlight()
-			else
-				local style = player:GetAttribute("Style") :: string?
-				local id = style and Signature[style]
-				if id then
-					cast(id)
-				end
-			end
+			signature(true)
 		elseif state == Enum.UserInputState.End or state == Enum.UserInputState.Cancel then
-			if kind == "swing" then
-				Movement.releaseSwing()
-			elseif kind == "fly" then
-				Movement.endFlight()
-			end
+			signature(false)
 		end
 		return Enum.ContextActionResult.Sink
-	end, true, Enum.KeyCode.E)
-	ContextActionService:SetTitle("Signature", "E")
+	end, false, Enum.KeyCode.E, Enum.KeyCode.ButtonL2)
 
 	-- The basic attack. A click is read through UserInputService so a click on
-	-- the interface never swings; phones and pads get a button of their own.
+	-- the interface never swings.
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if not processed and input.UserInputType == Enum.UserInputType.MouseButton1 then
 			act("strike")
@@ -113,19 +149,16 @@ function Input.start()
 			act("strike")
 		end
 		return Enum.ContextActionResult.Sink
-	end, true, Enum.KeyCode.ButtonR2)
-	ContextActionService:SetTitle("Strike", "Hit")
+	end, false, Enum.KeyCode.ButtonR2)
 
-	-- Hold B to power up; let go to store it for the next technique.
 	ContextActionService:BindAction("Charge", function(_, state)
 		if state == Enum.UserInputState.Begin then
-			act("chargeStart")
+			charge(true)
 		elseif state == Enum.UserInputState.End or state == Enum.UserInputState.Cancel then
-			ActionRemote:FireServer("chargeEnd")
+			charge(false)
 		end
 		return Enum.ContextActionResult.Sink
-	end, true, Enum.KeyCode.B)
-	ContextActionService:SetTitle("Charge", "B")
+	end, false, Enum.KeyCode.B, Enum.KeyCode.ButtonB)
 
 	-- R: the next weapon, for a set that lives on R.
 	ContextActionService:BindAction("Cycle", function(_, state)
@@ -146,6 +179,22 @@ function Input.start()
 		end
 		return Enum.ContextActionResult.Pass
 	end, false, Enum.KeyCode.F)
+
+	-- J: the menu (daily reward, quests, boards, stats). L: the loadout.
+	ContextActionService:BindAction("Menu", function(_, state)
+		if state == Enum.UserInputState.Begin then
+			Loadout.close()
+			Hub.toggle()
+		end
+		return Enum.ContextActionResult.Sink
+	end, false, Enum.KeyCode.J)
+	ContextActionService:BindAction("Loadout", function(_, state)
+		if state == Enum.UserInputState.Begin and player:GetAttribute("Style") and not Select.isOpen() then
+			Hub.close()
+			Loadout.toggle()
+		end
+		return Enum.ContextActionResult.Sink
+	end, false, Enum.KeyCode.L)
 
 	ContextActionService:BindAction("Characters", function(_, state)
 		if state == Enum.UserInputState.Begin and player:GetAttribute("Style") then

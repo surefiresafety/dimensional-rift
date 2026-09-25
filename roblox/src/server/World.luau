@@ -61,6 +61,31 @@ local function placeholderArena(map: any, seed: number): Model
 		band.Material = Enum.Material.Neon
 		band.Parent = arena
 	end
+	-- Tall masts inside the skyline, where the fighting is: the towers stand
+	-- 70-120 units out and a web reaches 60, so without these nobody could
+	-- swing near the portal.
+	for i = 1, 12 do
+		local a = (i / 12) * math.pi * 2 + rng:NextNumber(-0.12, 0.12)
+		local r = rng:NextNumber(30, 46) * STUDS
+		local h = rng:NextNumber(28, 40) * STUDS
+		local mast = Instance.new("Part")
+		mast.Name = "Mast"
+		mast.Anchored = true
+		mast.Size = Vector3.new(1.2 * STUDS, h, 1.2 * STUDS)
+		mast.CFrame = CFrame.new(c + Vector3.new(math.cos(a) * r, h / 2, math.sin(a) * r))
+		mast.Color = Color3.fromRGB(44, 40, 60)
+		mast.Material = Enum.Material.Metal
+		mast.Parent = arena
+		local lamp = Instance.new("Part")
+		lamp.Anchored = true
+		lamp.CanCollide = false
+		lamp.Shape = Enum.PartType.Ball
+		lamp.Size = Vector3.one * 2.4 * STUDS
+		lamp.CFrame = CFrame.new(mast.Position + Vector3.new(0, h / 2 + 0.6 * STUDS, 0))
+		lamp.Color = tint
+		lamp.Material = Enum.Material.Neon
+		lamp.Parent = arena
+	end
 	return arena
 end
 

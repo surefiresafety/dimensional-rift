@@ -11,6 +11,7 @@ local Remotes = require(Shared.Remotes)
 local Styles = require(Shared.Data.Styles)
 local RulesData = require(Shared.Data.Rules)
 local Arsenals = require(Shared.Data.Arsenals)
+local Skills = require(Shared.Data.Skills)
 
 local Combat = require(script.Combat)
 local Abilities = require(script.Abilities)
@@ -20,6 +21,8 @@ local Waves = require(script.Waves)
 local World = require(script.World)
 local Looks = require(script.Looks)
 local Symbiote = require(script.Symbiote)
+local Profiles = require(script.Profiles)
+local Progress = require(script.Progress)
 local Signature = require(Shared.Signature)
 
 -- Create every remote before anyone can ask for one.
@@ -29,11 +32,25 @@ local Action = Remotes.get("Action")
 
 Players.CharacterAutoLoads = false -- a character is chosen before anyone spawns
 
---- Puts a player into a style: its kit, its energy, its body.
+--- Clears everything a fight leaves on a player: buffs, shields, summons, a
+--- stored charge. Used on respawn and on picking a new character.
+local function resetCombat(ps: Combat.PState)
+	ps.transformUntil = nil
+	ps.buff, ps.domain, ps.minions = nil, nil, {}
+	ps.shield, ps.shieldUntil, ps.shieldReflect = 0, 0, 0
+	ps.evadeUntil, ps.invulnUntil, ps.decoy = 0, 0, false
+	ps.output, ps.chargeStart = nil, nil
+	ps.player:SetAttribute("ChargeStart", nil)
+end
+
+--- Puts a player into a style: its kit, its energy, its body. `keepHealth`
+--- keeps their health and where they stand (a transform, or a switch
+--- mid-fight); without it they arrive fresh at the spawn.
 local function applyStyle(ps: Combat.PState, styleId: string, keepHealth: boolean?)
 	local st = Styles[styleId]
 	ps.style = styleId
-	ps.slots = table.clone(st.slots)
+	-- The player's own loadout for this character, if they saved one.
+	ps.slots = Progress.slotsFor(ps.player, styleId)
 	ps.maxSe = st.energy or Config.PLAYER_MAX_SE
 	ps.se = math.min(ps.se, ps.maxSe)
 	if ps.maxSe == math.huge then
@@ -42,10 +59,22 @@ local function applyStyle(ps: Combat.PState, styleId: string, keepHealth: boolea
 	for _, id in st.pool do
 		ps.learned[id] = true
 	end
+	-- A weapon set starts drawn: the current one if it belongs to this set,
+	-- else the first (applyStyle in the web build).
+	local set = (Arsenals :: any)[styleId]
+	if not (set and ps.weapon and set.items[ps.weapon]) then
+		ps.weapon = if set then set.order[1] else nil
+	end
+	-- Infinity only stays up for a kit that can take it down again.
+	local canToggle = false
+	for _, id in ps.slots do
+		canToggle = canToggle or Skills[id].type == "toggle"
+	end
+	if not canToggle then
+		ps.infinity = false
+	end
 	if not keepHealth then
-		-- A fresh start: nothing drawn, nothing to rewind to.
-		ps.weapon = nil
-		table.clear(ps.history)
+		table.clear(ps.history) -- nothing to rewind to
 	end
 	local hum = Combat.humanoidOf(ps.player)
 	local hp = if hum and keepHealth then hum.Health else nil
@@ -83,41 +112,57 @@ local function transform(ps: Combat.PState, into: string?)
 	end
 end
 Abilities.setTransform(transform)
+-- Changing body reloads the character, which yields. Anything that happens
+-- inside the server's frame loop (a transform running out, the symbiote)
+-- does it on its own thread so the loop never stalls halfway.
 Combat.revert = function(ps)
-	transform(ps, nil)
+	task.spawn(transform, ps, nil)
 end
 -- The symbiote puts you back in the suit, or leaves you in Ironthread.
 Symbiote.setRestyle(function(ps, styleId)
 	ps.baseStyle, ps.transformUntil = nil, nil
-	local root = Combat.rootOf(ps.player)
-	local where = root and root.CFrame
-	applyStyle(ps, styleId, true)
-	local newRoot = Combat.rootOf(ps.player)
-	if newRoot and where then
-		newRoot.CFrame = where
-	end
+	task.spawn(function()
+		local root = Combat.rootOf(ps.player)
+		local where = root and root.CFrame
+		applyStyle(ps, styleId, true)
+		local newRoot = Combat.rootOf(ps.player)
+		if newRoot and where then
+			newRoot.CFrame = where
+		end
+	end)
 end)
 
-Players.PlayerAdded:Connect(function(player)
+local function onPlayerAdded(player: Player)
+	if Combat.states[player] then
+		return
+	end
 	Combat.newState(player)
 	player.CharacterAdded:Connect(function(character)
 		local hum = character:WaitForChild("Humanoid") :: Humanoid
 		hum.Died:Connect(function()
-			-- Rise again as the same character after a beat.
+			Progress.died(player)
+			-- Rise again as the same character after a beat, unless they have
+			-- already picked someone new in the meantime.
 			task.delay(4, function()
 				local ps = Combat.states[player]
-				if ps and ps.style and player.Parent then
-					ps.baseStyle, ps.transformUntil = nil, nil
-					ps.buff, ps.domain, ps.minions = nil, nil, {}
-					ps.output, ps.chargeStart, ps.decoy = nil, nil, false
-					player:SetAttribute("ChargeStart", nil)
+				if ps and ps.style and player.Parent and player.Character == character then
+					-- Back as who they chose, not as whatever they had turned into.
+					local chosen = ps.baseStyle or ps.style :: string
+					ps.style = chosen
+					ps.baseStyle = nil
+					resetCombat(ps)
 					Symbiote.reset(ps)
-					applyStyle(ps, ps.style)
+					applyStyle(ps, chosen)
 				end
 			end)
 		end)
 	end)
-end)
+end
+Players.PlayerAdded:Connect(onPlayerAdded)
+-- In Studio the first player can arrive before this script runs.
+for _, player in Players:GetPlayers() do
+	onPlayerAdded(player)
+end
 
 Players.PlayerRemoving:Connect(function(player)
 	local ps = Combat.states[player]
@@ -125,19 +170,35 @@ Players.PlayerRemoving:Connect(function(player)
 		Symbiote.reset(ps)
 	end
 	Combat.states[player] = nil
+	Combat.lastHitBy[player] = nil
 end)
 
+local lastSelect: { [Player]: number } = {}
 SelectStyle.OnServerEvent:Connect(function(player, styleId)
 	local ps = Combat.states[player]
 	if not ps or type(styleId) ~= "string" or not Styles[styleId] then
 		return
 	end
-	ps.baseStyle, ps.transformUntil = nil, nil
-	ps.output, ps.chargeStart = nil, nil
-	player:SetAttribute("ChargeStart", nil)
+	-- Every pick reloads the character: once a second and a half at most.
+	local clock = os.clock()
+	if clock - (lastSelect[player] or -99) < 1.5 then
+		return
+	end
+	lastSelect[player] = clock
+	if not Progress.canPlay(player, styleId) then
+		Combat.notice(player, Styles[styleId].name .. " is not on your roster yet.")
+		return
+	end
+	Progress.chose(player, styleId)
+	-- Switching mid-fight keeps your health and your place: a new character
+	-- is not a free heal. The first pick, or a pick while down, starts fresh.
+	local hum = Combat.humanoidOf(player)
+	local switching = ps.style ~= nil and hum ~= nil and hum.Health > 0
+	ps.baseStyle = nil
+	resetCombat(ps)
 	Symbiote.reset(ps)
-	applyStyle(ps, styleId)
-	if not Waves.running then
+	applyStyle(ps, styleId, switching)
+	if not Waves.started then
 		Waves.start(Config.START_MAP)
 	end
 end)
@@ -212,7 +273,11 @@ end)
 Players.PlayerRemoving:Connect(function(player)
 	lastCast[player] = nil
 	lastAction[player] = nil
+	lastSelect[player] = nil
 end)
+
+Profiles.start()
+Progress.start()
 
 World.load(Config.START_MAP) -- the waves start when the first player picks a character
 

@@ -120,8 +120,6 @@ function Enemies.spawn(id: string, at: Vector3): Combat.Enemy?
 	hum.HealthDisplayDistance = 90
 	hum.BreakJointsOnDeath = false
 	model:PivotTo(CFrame.new(at + Vector3.new(0, 4, 0)))
-	model.Parent = folder
-	root:SetNetworkOwner(nil) -- the server drives them
 
 	local now = Combat.now()
 	local e: Combat.Enemy = {
@@ -142,9 +140,13 @@ function Enemies.spawn(id: string, at: Vector3): Combat.Enemy?
 		stateUntil = 0,
 		lungeHit = false,
 		nextCharge = now + (if t.charge then t.charge.cd * (0.5 + math.random()) else 0),
-		nextAura = now + (if t.aura then t.aura.every else 0),
+		nextAura = now + (if t.aura then t.aura.every or 0.6 else 0),
 		allyUntil = 0,
 	}
+	-- Into the world only once its record is whole, so a bad template can
+	-- never leave a body standing that nothing drives.
+	model.Parent = folder
+	root:SetNetworkOwner(nil) -- the server drives them
 	table.insert(Combat.enemies, e)
 	Combat.fx("burst", { at = at, color = look.top or 0xb06cff, count = 12 })
 	return e
@@ -222,8 +224,31 @@ function Enemies.think()
 			e.nextAttack = now + Config.ENEMY_MELEE_COOLDOWN
 			Combat.hurtPlayer(ps, e.t.atk, e.t.nature, e)
 		end
+		-- Regeneration, and a damaging aura every 0.6 s (updateEnemies).
+		if e.t.regen and e.hum.Health < e.hum.MaxHealth then
+			e.hum.Health = math.min(e.hum.MaxHealth, e.hum.Health + e.t.regen * Config.ENEMY_THINK_INTERVAL)
+		end
+		local aura = e.t.aura
+		if aura and now >= e.nextAura then
+			e.nextAura = now + (aura.every or 0.6)
+			Combat.fx("burst", { at = e.root.Position, color = RulesData.NATURE[e.t.nature].color, count = 5 })
+			for _, other in Combat.states do
+				local root = Combat.rootOf(other.player)
+				if root and (root.Position - e.root.Position).Magnitude < (aura.radius or 6) * STUDS then
+					Combat.hurtPlayer(other, aura.power or 6, e.t.nature, e)
+				end
+			end
+		end
+		-- Shoots from 4.5 to 42 units, like the web build.
 		local r = e.t.ranged
-		if r and not e.status.stun and not e.status.paralyze and d >= (r.min or 8) * STUDS and now >= e.nextShot then
+		if
+			r
+			and not e.status.stun
+			and not e.status.paralyze
+			and d > 4.5 * STUDS
+			and d < 42 * STUDS
+			and now >= e.nextShot
+		then
 			e.nextShot = now + r.cd * (0.8 + math.random() * 0.5)
 			shoot(e, target)
 		end

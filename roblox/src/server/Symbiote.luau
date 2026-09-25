@@ -59,11 +59,8 @@ function Symbiote.detach(ps: Combat.PState, cause: string)
 	if not root then
 		return
 	end
-	-- A takeover transform is undone first: the suit was the transform.
 	local host = ps.baseStyle or ps.style :: string
-	if ps.baseStyle then
-		Combat.revert(ps)
-	end
+	local transformed = ps.baseStyle ~= nil
 	ps.bond, ps.hunger, ps.feeding = 0, 100, false
 	local at = root.Position + Vector3.new(2.5, 0, 2.5) * STUDS
 	local blob = Instance.new("Part")
@@ -77,6 +74,11 @@ function Symbiote.detach(ps: Combat.PState, cause: string)
 	blob.CFrame = CFrame.new(at.X, root.Position.Y - 2, at.Z)
 	blob.Parent = workspace
 	ps.looseSuit = { untilT = Combat.now() + 60, host = host, at = blob.Position, part = blob :: BasePart }
+	-- A takeover transform is undone too: the suit was the transform. After
+	-- looseSuit is set, so nothing can detach it twice while the body reloads.
+	if transformed then
+		Combat.revert(ps)
+	end
 	Symbiote.say(ps, "NO. No, no, we need you.", true)
 	Combat.fx("banner", { text = "THE SYMBIOTE IS OFF", color = 0xc0294a })
 	Combat.fx("burst", { at = root.Position, color = 0x1a1a24, count = 34 })
