@@ -487,37 +487,27 @@ return function(K: any)
 
 	-- Old cedars (anchors, with Foliage crowns) ---------------------------------------
 	local cedars = {
-		{ "ne1", 34, -38, 40 },
-		{ "ne2", 40, -42, 44 },
-		{ "ne3", 46, -37, 36 },
-		{ "nw1", -34, -38, 40 },
-		{ "nw2", -40, -42, 44 },
-		{ "nw3", -46, -37, 36 },
-		{ "se1", 46, 26, 38 },
-		{ "se2", 50, 34, 42 },
-		{ "se3", 44, 44, 36 },
-		{ "sw1", -46, 26, 38 },
-		{ "sw2", -44, 34, 42 },
-		{ "sw3", -52, 20, 36 },
-		{ "gate-e", 12, 56, 34 },
-		{ "gate-w", -12, 56, 34 },
-		{ "court-e", 10, -16, 40 },
-		{ "court-w", -10, -16, 40 },
-		{ "ncourt-e", 11, -31, 40 },
-		{ "ncourt-w", -11, -31, 40 },
+		{ id = "ne1", x = 34, z = -38, h = 40 },
+		{ id = "ne2", x = 40, z = -42, h = 44 },
+		{ id = "ne3", x = 46, z = -37, h = 36 },
+		{ id = "nw1", x = -34, z = -38, h = 40 },
+		{ id = "nw2", x = -40, z = -42, h = 44 },
+		{ id = "nw3", x = -46, z = -37, h = 36 },
+		{ id = "se1", x = 46, z = 26, h = 38 },
+		{ id = "se2", x = 50, z = 34, h = 42 },
+		{ id = "se3", x = 44, z = 44, h = 36 },
+		{ id = "sw1", x = -46, z = 26, h = 38 },
+		{ id = "sw2", x = -44, z = 34, h = 42 },
+		{ id = "sw3", x = -52, z = 20, h = 36 },
+		{ id = "gate-e", x = 12, z = 56, h = 34 },
+		{ id = "gate-w", x = -12, z = 56, h = 34 },
+		{ id = "court-e", x = 10, z = -16, h = 40 },
+		{ id = "court-w", x = -10, z = -16, h = 40 },
+		{ id = "ncourt-e", x = 11, z = -31, h = 40 },
+		{ id = "ncourt-w", x = -11, z = -31, h = 40 },
 	}
 	for _, c in cedars do
-		K.tree({ id = "cedar-" .. c[1], x = c[2], z = c[3], h = c[4], kind = "cedar" })
-		-- WORKAROUND (tests/layoutcheck.luau C.hero): the sightline check hands hitBall
-		-- the unnormalised segment (0, 3, 0) -> hero, but hitBall assumes a unit
-		-- direction, so every crown ahead of the eye within about 80 u "blocks" it.
-		-- The nearest crown really clears the line by 15.8 u. Remove this once the
-		-- check normalises d (or scales t by |d|).
-		if c[3] < 0 then
-			for i = 1, 3 do
-				table.insert(heroIds, `cedar-{c[1]}/crown{i}`)
-			end
-		end
+		K.tree({ id = "cedar-" .. c.id, x = c.x, z = c.z, h = c.h, kind = "cedar" })
 	end
 
 	-- Backdrop: 24 cedars in the forest beyond ------------------------------------------

@@ -529,21 +529,23 @@ function C.hero(P: Plan): { string }
 	local o = { 0, 3, 0 }
 	local tgt = { hero.x, 0.6 * hero.top, hero.z }
 	local d = { tgt[1] - o[1], tgt[2] - o[2], tgt[3] - o[3] }
+	local len = sqrt(d[1] ^ 2 + d[2] ^ 2 + d[3] ^ 2)
+	d = { d[1] / len, d[2] / len, d[3] / len } -- hitBall wants a unit direction
 	for _, fp in P.recs do
 		if Layouts.checked(fp) and not fp.scatter and not isHero(P, fp.id) then
 			local t
 			if fp.shape == "ball" then
-				t = hitBall({ fp.x, (fp.h0 + fp.h1) / 2, fp.z, fp.w / 2 + 0.3 }, o, d, 1)
+				t = hitBall({ fp.x, (fp.h0 + fp.h1) / 2, fp.z, fp.w / 2 + 0.3 }, o, d, len)
 			else
 				local g = table.clone(fp)
 				g.w += 0.6
 				g.d += 0.6
 				g.h0 -= 0.3
 				g.h1 += 0.3
-				t = hitSolid(g, o, d, 1)
+				t = hitSolid(g, o, d, len)
 			end
 			if t then
-				table.insert(fails, `{fp.id} blocks the sightline at t {fmt(t)}`)
+				table.insert(fails, `{fp.id} blocks the sightline {fmt(t)} u from the eye`)
 			end
 		end
 	end
