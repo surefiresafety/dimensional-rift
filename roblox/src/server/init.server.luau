@@ -82,6 +82,7 @@ local function applyStyle(ps: Combat.PState, styleId: string, keepHealth: boolea
 	if root and not keepHealth then
 		root.CFrame = CFrame.new(World.spawnPoint())
 	end
+	Progress.nameplate(ps.player)
 	Combat.publish(ps)
 end
 

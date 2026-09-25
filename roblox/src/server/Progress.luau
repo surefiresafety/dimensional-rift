@@ -201,6 +201,9 @@ local function award(player: Player, p: Progression.Profile, xp: number, shards:
 	local got = if claimed then shards else math.floor(shards * Progression.upgradeMul(p, "fortune") + 0.5)
 	p.shards += got
 	local reached = Progression.addXp(p, xp * mul)
+	if #reached > 0 then
+		Progress.nameplate(player)
+	end
 	if not claimed then
 		local r = runOf(player)
 		r.xp += math.floor(xp * mul + 0.5)
@@ -240,6 +243,15 @@ local function unlock(player: Player, p: Progression.Profile, styleId: string, w
 	Combat.notice(player, `{Styles[styleId].name} joins your roster: {why}.`, "gold")
 	checkRoster(player, p)
 	mark(player)
+end
+
+--- The name over a player's head: who they are and their level.
+function Progress.nameplate(player: Player)
+	local hum = Combat.humanoidOf(player)
+	local p = Profiles.get(player)
+	if hum then
+		hum.DisplayName = if p then `{player.DisplayName}  ·  Lv {(Progression.levelOf(p.xp))}` else player.DisplayName
+	end
 end
 
 --- An upgrade's multiplier for this player (1 before their save loads).
@@ -510,6 +522,7 @@ local function onLoaded(player: Player, p: Progression.Profile)
 
 	Progression.refreshQuests(p, today(), seedOf(player))
 	Progress.applyUpgrades(player)
+	Progress.nameplate(player)
 	-- Anything absorbed in earlier sessions can be slotted again.
 	local ps = Combat.states[player]
 	if ps then
