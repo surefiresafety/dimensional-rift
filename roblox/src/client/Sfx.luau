@@ -109,6 +109,8 @@ function Sfx.forFx(kind: string, d: any)
 	elseif kind == "domain" then
 		Sfx.play("domain")
 		Sfx.shake(0.6)
+	elseif kind == "pickup" and d.player == Players.LocalPlayer then
+		Sfx.play("pickup", nil, 1.5)
 	elseif kind == "banner" then
 		Sfx.play("banner")
 	end

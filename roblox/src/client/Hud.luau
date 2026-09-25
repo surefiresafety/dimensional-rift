@@ -22,6 +22,8 @@ local Rules = require(Shared.Rules)
 local Ui = require(script.Parent.Ui)
 local Profile = require(script.Parent.Profile)
 local Sfx = require(script.Parent.Sfx)
+local Radar = require(script.Parent.Radar)
+local Progression = require(Shared.Progression)
 
 local player = Players.LocalPlayer
 local Hud = {}
@@ -417,6 +419,63 @@ function Hud.build()
 			Hud.banner(`LEVEL {new.level}`, 0xffd54a)
 			Sfx.play("level")
 		end
+	end)
+
+	Radar.build(gui, TOP + 132, UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
+
+	-- The combo: hits in a row and the rank they have reached, at the right
+	-- edge of the screen, punching bigger with every hit.
+	local combo = Ui.make("Frame", {
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -24, 0.52, 0),
+		Size = UDim2.fromOffset(200, 96),
+		BackgroundTransparency = 1,
+		Visible = false,
+		Parent = gui,
+	})
+	local rank = Ui.label({
+		Text = "",
+		Font = Ui.DISPLAY,
+		TextSize = 64,
+		TextColor3 = Ui.GOLD,
+		TextStrokeTransparency = 0.2,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		Size = UDim2.new(1, 0, 0, 62),
+		Parent = combo,
+	})
+	local hits = Ui.label({
+		Text = "",
+		Font = Ui.DISPLAY,
+		TextSize = 26,
+		TextStrokeTransparency = 0.3,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		Position = UDim2.fromOffset(0, 62),
+		Size = UDim2.new(1, 0, 0, 28),
+		Parent = combo,
+	})
+	local pop = Ui.make("UIScale", { Parent = combo })
+	local RANK_COLOUR: { [string]: Color3 } = {
+		D = Color3.fromRGB(160, 160, 180),
+		C = Color3.fromRGB(120, 200, 255),
+		B = Color3.fromRGB(80, 230, 150),
+		A = Color3.fromRGB(255, 213, 74),
+		S = Color3.fromRGB(255, 140, 60),
+		SS = Color3.fromRGB(255, 70, 90),
+		SSS = Color3.fromRGB(200, 110, 255),
+	}
+	player:GetAttributeChangedSignal("Combo"):Connect(function()
+		local n = player:GetAttribute("Combo") :: number?
+		if not n or n < 2 then
+			combo.Visible = false
+			return
+		end
+		local r = Progression.comboRank(n)
+		combo.Visible = true
+		rank.Text = r
+		rank.TextColor3 = RANK_COLOUR[r] or Ui.GOLD
+		hits.Text = `{n} HITS`
+		pop.Scale = 1.25
+		TweenService:Create(pop, TweenInfo.new(0.18, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 	end)
 
 	rail = Ui.make("Frame", {

@@ -20,6 +20,7 @@ local RulesData = require(Shared.Data.Rules)
 local Combat = require(script.Parent.Combat)
 local Enemies = require(script.Parent.Enemies)
 local World = require(script.Parent.World)
+local Pickups = require(script.Parent.Pickups)
 
 local STUDS = Config.STUDS_PER_UNIT
 local WaveRemote = Remotes.get("Wave")
@@ -102,6 +103,7 @@ function Waves.start(mapId: string)
 	Waves.started = true
 	Waves.gen += 1
 	World.load(mapId)
+	Pickups.clear()
 	for _, e in table.clone(Combat.enemies) do
 		Combat.kill(e, nil)
 	end

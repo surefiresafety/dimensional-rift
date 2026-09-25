@@ -4,6 +4,7 @@
 -- the server says they ended.
 
 local Debris = game:GetService("Debris")
+local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -163,6 +164,15 @@ handlers.dash = function(d)
 		0.3
 	)
 	fade(p, 0.35, Vector3.new(0.1, 0.1, length))
+end
+
+-- Something picked up: a pop, and what it was worth for whoever took it.
+handlers.pickup = function(d)
+	local p = part(Enum.PartType.Ball, Vector3.one * 2, CFrame.new(d.at + Vector3.new(0, 2, 0)), d.color, 0.2)
+	fade(p, 0.3, Vector3.one * 6)
+	if d.player == Players.LocalPlayer then
+		handlers.number({ at = d.at + Vector3.new(0, 4, 0), text = d.text, tone = "heal" })
+	end
 end
 
 -- It has seen you: a "!" over its head.

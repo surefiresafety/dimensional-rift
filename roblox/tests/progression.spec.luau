@@ -238,6 +238,7 @@ H.test("every quest kind is one the server sends", function()
 		damage = true,
 		strike = true,
 		output = true,
+		combo = true,
 	}
 	for _, q in Progression.QUESTS do
 		assert(SENT[q.kind], q.id .. " waits for an event nothing sends: " .. q.kind)
@@ -254,6 +255,50 @@ H.test("worlds: best waves and the order they come in", function()
 	local order = RulesData.MAP_IDS
 	H.eq(Progression.nextWorld(order, order[1]), order[2], "next")
 	H.eq(Progression.nextWorld(order, order[#order]), order[1], "wraps")
+end)
+
+H.test("a best-of quest keeps the best, a counting quest adds up", function()
+	local p = Progression.newProfile()
+	p.quests = {
+		day = 1,
+		rerolled = false,
+		list = {
+			{
+				id = "combo",
+				kind = "combo",
+				best = true,
+				text = "",
+				goal = 35,
+				progress = 0,
+				claimed = false,
+				shards = 1,
+				xp = 1,
+			},
+			{ id = "kills", kind = "kill", text = "", goal = 30, progress = 0, claimed = false, shards = 1, xp = 1 },
+		},
+	}
+	Progression.questEvent(p, "combo", 20)
+	Progression.questEvent(p, "combo", 12)
+	H.eq(p.quests.list[1].progress, 20, "the best combo, not the sum")
+	local done = Progression.questEvent(p, "combo", 40)
+	H.eq(#done, 1, "done at 35")
+	H.eq(p.quests.list[1].progress, 35, "capped")
+	Progression.questEvent(p, "kill", 1)
+	Progression.questEvent(p, "kill", 1)
+	H.eq(p.quests.list[2].progress, 2, "kills add up")
+end)
+
+H.test("combo ranks and rewards", function()
+	H.eq(Progression.comboRank(0), "D", "nothing")
+	H.eq(Progression.comboRank(10), "C", "ten")
+	H.eq(Progression.comboRank(49), "A", "just short of S")
+	H.eq(Progression.comboRank(50), "S", "S")
+	H.eq(Progression.comboRank(500), "SSS", "top")
+	local xp, shards = Progression.comboReward(14)
+	H.eq(xp, 28, "two a hit")
+	H.eq(shards, 0, "no shard under fifteen")
+	xp, shards = Progression.comboReward(60)
+	H.eq(shards, 8, "doubled from S rank")
 end)
 
 return H

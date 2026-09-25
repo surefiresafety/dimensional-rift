@@ -26,6 +26,7 @@ local Maps = require(Shared.Data.Maps)
 local Combat = require(script.Parent.Combat)
 local Profiles = require(script.Parent.Profiles)
 local Waves = require(script.Parent.Waves)
+local Pickups = require(script.Parent.Pickups)
 
 local ProfileRemote = Remotes.get("Profile")
 local Ask = Remotes.fn("Ask")
@@ -39,6 +40,8 @@ local dirty: { [Player]: boolean } = {}
 local urgent: { [Player]: boolean } = {}
 local lastSent: { [Player]: number } = {}
 local badgePending: { [string]: boolean } = {}
+-- Hits in a row, and when the last one landed.
+local combos: { [Player]: { hits: number, last: number } } = {}
 local friends: { [Player]: number } = {}
 local friendPairs: { [string]: boolean } = {}
 local lastAsk: { [Player]: number } = {}
@@ -476,6 +479,16 @@ function Progress.start()
 	end)
 
 	Combat.onEvent(function(ps, kind, amount)
+		if kind == "damage" and amount > 0 then
+			local c = combos[ps.player]
+			if not c then
+				c = { hits = 0, last = 0 }
+				combos[ps.player] = c
+			end
+			c.hits += 1
+			c.last = os.clock()
+			ps.player:SetAttribute("Combo", c.hits)
+		end
 		local p = Profiles.get(ps.player)
 		if not p then
 			return
@@ -547,6 +560,7 @@ function Progress.start()
 	Players.PlayerRemoving:Connect(function(player: Player)
 		recount(player)
 		dirty[player], urgent[player], lastSent[player] = nil, nil, nil
+		combos[player] = nil
 		friends[player] = nil
 		lastAsk[player] = nil
 		for key in friendPairs do
@@ -576,12 +590,54 @@ function Progress.start()
 		end
 	end)
 
+	-- Shards picked up off the floor.
+	Pickups.onShards = function(player, n)
+		local p = Profiles.get(player)
+		if p then
+			p.shards += n
+			Progression.bump(p, "shardsFound", n)
+			mark(player, true)
+		end
+	end
+	Combat.onKilled(function(e)
+		Pickups.fromKill(e)
+	end)
+
 	local acc = 0
 	RunService.Heartbeat:Connect(function(dt)
 		acc += dt
 		if acc >= 0.3 then
 			acc = 0
 			flush()
+			-- A combo ends three seconds after its last hit, and pays out.
+			local now = os.clock()
+			for player, c in combos do
+				if now - c.last > Progression.COMBO_WINDOW then
+					combos[player] = nil
+					if player.Parent then
+						player:SetAttribute("Combo", nil)
+						local p = Profiles.get(player)
+						if p and c.hits >= 5 then
+							local xp, shards = Progression.comboReward(c.hits)
+							award(player, p, xp, shards)
+							quest(player, p, "combo", c.hits)
+							if c.hits > (p.stats.bestCombo or 0) then
+								p.stats.bestCombo = c.hits
+							end
+							if c.hits >= 10 then
+								Combat.notice(
+									player,
+									`{Progression.comboRank(c.hits)} rank: {c.hits}-hit combo. +{xp} XP{if shards
+											> 0
+										then `, +{shards} shards`
+										else ""}.`,
+									"gold"
+								)
+							end
+						end
+					end
+				end
+			end
 		end
 	end)
 end

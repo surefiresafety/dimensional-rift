@@ -46,6 +46,7 @@ Progression.DAILY = {
 export type Quest = {
 	id: string, -- the template
 	kind: string, -- which event advances it
+	best: boolean?, -- keeps the best value seen instead of adding up
 	text: string,
 	goal: number,
 	progress: number,
@@ -78,6 +79,16 @@ Progression.QUESTS = {
 		goals = { 3, 5, 8 },
 		shards = 60,
 		xp = 120,
+	},
+	-- `best`: progress is the best single value seen, not a running total.
+	{
+		id = "combo",
+		kind = "combo",
+		best = true,
+		text = "Reach a %d-hit combo",
+		goals = { 20, 35, 50 },
+		shards = 70,
+		xp = 140,
 	},
 }
 Progression.QUESTS_PER_DAY = 3
@@ -379,6 +390,7 @@ function Progression.rollQuests(day: number, seed: number): { Quest }
 		table.insert(out, {
 			id = q.id,
 			kind = q.kind,
+			best = q.best,
 			text = string.format(q.text, goal),
 			goal = goal,
 			progress = 0,
@@ -405,8 +417,11 @@ function Progression.questEvent(p: Profile, kind: string, amount: number?): ({ Q
 	local done, moved = {}, false
 	for _, q in p.quests.list do
 		if q.kind == kind and not q.claimed and q.progress < q.goal then
-			q.progress = math.min(q.goal, q.progress + (amount or 1))
-			moved = true
+			local before = q.progress
+			q.progress = if q.best
+				then math.min(q.goal, math.max(q.progress, amount or 1))
+				else math.min(q.goal, q.progress + (amount or 1))
+			moved = moved or q.progress ~= before
 			if q.progress >= q.goal then
 				table.insert(done, q)
 			end
@@ -467,6 +482,7 @@ function Progression.rerollQuest(p: Profile, index: number, seed: number): (bool
 	p.quests.list[index] = {
 		id = t.id,
 		kind = t.kind,
+		best = t.best,
 		text = string.format(t.text, goal),
 		goal = goal,
 		progress = 0,
@@ -477,6 +493,39 @@ function Progression.rerollQuest(p: Profile, index: number, seed: number): (bool
 	p.shards -= Progression.QUEST_REROLL_COST
 	p.quests.rerolled = true
 	return true, nil
+end
+
+-- Combos ------------------------------------------------------------------
+
+Progression.COMBO_WINDOW = 3 -- seconds between hits before a combo drops
+
+local RANKS: { { at: number, rank: string } } = {
+	{ at = 120, rank = "SSS" },
+	{ at = 80, rank = "SS" },
+	{ at = 50, rank = "S" },
+	{ at = 35, rank = "A" },
+	{ at = 20, rank = "B" },
+	{ at = 10, rank = "C" },
+}
+
+--- The letter a combo of `hits` has earned.
+function Progression.comboRank(hits: number): string
+	for _, r in RANKS do
+		if hits >= r.at then
+			return r.rank
+		end
+	end
+	return "D"
+end
+
+--- What a finished combo is worth: two experience a hit, and a shard for
+--- every fifteen hits, doubled from S rank up.
+function Progression.comboReward(hits: number): (number, number)
+	local shards = math.floor(hits / 15)
+	if hits >= 50 then
+		shards *= 2
+	end
+	return hits * 2, shards
 end
 
 -- Worlds -------------------------------------------------------------------

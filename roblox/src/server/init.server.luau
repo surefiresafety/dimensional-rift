@@ -20,6 +20,7 @@ local Waves = require(script.Waves)
 local World = require(script.World)
 local Looks = require(script.Looks)
 local Symbiote = require(script.Symbiote)
+local Pickups = require(script.Pickups)
 local Profiles = require(script.Profiles)
 local Progress = require(script.Progress)
 local Signature = require(Shared.Signature)
@@ -280,6 +281,7 @@ RunService.Heartbeat:Connect(function(dt)
 	Projectiles.step(dt)
 	Combat.step(dt)
 	Symbiote.step(dt)
+	Pickups.step(dt)
 	thinkAcc += dt
 	if thinkAcc >= Config.ENEMY_THINK_INTERVAL then
 		thinkAcc = 0

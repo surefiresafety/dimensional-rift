@@ -148,6 +148,8 @@ function Enemies.spawn(id: string, at: Vector3): Combat.Enemy?
 	}
 	-- Into the world only once its record is whole, so a bad template can
 	-- never leave a body standing that nothing drives.
+	model:SetAttribute("Boss", t.boss == true)
+	model:SetAttribute("Hunting", false)
 	model.Parent = folder
 	root:SetNetworkOwner(nil) -- the server drives them
 	table.insert(Combat.enemies, e)
@@ -267,12 +269,14 @@ function Enemies.think()
 		if action == "idle" then
 			wander(e, now)
 		elseif action == "notice" then
+			e.model:SetAttribute("Hunting", true)
 			Combat.fx("alert", { model = e.model, color = 0xffd54a })
 			alertPack(e)
 			if target then
 				e.hum:MoveTo(target.Position)
 			end
 		elseif action == "giveup" then
+			e.model:SetAttribute("Hunting", false)
 			e.home = e.root.Position
 			wander(e, now)
 		elseif action == "chase" then
