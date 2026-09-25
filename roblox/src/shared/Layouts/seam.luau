@@ -696,7 +696,7 @@ return function(K: any)
 	end
 	-- the 4 collidable fragments at r 64 (anchors and flight-only perches)
 	for i, b in { 20, 110, 200, 290 } do
-		fragment("fragment" .. i, b, 64, 26, 34, fragMats[(i - 1) % #fragMats + 1], true, true)
+		fragment("fragment" .. i, b, 64, 0, ({ 26, 30, 34, 28 })[i], fragMats[(i - 1) % #fragMats + 1], true, true)
 	end
 	-- 8 decor fragments at r 60-90
 	for i, f in
