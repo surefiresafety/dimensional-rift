@@ -65,6 +65,33 @@ export type PState = {
 	minions: { Minion },
 	domain: Domain?,
 	kills: number,
+	-- Basic attack, dodge and output charge.
+	strikeReadyAt: number,
+	nextDodge: number,
+	invulnUntil: number,
+	chargeStart: number?,
+	output: { dmg: number, cost: number, name: string, tier: number }?,
+	-- Weapon and suit sets, and the rewind history (oldest first).
+	weapon: string?,
+	history: { Rules.Snapshot },
+	historyNext: number,
+	-- R: tendrils, limbs and webbing on their own.
+	autoAttack: boolean,
+	limbCd: { number },
+	webCd: number,
+	-- The symbiote: its own health, its hunger, and how well it holds on.
+	suitHp: number?,
+	suitBroken: boolean,
+	suitHurtAt: number,
+	hunger: number,
+	bond: number,
+	feeding: boolean,
+	feedTry: number,
+	symChat: number,
+	symbioteCd: number,
+	looseSuit: { untilT: number, host: string, at: Vector3, part: BasePart }?,
+	-- A character with a takeover (the Vessel) gets one save per life.
+	takeoverUsed: boolean,
 }
 
 export type Enemy = {
@@ -81,6 +108,16 @@ export type Enemy = {
 	nextAttack: number,
 	nextShot: number,
 	nextSummon: number,
+	-- A charger's telegraphed lunge: plant, flare, go.
+	state: string,
+	stateUntil: number,
+	lungeDir: Vector3?,
+	lungeHit: boolean,
+	nextCharge: number,
+	nextAura: number,
+	-- Worn by Kenjaku's Body Swap: it fights for its wearer until this runs out.
+	allyOf: PState?,
+	allyUntil: number,
 }
 
 local Combat = {}
@@ -141,6 +178,28 @@ function Combat.newState(player: Player): PState
 		minions = {},
 		domain = nil,
 		kills = 0,
+		strikeReadyAt = 0,
+		nextDodge = 0,
+		invulnUntil = 0,
+		chargeStart = nil,
+		output = nil,
+		weapon = nil,
+		history = {},
+		historyNext = 0,
+		autoAttack = false,
+		limbCd = {},
+		webCd = 0,
+		suitHp = nil,
+		suitBroken = false,
+		suitHurtAt = -99,
+		hunger = 100,
+		bond = RulesData.BOND_MAX,
+		feeding = false,
+		feedTry = 0,
+		symChat = 14,
+		symbioteCd = 0,
+		looseSuit = nil,
+		takeoverUsed = false,
 	}
 	Combat.states[player] = ps
 	return ps
@@ -154,6 +213,22 @@ function Combat.publish(ps: PState)
 	p:SetAttribute("Style", ps.style)
 	p:SetAttribute("Slots", table.concat(ps.slots, ","))
 	p:SetAttribute("Infinity", ps.infinity)
+	local st = ps.style and Styles[ps.style]
+	local sym = st and st.symbiote
+	p:SetAttribute("SuitMax", if sym then sym.suit else nil)
+	p:SetAttribute("Suit", if sym then math.floor(ps.suitHp or sym.suit) else nil)
+	p:SetAttribute("Hunger", if sym and sym.hunger then math.floor(ps.hunger) else nil)
+	p:SetAttribute("Bond", if sym then math.floor(ps.bond) else nil)
+	p:SetAttribute("Output", if ps.output then ps.output.name else nil)
+	p:SetAttribute("Weapon", ps.weapon)
+	p:SetAttribute("Auto", ps.autoAttack)
+	p:SetAttribute("LooseSuit", ps.looseSuit ~= nil)
+	local learned = {}
+	for id in ps.learned do
+		table.insert(learned, id)
+	end
+	table.sort(learned)
+	p:SetAttribute("Learned", table.concat(learned, ","))
 end
 
 function Combat.buffActive(ps: PState?): Buff?
@@ -161,6 +236,11 @@ function Combat.buffActive(ps: PState?): Buff?
 		return ps.buff
 	end
 	return nil
+end
+
+--- A craft ten metres up is out of reach of fists, blades and tendrils.
+function Combat.groundReachable(e: Enemy, from: Vector3): boolean
+	return not (e.t.visitor and e.root.Position.Y - from.Y > 4 * STUDS)
 end
 
 --- Every live enemy whose root is within `radius` studs of `pos`.
@@ -279,6 +359,14 @@ function Combat.hitEnemy(e: Enemy, power: number, nature: string, from: Vector3?
 	end
 end
 
+--- Set by Symbiote: what a hit does to the bond, and whether the suit panics.
+Combat.afterHurt = function(_ps: PState, _dmg: number, _nature: string) end
+--- Set by init: a style with a takeover (the Vessel) is saved once per life.
+Combat.onLethal = function(_ps: PState): boolean
+	return false
+end
+Combat.lastHitBy = {} :: { [Player]: string }
+
 --- hurtPlayer: Infinity, evasion, shields and decoys first, then the hit.
 function Combat.hurtPlayer(ps: PState, atk: number, nature: string, from: Enemy?)
 	local hum = Combat.humanoidOf(ps.player)
@@ -292,6 +380,9 @@ function Combat.hurtPlayer(ps: PState, atk: number, nature: string, from: Enemy?
 	end
 	if ps.infinity then
 		return say("INFINITY")
+	end
+	if now < ps.invulnUntil then
+		return say("DODGED")
 	end
 	if now < ps.evadeUntil then
 		return say("SPIDER-SENSE")
@@ -309,13 +400,77 @@ function Combat.hurtPlayer(ps: PState, atk: number, nature: string, from: Enemy?
 		return say("CLONE!")
 	end
 	local dmg = rules:damageToPlayer(atk, nature, Config.PLAYER_NATURE, math.random())
+	-- The symbiote takes its share first, out of its own health.
+	local st = ps.style and Styles[ps.style]
+	local sym = st and st.symbiote
+	if sym then
+		ps.suitHurtAt = now
+		ps.suitHp = ps.suitHp or sym.suit
+		local eaten, through = Rules.suitAbsorb(dmg, sym.absorb, ps.suitHp :: number, ps.suitBroken)
+		if eaten > 0 then
+			ps.suitHp = (ps.suitHp :: number) - eaten
+			dmg = through
+			Combat.fx("number", { at = root.Position + Vector3.new(2, 3.5, 0), text = "-" .. eaten, tone = "nve" })
+		end
+		if (ps.suitHp :: number) <= 0 and not ps.suitBroken then
+			ps.suitBroken = true
+			Combat.fx("banner", { text = "SUIT TORN", color = 0xc0294a })
+			Combat.notice(
+				ps.player,
+				"The symbiote is torn open. It stops covering you until it knits back together.",
+				"gold"
+			)
+		end
+	end
+	if from then
+		Combat.lastHitBy[ps.player] = from.t.name
+	end
+	if hum.Health - dmg <= 0 and Combat.onLethal(ps) then
+		return
+	end
 	hum.Health = math.max(0, hum.Health - dmg)
 	Combat.fx("number", { at = root.Position + Vector3.new(0, 3, 0), text = tostring(dmg), tone = "hurt" })
+	Combat.afterHurt(ps, dmg, nature)
+end
+
+export type Worn = {
+	model: Model,
+	hum: Humanoid,
+	root: BasePart,
+	owner: PState,
+	untilT: number,
+	next: number,
+	power: number,
+	nature: string,
+}
+--- Bodies taken by Body Swap: out of the fight's enemy list, fighting for
+--- their wearer until the time runs out.
+Combat.worn = {} :: { Worn }
+
+local function stepWorn(now: number)
+	for i = #Combat.worn, 1, -1 do
+		local w = Combat.worn[i]
+		if now >= w.untilT or w.hum.Health <= 0 or not w.model.Parent then
+			table.remove(Combat.worn, i)
+			Combat.fx("burst", { at = w.root.Position, color = 0xb06cff, count = 16 })
+			w.model:Destroy()
+			continue
+		end
+		local e = Combat.nearestEnemy(w.root.Position, 60 * STUDS)
+		if e then
+			w.hum:MoveTo(e.root.Position)
+			if now >= w.next and (e.root.Position - w.root.Position).Magnitude < 4 * STUDS then
+				w.next = now + 0.9
+				Combat.hitEnemy(e, w.power, w.nature, w.root.Position, { knock = 6 }, w.owner)
+			end
+		end
+	end
 end
 
 --- Status effects, regen, buffs and anything else that runs on the clock.
 function Combat.step(dt: number)
 	local now = Combat.now()
+	stepWorn(now)
 	for _, e in table.clone(Combat.enemies) do
 		if not e.dead then
 			local dot = Rules.tickStatuses(e.status, e.clock, dt, e.hum.MaxHealth)
@@ -334,6 +489,15 @@ function Combat.step(dt: number)
 		local root = Combat.rootOf(ps.player)
 		if not hum or not root or hum.Health <= 0 then
 			continue
+		end
+		-- Reverse Time's memory: a snapshot every half second, twelve seconds deep.
+		if now >= ps.historyNext then
+			ps.historyNext = now + 0.5
+			local p = root.Position
+			table.insert(ps.history, { t = now, hp = hum.Health, se = ps.se, x = p.X, y = p.Y, z = p.Z })
+			while #ps.history > 0 and now - ps.history[1].t > 12 do
+				table.remove(ps.history, 1)
+			end
 		end
 		if ps.se < ps.maxSe and now > ps.regenBlockedUntil then
 			ps.se = math.min(ps.maxSe, ps.se + Config.SE_REGEN_PER_SECOND * dt)

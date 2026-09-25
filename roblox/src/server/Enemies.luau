@@ -138,6 +138,12 @@ function Enemies.spawn(id: string, at: Vector3): Combat.Enemy?
 		nextAttack = now + 1,
 		nextShot = now + (if t.ranged then t.ranged.cd * math.random() else 0),
 		nextSummon = now + (if t.summon then t.summon.every else 0),
+		state = "idle",
+		stateUntil = 0,
+		lungeHit = false,
+		nextCharge = now + (if t.charge then t.charge.cd * (0.5 + math.random()) else 0),
+		nextAura = now + (if t.aura then t.aura.every else 0),
+		allyUntil = 0,
 	}
 	table.insert(Combat.enemies, e)
 	Combat.fx("burst", { at = at, color = look.top or 0xb06cff, count = 12 })

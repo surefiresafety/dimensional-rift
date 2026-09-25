@@ -199,4 +199,14 @@ return {
 		["50"] = { "We are hungry, Theo.", "There is meat everywhere. Why do you wait?" },
 		["75"] = { "We are getting hungry.", "Feed us soon." },
 	},
+	SYM_IDLE = { "We could take this whole street.", "They are so soft.", "Together, we are more than you were.", "You are slower without us. Admit it.", "We like this one. Keep it." },
+	WEB_SLINGERS = {
+		spiderman = 16777215,
+		venom = 2763316,
+		carnage = 13898794,
+		antivenom = 15659766,
+		insomniac = 15791359,
+		miles = 14674164,
+		ironspider = 0xffc83d,
+	},
 }

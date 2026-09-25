@@ -167,4 +167,39 @@ H.test("output tiers", function()
 	H.eq(Rules.outputTier(tiers, 12), 3, "ten and over")
 end)
 
+H.test("weapons cycle in order and wrap", function()
+	local order = { "a", "b", "c" }
+	H.eq(Rules.nextWeapon(order, nil), "a", "nothing drawn")
+	H.eq(Rules.nextWeapon(order, "a"), "b", "next")
+	H.eq(Rules.nextWeapon(order, "c"), "a", "wraps")
+	H.eq(Rules.nextWeapon(order, "zzz"), "a", "unknown starts over")
+end)
+
+H.test("reverse time picks the newest snapshot old enough", function()
+	local h = {}
+	for t = 0, 10 do
+		table.insert(h, { t = t, hp = t * 10, se = 0, x = 0, y = 0, z = 0 })
+	end
+	H.eq((Rules.rewindSnapshot(h, 10, 6) :: any).t, 4, "six seconds back from ten")
+	H.eq((Rules.rewindSnapshot(h, 3, 6) :: any).t, 0, "not that much history: the oldest")
+	H.eq(Rules.rewindSnapshot({}, 3, 6), nil, "no history at all")
+end)
+
+H.test("the suit eats its share, and a torn suit eats nothing", function()
+	local eaten, through = Rules.suitAbsorb(100, 0.45, 420, false)
+	H.eq(eaten, 45, "venom's share")
+	H.eq(through, 55, "the rest")
+	eaten, through = Rules.suitAbsorb(100, 0.45, 20, false)
+	H.eq(eaten, 20, "only what the suit has left")
+	H.eq(through, 80, "the rest goes through")
+	eaten = Rules.suitAbsorb(100, 0.45, 420, true)
+	H.eq(eaten, 0, "torn")
+end)
+
+H.test("the bond: sound is worst, then fire, nothing else touches it", function()
+	H.eq(Rules.bondLoss("sound", 10), 8, "sound")
+	H.eq(Rules.bondLoss("fire", 10), 5.5, "fire")
+	H.eq(Rules.bondLoss("water", 10), 0, "water")
+end)
+
 return H

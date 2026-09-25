@@ -223,6 +223,41 @@ function Rules.waveList(map: { waves: { { string } }, filler: { string }? }, ind
 	return list
 end
 
+--- The next weapon or suit in an arsenal's order, wrapping round. Nothing
+--- drawn yet means the first.
+function Rules.nextWeapon(order: { string }, current: string?): string
+	local i = if current then table.find(order, current) else nil
+	return order[((i or 0) % #order) + 1]
+end
+
+export type Snapshot = { t: number, hp: number, se: number, x: number, y: number, z: number }
+
+--- Reverse Time: the newest snapshot at least `seconds` old, or the oldest
+--- one there is if nothing goes back that far. `history` is oldest first.
+function Rules.rewindSnapshot(history: { Snapshot }, now: number, seconds: number): Snapshot?
+	local best: Snapshot? = nil
+	for _, h in history do
+		if now - h.t >= seconds then
+			best = h
+		end
+	end
+	return best or history[1]
+end
+
+--- The symbiote suit takes its share of a hit out of its own health first.
+--- Returns what it ate and what still reaches the body.
+function Rules.suitAbsorb(dmg: number, absorb: number, suitHp: number, broken: boolean): (number, number)
+	local want = if broken then 0 else round(dmg * absorb)
+	local eaten = math.min(want, math.max(0, round(suitHp)))
+	return eaten, dmg - eaten
+end
+
+--- How much of the bond a hit strips: sound worst, fire next, nothing else.
+function Rules.bondLoss(nature: string, dmg: number): number
+	local mul = if nature == "sound" then 1.6 elseif nature == "fire" then 1.1 else 0
+	return dmg * mul * 0.5
+end
+
 --- The output tier a charge held for `held` seconds reaches.
 function Rules.outputTier(tiers: { { at: number } }, held: number): number
 	local best = 1

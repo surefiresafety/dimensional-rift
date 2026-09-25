@@ -59,7 +59,7 @@ function block(opening) {
 
 const TABLES = ['BEATS', 'NATURE', 'MAX_SLOTS', 'OUTPUT_TIERS', 'ARSENALS', 'SKILLS', 'STYLES', 'GRADES', 'ENEMIES',
   'MAPS', 'MAP_IDS', 'PORTAL_COLOR', 'CHARACTERS', 'ENEMY_LOOKS', 'E_ACTION', 'WORLD_OF', 'WORLD_LABEL', 'ARMY_TIERS',
-  'SYM_LINES', 'BOND_MAX'];
+  'SYM_LINES', 'SYM_IDLE', 'BOND_MAX', 'WEB_SLINGERS'];
 
 let source = TABLES.map(declaration).join('\n');
 // A map names the function that builds its geometry; Roblox gets the name.
@@ -138,7 +138,7 @@ const MODULES = {
     OUTPUT_TIERS: data.OUTPUT_TIERS, ARMY_TIERS: data.ARMY_TIERS, BOND_MAX: data.BOND_MAX,
     E_ACTION: data.E_ACTION, WORLD_OF: data.WORLD_OF, WORLD_LABEL: data.WORLD_LABEL,
     MAP_IDS: data.MAP_IDS, PORTAL_COLOR: data.PORTAL_COLOR, BOSS_IDS: data.BOSS_IDS, ALPHA_IDS: data.ALPHA_IDS,
-    SYM_LINES: data.SYM_LINES,
+    SYM_LINES: data.SYM_LINES, SYM_IDLE: data.SYM_IDLE, WEB_SLINGERS: data.WEB_SLINGERS,
   }],
 };
 
