@@ -16,6 +16,7 @@
 --     Wave(mapId, waveNumber, enemiesLeft)
 --     Profile(snapshot)                     the player's progress (Progress.snapshot)
 --     Summary(run)                          a world cleared: what this run earned
+--     Story(kind, payload)                  "card" {chapter,title,sub,text} or "line" {speaker,text}
 --     Wave(..., nextIn?)                    nextIn: seconds until the next wave
 --   Client -> server, with an answer (RemoteFunction)
 --     Ask(action, ...) -> { ok, message?, ... }
@@ -26,7 +27,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local NAMES = { "SelectStyle", "Cast", "Action", "Cooldown", "Fx", "Notice", "Wave", "Profile", "Summary" }
+local NAMES = { "SelectStyle", "Cast", "Action", "Cooldown", "Fx", "Notice", "Wave", "Profile", "Summary", "Story" }
 local FUNCTIONS = { "Ask" }
 
 local Remotes = {}

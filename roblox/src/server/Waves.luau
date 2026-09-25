@@ -8,14 +8,12 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Worlds = require(Shared.Worlds)
 local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
 local Rules = require(Shared.Rules)
 local Progression = require(Shared.Progression)
-local Maps = require(Shared.Data.Maps)
-local EnemyData = require(Shared.Data.Enemies)
 local Skills = require(Shared.Data.Skills)
-local RulesData = require(Shared.Data.Rules)
 
 local Combat = require(script.Parent.Combat)
 local Enemies = require(script.Parent.Enemies)
@@ -31,6 +29,12 @@ Waves.running = false
 Waves.started = false -- the first player's pick starts the rift; nothing restarts it
 Waves.gen = 0 -- bumped by every start, so a timer from an old run does nothing
 Waves.clearing = false -- true while an old world's leftovers are removed
+-- 1, or 2 for Loose Threads: the harder tier once someone has closed the rift.
+Waves.tier = 1
+--- Set by Progress: the tier a world starts at, from who is playing.
+Waves.tierFor = function(_mapId: string): number
+	return 1
+end
 
 local clearedHandlers: { (string, number) -> () } = {}
 --- A wave fell: the world it was in and its number (1-based).
@@ -78,7 +82,7 @@ function Waves.spawnSpot(centre: Vector3): Vector3
 end
 
 function Waves.spawnCurrent()
-	local map = Maps[World.current :: string]
+	local map = Worlds.get(World.current :: string)
 	local list = Rules.waveList(map, Waves.index)
 	local c = map.portalCenter or { x = 0, y = 0, z = 0 }
 	-- Spread over the arena and out of sight range of everyone, in small
@@ -87,17 +91,20 @@ function Waves.spawnCurrent()
 	local centre = Vector3.new(c.x, 0, c.z) * STUDS
 	local packAt: Vector3? = nil
 	for i, id in list do
-		local boss = EnemyData[id] and EnemyData[id].boss
+		local boss = Worlds.enemy(id) and Worlds.enemy(id).boss
 		if boss or not packAt or (i % 3) == 1 then
 			packAt = Waves.spawnSpot(centre)
 		end
 		local jitter = if boss then Vector3.zero else Vector3.new(math.random(-4, 4), 0, math.random(-4, 4)) * STUDS
-		local affix = Rules.rollAffix(Waves.index + 1, boss, math.random(), math.random())
-		Enemies.spawn(id, (packAt :: Vector3) + jitter, affix)
+		-- The Seam stitches everything into an elite; Loose Threads makes
+		-- elites commoner and everything tougher.
+		local bonus = (if map.stitched then 1 else 0) + (if Waves.tier > 1 then 0.15 else 0)
+		local affix = Rules.rollAffix(Waves.index + 1, boss, math.random(), math.random(), bonus)
+		Enemies.spawn(id, (packAt :: Vector3) + jitter, affix, if Waves.tier > 1 then 1.6 else 1)
 	end
 	local names = {}
 	for _, id in list do
-		table.insert(names, EnemyData[id].name)
+		table.insert(names, Worlds.enemy(id).name)
 	end
 	Combat.notice(nil, ("Wave %d: %s."):format(Waves.index + 1, table.concat(names, ", ")))
 	Combat.fx("banner", { text = "WAVE " .. (Waves.index + 1), color = 0xffd54a })
@@ -119,6 +126,7 @@ function Waves.start(mapId: string)
 	Waves.clearing = false
 	Pickups.clear()
 	Waves.index = 0
+	Waves.tier = Waves.tierFor(mapId)
 	Waves.running = true
 	for _, fn in startedHandlers do
 		task.spawn(fn, mapId)
@@ -159,18 +167,18 @@ Combat.onGone(function()
 	for _, fn in clearedHandlers do
 		task.spawn(fn, mapId, number)
 	end
-	local map = Maps[mapId]
+	local map = Worlds.get(mapId)
 	if number >= #map.waves then
 		-- The last scripted wave is the world's last boss: the rift moves on.
 		Waves.running = false
 		for _, fn in worldHandlers do
 			task.spawn(fn, mapId)
 		end
-		local nextMap = Progression.nextWorld(RulesData.MAP_IDS, mapId)
+		local nextMap = Progression.nextWorld(Worlds.ORDER, mapId)
 		Combat.fx("banner", { text = string.upper(map.name) .. " CLEARED", color = 0xffd54a })
 		Combat.notice(
 			nil,
-			`{map.name} is clear. The rift opens onto {Maps[nextMap].name} in {Config.WORLD_BREAK} seconds.`,
+			`{map.name} is clear. The rift opens onto {Worlds.get(nextMap).name} in {Config.WORLD_BREAK} seconds.`,
 			"gold"
 		)
 		task.delay(Config.WORLD_BREAK, function()

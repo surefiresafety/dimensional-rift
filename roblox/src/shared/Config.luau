@@ -91,6 +91,7 @@ Config.BADGES = {
 	level_25 = 0,
 	streak_7 = 0, -- a seven-day login streak
 	roster_15 = 0, -- fifteen characters on the roster
+	rift_closed = 0, -- beat Hyakunui and close the rift
 }
 
 return Config

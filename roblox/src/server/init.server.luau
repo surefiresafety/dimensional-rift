@@ -21,6 +21,8 @@ local World = require(script.World)
 local Looks = require(script.Looks)
 local Symbiote = require(script.Symbiote)
 local Pickups = require(script.Pickups)
+local FinaleFight = require(script.FinaleFight)
+local Story = require(script.Story)
 local Profiles = require(script.Profiles)
 local Progress = require(script.Progress)
 local Signature = require(Shared.Signature)
@@ -237,7 +239,9 @@ SelectStyle.OnServerEvent:Connect(function(player, styleId)
 	Symbiote.reset(ps)
 	applyStyle(ps, styleId, switching)
 	if not Waves.started then
-		Waves.start(Config.START_MAP)
+		-- The first player on a fresh server carries on where they left off:
+		-- the furthest world they have opened.
+		Waves.start(Progress.startWorld(player))
 	end
 end)
 
@@ -323,6 +327,7 @@ end)
 -- Progress first, so it hears about every profile, including one that
 -- loads instantly (the in-memory store in Studio).
 Progress.start()
+Story.start()
 Profiles.start()
 
 World.load(Config.START_MAP) -- the waves start when the first player picks a character
@@ -337,6 +342,7 @@ RunService.Heartbeat:Connect(function(dt)
 	autoAcc += dt
 	if autoAcc >= 0.1 then
 		Abilities.stepAuto(autoAcc)
+		FinaleFight.step()
 		autoAcc = 0
 	end
 	thinkAcc += dt

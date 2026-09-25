@@ -134,10 +134,17 @@ function Screens.build()
 	end)
 	local shown = 0
 	Remotes.get("Summary").OnClientEvent:Connect(function(run: any)
-		title.Text = string.upper(run.world) .. " CLEARED"
-		sub.Text = if run.first
-			then "First clear. The rift opens onto the next world."
+		local ending = run.ending
+		title.Text = if ending then ending.title else string.upper(run.world) .. " CLEARED"
+		sub.Text = if ending
+			then ending.text .. "\n\n" .. ending.epilogue .. "\n\n" .. ending.postgame
+			elseif run.first then "First clear. The rift opens onto the next world."
 			else "The rift opens onto the next world."
+		-- The ending has more to say: a bigger card, and it stays until closed.
+		card.Size = if ending then UDim2.fromOffset(560, 470) else UDim2.fromOffset(460, 330)
+		sub.Size = UDim2.new(1, 0, 0, if ending then 150 else 18)
+		sub.TextWrapped = true
+		rows.Position = UDim2.fromOffset(0, if ending then 210 else 76)
 		for _, c in rows:GetChildren() do
 			if c:IsA("Frame") then
 				c:Destroy()
@@ -179,7 +186,7 @@ function Screens.build()
 		-- report has replaced this one since).
 		shown += 1
 		local mine = shown
-		task.delay(13, function()
+		task.delay(if ending then 60 else 13, function()
 			if shown == mine then
 				card.Visible = false
 			end

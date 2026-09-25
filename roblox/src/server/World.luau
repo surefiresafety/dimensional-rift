@@ -9,9 +9,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Worlds = require(Shared.Worlds)
 local Config = require(Shared.Config)
 local Palette = require(Shared.Palette)
-local Maps = require(Shared.Data.Maps)
 
 local Arenas = require(script.Parent.Arenas)
 
@@ -38,7 +38,7 @@ end
 
 --- Loads a world: its lighting, and its arena.
 function World.load(mapId: string): any
-	local map = Maps[mapId]
+	local map = Worlds.get(mapId)
 	assert(map, "No such map: " .. mapId)
 	local old = workspace:FindFirstChild("Arena")
 	if old then
@@ -107,7 +107,7 @@ task.spawn(function()
 end)
 
 function World.spawnPoint(): Vector3
-	local map = Maps[World.current or Config.START_MAP]
+	local map = Worlds.get(World.current or Config.START_MAP)
 	local s = map.spawn or { x = 0, y = 0, z = 8 }
 	return Vector3.new(s.x, 0, s.z) * STUDS + Vector3.new(0, 4, 0)
 end

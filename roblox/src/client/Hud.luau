@@ -10,12 +10,12 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Worlds = require(Shared.Worlds)
 local Palette = require(Shared.Palette)
 local Remotes = require(Shared.Remotes)
 local RulesData = require(Shared.Data.Rules)
 local Skills = require(Shared.Data.Skills)
 local Styles = require(Shared.Data.Styles)
-local Maps = require(Shared.Data.Maps)
 local Arsenals = require(Shared.Data.Arsenals)
 local Rules = require(Shared.Rules)
 
@@ -600,7 +600,7 @@ function Hud.build()
 	Remotes.get("Notice").OnClientEvent:Connect(Hud.log)
 	local countdown = 0
 	Remotes.get("Wave").OnClientEvent:Connect(function(mapId: string, n: number, left: number, nextIn: number?)
-		local m = Maps[mapId]
+		local m = Worlds.get(mapId)
 		mapName.Text = string.upper(if m then m.name else mapId)
 		waveTitle.Text = `Wave {n}`
 		countdown += 1

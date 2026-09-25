@@ -116,6 +116,7 @@ export type Profile = {
 	stats: { [string]: number },
 	badges: { [string]: boolean },
 	upgrades: { [string]: number }, -- permanent upgrades bought with shards
+	closed: number, -- times this player has closed the rift (beaten Hyakunui)
 	lastStyle: string?,
 }
 
@@ -139,6 +140,7 @@ function Progression.newProfile(): Profile
 		stats = {},
 		badges = {},
 		upgrades = {},
+		closed = 0,
 		lastStyle = nil,
 	}
 end
@@ -664,6 +666,17 @@ function Progression.worldUnlocked(p: Profile, order: { string }, mapId: string)
 		return false
 	end
 	return i == 1 or p.cleared[order[i - 1]] == true
+end
+
+--- Where a player carries on from: the first world in the rift's order they
+--- have opened but not cleared. With everything cleared, the start again.
+function Progression.frontier(p: Profile, order: { string }): string
+	for _, id in order do
+		if Progression.worldUnlocked(p, order, id) and not p.cleared[id] then
+			return id
+		end
+	end
+	return order[1]
 end
 
 --- The best wave across every world: what the global board ranks.

@@ -15,13 +15,14 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Worlds = require(Shared.Worlds)
 local Config = require(Shared.Config)
 local Progression = require(Shared.Progression)
+local StoryData = require(Shared.Story)
 local Remotes = require(Shared.Remotes)
 local RulesData = require(Shared.Data.Rules)
 local Skills = require(Shared.Data.Skills)
 local Styles = require(Shared.Data.Styles)
-local Maps = require(Shared.Data.Maps)
 
 local Combat = require(script.Parent.Combat)
 local Profiles = require(script.Parent.Profiles)
@@ -197,8 +198,20 @@ end
 --- earned in a fight, not to rewards that are claimed.
 local unlock: (player: Player, p: Progression.Profile, styleId: string, why: string) -> () -- below
 
+--- Where the first player on a fresh server starts the rift: the furthest
+--- world they have opened (the start, before their save loads).
+function Progress.startWorld(player: Player): string
+	local p = Profiles.get(player)
+	return if p then Progression.frontier(p, Worlds.ORDER) else Config.START_MAP
+end
+
 local function award(player: Player, p: Progression.Profile, xp: number, shards: number, claimed: boolean?)
 	local mul = if claimed then 1 else Progression.friendMul(friends[player] or 0)
+	-- Loose Threads pays half as much again for its harder fights.
+	if not claimed and Waves.tier > 1 then
+		mul *= 1.5
+		shards = math.floor(shards * 1.5 + 0.5)
+	end
 	-- Fortune: more shards from fighting.
 	local got = if claimed then shards else math.floor(shards * Progression.upgradeMul(p, "fortune") + 0.5)
 	p.shards += got
@@ -477,10 +490,10 @@ end
 local lastTravel = -99
 
 asks.travel = function(player, p, mapId)
-	if type(mapId) ~= "string" or not Maps[mapId] then
+	if type(mapId) ~= "string" or not Worlds.get(mapId) then
 		return answer(false, "No such world.")
 	end
-	if not Progression.worldUnlocked(p, RulesData.MAP_IDS, mapId) then
+	if not Progression.worldUnlocked(p, Worlds.ORDER, mapId) then
 		return answer(false, "Clear the world before it first.")
 	end
 	if mapId == World.current then
@@ -498,7 +511,7 @@ asks.travel = function(player, p, mapId)
 		return answer(false, `The rift is still settling ({math.ceil(15 - (clock - lastTravel))}s).`)
 	end
 	lastTravel = clock
-	Combat.notice(nil, `{player.DisplayName} opens the rift onto {Maps[mapId].name}.`, "gold")
+	Combat.notice(nil, `{player.DisplayName} opens the rift onto {Worlds.get(mapId).name}.`, "gold")
 	task.spawn(Waves.start, mapId)
 	return answer(true, "Travelling.")
 end
@@ -650,6 +663,19 @@ function Progress.start()
 		end
 	end)
 
+	-- Loose Threads once everyone here has closed the rift at least once.
+	Waves.tierFor = function()
+		local any, all = false, true
+		for _, player in Players:GetPlayers() do
+			local p = Profiles.get(player)
+			if p then
+				any = true
+				all = all and p.closed > 0
+			end
+		end
+		return if any and all then 2 else 1
+	end
+
 	Waves.onStarted(function()
 		-- A fresh run for everyone in the rift, from the world's first wave.
 		table.clear(runs)
@@ -674,9 +700,33 @@ function Progress.start()
 				badge(player, p, "world_clear")
 				Combat.notice(
 					player,
-					`{Maps[mapId].name} cleared{if first then " for the first time" else ""}: +{shards} Rift Shards.`,
+					`{Worlds.get(mapId).name} cleared{if first then " for the first time" else ""}: +{shards} Rift Shards.`,
 					"gold"
 				)
+				-- The Seam: the rift is closed. The ending, a reward, a badge, and
+				-- Loose Threads from now on.
+				local ending = nil
+				if mapId == StoryData.FINAL then
+					p.closed += 1
+					badge(player, p, "rift_closed")
+					if p.closed == 1 then
+						award(player, p, 0, 1000, true)
+						Combat.notice(
+							player,
+							"The rift is closed. +1000 Rift Shards. Loose Threads: every world is harder now, and pays more.",
+							"gold"
+						)
+					end
+					local style = ps.baseStyle or ps.style
+					local universe = style and RulesData.WORLD_OF[style] or "other"
+					ending = {
+						title = StoryData.ENDING.title,
+						text = StoryData.ENDING.text,
+						epilogue = StoryData.EPILOGUE[universe] or StoryData.EPILOGUE.other,
+						postgame = StoryData.POSTGAME,
+						times = p.closed,
+					}
+				end
 				local r = runOf(player)
 				-- A combo still going when the last boss falls counts too.
 				local live = combos[player]
@@ -684,7 +734,7 @@ function Progress.start()
 					r.bestCombo = math.max(r.bestCombo, live.hits)
 				end
 				SummaryRemote:FireClient(player, {
-					world = Maps[mapId].name,
+					world = Worlds.get(mapId).name,
 					first = first,
 					kills = r.kills,
 					bestCombo = r.bestCombo,
@@ -692,6 +742,7 @@ function Progress.start()
 					shards = r.shards,
 					seconds = math.floor(os.clock() - r.start),
 					level = (Progression.levelOf(p.xp)),
+					ending = ending,
 				})
 			end
 		end

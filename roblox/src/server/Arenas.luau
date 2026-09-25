@@ -966,6 +966,86 @@ themes.storm = {
 	end,
 }
 
+--- The Seam: the space between every world. Dark ground, pieces of the other
+--- worlds hanging in the air, crimson threads stitched across the sky, and
+--- stitched pillars to swing from.
+themes.seam = {
+	clock = 0,
+	build = function(k)
+		ground(k, Enum.Material.Basalt, Color3.fromRGB(40, 18, 24))
+		local crimson = Color3.fromRGB(255, 45, 85)
+		-- Threads: long glowing strands pulled taut across the sky.
+		for _ = 1, 26 do
+			local a = around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(40, 120), k.rng:NextNumber(25, 70))
+			local b = around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(40, 120), k.rng:NextNumber(25, 70))
+			local len = (b - a).Magnitude
+			part(k, {
+				Size = Vector3.new(0.35 * STUDS, 0.35 * STUDS, len),
+				CFrame = CFrame.lookAt(a:Lerp(b, 0.5), b),
+				Color = crimson,
+				Material = Enum.Material.Neon,
+				CanCollide = false,
+				CanQuery = false,
+				CastShadow = false,
+			})
+		end
+		-- Fragments of the nine worlds, torn loose and hanging in the void.
+		for i = 1, 14 do
+			local a = i / 14 * math.pi * 2 + k.rng:NextNumber(-0.1, 0.1)
+			local at = around(k, a, k.rng:NextNumber(70, 110), k.rng:NextNumber(8, 30))
+			local kind = i % 4
+			if kind == 0 then
+				building(
+					k,
+					at,
+					k.rng:NextNumber(12, 18) * STUDS,
+					k.rng:NextNumber(12, 18) * STUDS,
+					k.rng:NextNumber(20, 40) * STUDS,
+					Color3.fromRGB(38, 34, 52),
+					Color3.fromRGB(255, 232, 170),
+					CFrame.Angles(k.rng:NextNumber(-0.4, 0.4), 0, k.rng:NextNumber(-0.4, 0.4))
+				)
+			elseif kind == 1 then
+				torii(k, at, k.rng:NextNumber(0, 6.28), Color3.fromRGB(200, 40, 34))
+			elseif kind == 2 then
+				crystal(k, at, k.rng:NextNumber(6, 12) * STUDS, Color3.fromRGB(150, 110, 255))
+			else
+				rock(k, at, k.rng:NextNumber(6, 10) * STUDS, Color3.fromRGB(90, 60, 70))
+			end
+		end
+		-- Cover in the fight: shards of stitched stone.
+		for _ = 1, 22 do
+			rock(
+				k,
+				around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(14, 54)),
+				k.rng:NextNumber(2, 5) * STUDS,
+				Color3.fromRGB(70, 40, 50),
+				Enum.Material.Basalt
+			)
+		end
+		for i = 1, 12 do
+			spire(
+				k,
+				around(k, i / 12 * math.pi * 2, k.rng:NextNumber(36, 48)),
+				k.rng:NextNumber(30, 42) * STUDS,
+				Color3.fromRGB(50, 26, 34),
+				Enum.Material.Basalt,
+				crimson
+			)
+		end
+		weather(k, {
+			Color = ColorSequence.new(crimson, Color3.fromRGB(255, 200, 210)),
+			LightEmission = 1,
+			Rate = 30,
+			Lifetime = NumberRange.new(4, 7),
+			Speed = NumberRange.new(2, 5),
+			Acceleration = Vector3.new(0, 6, 0), -- embers that rise
+			Size = NumberSequence.new(0.3),
+			SpreadAngle = Vector2.new(180, 180),
+		})
+	end,
+}
+
 local THEME_OF: { [string]: string } = {
 	buildTimesSquare = "city",
 	buildCullingColony = "ruin",
@@ -976,6 +1056,7 @@ local THEME_OF: { [string]: string } = {
 	buildLandOfEarth = "earth",
 	buildLandOfWater = "water",
 	buildLandOfLightning = "storm",
+	buildSeam = "seam",
 }
 
 --- The time of day a world's theme is set at.

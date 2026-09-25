@@ -134,6 +134,7 @@ export type Enemy = {
 	anims: { [string]: AnimationTrack },
 	affix: Rules.Affix?, -- an elite's modifier
 	summoned: boolean, -- called up by another enemy: drops nothing
+	adapted: { [string]: number }?, -- the Unbidden: hits taken per nature
 	moving: string?,
 	-- Worn by Kenjaku's Body Swap: it fights for its wearer until this runs out.
 	allyOf: PState?,
@@ -406,6 +407,16 @@ function Combat.hitEnemy(e: Enemy, power: number, nature: string, from: Vector3?
 			and style.symbiote.hunger
 		then Rules.hungerMul(by.hunger)
 		else 1
+	-- The Unbidden learns each nature after three hits of it.
+	local adaptMul = 1
+	if e.t.adapts then
+		e.adapted = e.adapted or {}
+		local adapted
+		adaptMul, adapted = Rules.adapt(e.adapted :: { [string]: number }, nature)
+		if adapted and (e.adapted :: any)[nature] == 4 then
+			Combat.fx("number", { at = e.root.Position + Vector3.new(0, 5, 0), text = "ADAPTED", tone = "nve" })
+		end
+	end
 	local dmg, eff = rules:damageToEnemy({
 		power = power,
 		nature = nature,
@@ -413,7 +424,7 @@ function Combat.hitEnemy(e: Enemy, power: number, nature: string, from: Vector3?
 		defMul = e.defMul,
 		armor = e.t.armor,
 		ignoreDef = o.ignoreDef,
-		buffMul = (if buff then buff.dmgMul else 1) * (if by then by.powerMul else 1),
+		buffMul = (if buff then buff.dmgMul else 1) * (if by then by.powerMul else 1) * adaptMul,
 		hungerMul = hungerMul,
 		roll = math.random(),
 	})

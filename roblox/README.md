@@ -82,6 +82,22 @@ rojo serve             # then, in Studio: Plugins > Rojo > Connect
 | Screens | HUD (health, energy, a status line for the drawn weapon, stored charge, suit, hunger and bond, ability rail with cooldowns, wave, log, banner) and Select Character |
 | Controls | Left click (basic attack), 1–5, G, E (signature), Q (dodge), B (hold to charge), R (Yuji's weapons), F (put the symbiote back on), J (menu), L (loadout), M (characters). Gamepad: R2 hit, L2 signature, Y ultimate, X dodge, B charge. Phones get a touch pad with cooldowns. |
 
+## Story mode: The Hundred Seams
+
+Nuime, the Stitched One, opened the rift to sew every world into one body he can
+wear forever. Each world's boss ladder guards one of his stitches; beating it pulls
+the stitch loose. Break all nine and the tenth world opens: **the Seam**, where
+Nuime and Patchwork have stitched themselves into **Hyakunui, the Hundred-Seam**.
+
+| | |
+| --- | --- |
+| Telling it | A card when each world opens (its chapter and what is happening), lines between waves and when its last boss falls, as subtitles. All the text is in `src/shared/Story.luau`. |
+| The Seam | Its own arena (floating pieces of the other worlds, crimson threads across the sky), and every enemy in it is stitched: an elite. Opens once the Land of Lightning is cleared. Data in `src/shared/Finale.luau`. |
+| Hyakunui | Three phases (`src/server/FinaleFight.luau`): seam cuts telegraphed under every player; at two thirds it tears out the Tempest Fox and the Unbidden, which adapts to any nature that hits it three times; at a third it grasps for bodies, which lets Akuro out of the Vessel, starves a symbiote, or takes a quarter of anyone else's health. |
+| The ending | The rift closes: an ending card with an epilogue for the universe of the character who closed it, 1,000 shards and a badge (`rift_closed`) the first time. |
+| After it | Loose Threads: once everyone on a server has closed the rift, every world is harder (tougher enemies, more elites) and pays half as much again. |
+| Coming back | A fresh server starts at the first player's furthest open world, not at the beginning. |
+
 ## The fight
 
 | | |
@@ -173,7 +189,7 @@ npm run test:roblox     # the Luau rules and data checks
   ```
 
   `globalTypes.d.luau` comes from the luau-lsp repository (`scripts/`).
-- 65 Lune tests pass. They check the ported rules against the web build's own formulas
+- 73 Lune tests pass. They check the ported rules against the web build's own formulas
   (damage over time matches to the point over several seconds at 60 fps), check
   that every exported reference resolves, check the progression rules (levels,
   rewards, the streak across a missed day, quests, loadouts, unlocks), and run the

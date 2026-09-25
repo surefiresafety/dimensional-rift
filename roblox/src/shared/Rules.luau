@@ -381,11 +381,15 @@ Rules.AFFIXES = {
 --- Whether an enemy arriving in wave `wave` (1-based) is an elite, and which.
 --- None in the first two waves; then 8%, rising 1.5% a wave to 30%. Bosses
 --- are never elites. `roll` and `pick` are uniform 0..1.
-function Rules.rollAffix(wave: number, boss: boolean?, roll: number, pick: number): Affix?
-	if boss or wave < 3 then
+--- `bonus` raises the chance (and its cap): Loose Threads adds 0.15, and a
+--- bonus of 1 or more makes every non-boss an elite from the first wave (the
+--- Seam, where everything is stitched).
+function Rules.rollAffix(wave: number, boss: boolean?, roll: number, pick: number, bonus: number?): Affix?
+	local b = bonus or 0
+	if boss or (wave < 3 and b < 1) then
 		return nil
 	end
-	local chance = math.min(0.3, 0.08 + (wave - 3) * 0.015)
+	local chance = math.min(0.3 + b, 0.08 + math.max(0, wave - 3) * 0.015 + b)
 	if roll >= chance then
 		return nil
 	end
@@ -405,6 +409,18 @@ function Rules.applyAffix(t: any, a: Affix)
 	end
 	t.color = a.color
 	t.affix = a.key
+end
+
+--- The Unbidden adapts: each hit of a nature counts, and from the fourth on
+--- that nature does a fifth of its damage. Returns the multiplier for this
+--- hit and whether it has adapted.
+function Rules.adapt(counts: { [string]: number }, nature: string): (number, boolean)
+	local n = (counts[nature] or 0) + 1
+	counts[nature] = n
+	if n > 3 then
+		return 0.2, true
+	end
+	return 1, false
 end
 
 -- Enemy behaviour ----------------------------------------------------------

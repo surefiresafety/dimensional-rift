@@ -8,9 +8,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Worlds = require(Shared.Worlds)
 local Progression = require(Shared.Progression)
-local Maps = require(Shared.Data.Maps)
-local RulesData = require(Shared.Data.Rules)
 local Styles = require(Shared.Data.Styles)
 
 local Ui = require(script.Parent.Ui)
@@ -335,10 +334,10 @@ end
 
 renders.worlds = function(d)
 	heading("THE RIFT'S WORLDS  ·  CLEAR ONE TO OPEN THE NEXT", 1)
-	for i, id in RulesData.MAP_IDS do
-		local m = Maps[id]
+	for i, id in Worlds.ORDER do
+		local m = Worlds.get(id)
 		local cleared = table.find(d.cleared, id) ~= nil
-		local open = i == 1 or table.find(d.cleared, RulesData.MAP_IDS[i - 1]) ~= nil
+		local open = i == 1 or table.find(d.cleared, Worlds.ORDER[i - 1]) ~= nil
 		local here = d.world == id
 		local card = Ui.make("Frame", {
 			LayoutOrder = 1 + i,
@@ -358,7 +357,7 @@ renders.worlds = function(d)
 		Ui.label({
 			Text = if open
 				then `{m.sub or ""}  ·  {#m.waves} waves{if best then `  ·  best wave {best}` else ""}`
-				else `Clear {Maps[RulesData.MAP_IDS[i - 1]].name} to open`,
+				else `Clear {Worlds.get(Worlds.ORDER[i - 1]).name} to open`,
 			TextSize = 12,
 			TextColor3 = Ui.DIM,
 			Position = UDim2.fromOffset(0, 20),
@@ -490,7 +489,7 @@ renders.stats = function(d)
 		{ "Rift Shards", Profile.shards(d.shards) },
 		{ "Roster", `{#d.unlocked} of {roster} characters` },
 		{ "Techniques absorbed", tostring(#d.learned) },
-		{ "Worlds cleared", `{#d.cleared} of {#RulesData.MAP_IDS}` },
+		{ "Worlds cleared", `{#d.cleared} of {#Worlds.ORDER}` },
 		{ "Enemies defeated", Profile.shards(s.kills or 0) },
 		{ "Bosses beaten", tostring(s.bosses or 0) },
 		{ "Waves cleared", tostring(s.waves or 0) },
@@ -499,12 +498,12 @@ renders.stats = function(d)
 		{ "Damage dealt", Profile.shards(s.damage or 0) },
 		{ "Time in the rift", `{math.floor((s.minutes or 0) / 60)}h {(s.minutes or 0) % 60}m` },
 	}
-	for _, id in RulesData.MAP_IDS do
+	for _, id in Worlds.ORDER do
 		local best = d.best[id]
 		if best then
 			table.insert(
 				lines,
-				{ Maps[id].name, `best wave {best}{if table.find(d.cleared, id) then "  ·  cleared" else ""}` }
+				{ Worlds.get(id).name, `best wave {best}{if table.find(d.cleared, id) then "  ·  cleared" else ""}` }
 			)
 		end
 	end

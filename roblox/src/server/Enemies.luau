@@ -7,12 +7,11 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Worlds = require(Shared.Worlds)
 local Config = require(Shared.Config)
 local Palette = require(Shared.Palette)
 local Rules = require(Shared.Rules)
 local RulesData = require(Shared.Data.Rules)
-local EnemyData = require(Shared.Data.Enemies)
-local EnemyLooks = require(Shared.Data.EnemyLooks)
 
 local Combat = require(script.Parent.Combat)
 local Looks = require(script.Parent.Looks)
@@ -148,8 +147,10 @@ local function creatureBody(model: Model, t: any)
 end
 
 --- Spawns one enemy of type `id` at `at`. Returns nil at the server's cap.
-function Enemies.spawn(id: string, at: Vector3, affix: Rules.Affix?): Combat.Enemy?
-	local template = EnemyData[id]
+--- `scale` toughens it: health times scale, attack by half as much again
+--- (Loose Threads uses 1.6).
+function Enemies.spawn(id: string, at: Vector3, affix: Rules.Affix?, scale: number?): Combat.Enemy?
+	local template = Worlds.enemy(id)
 	if not template or #Combat.enemies >= Config.MAX_ENEMIES then
 		return nil
 	end
@@ -157,7 +158,12 @@ function Enemies.spawn(id: string, at: Vector3, affix: Rules.Affix?): Combat.Ene
 	if affix then
 		Rules.applyAffix(t, affix)
 	end
-	local look = EnemyLooks[id]
+	local sc = scale or 1
+	if sc ~= 1 then
+		t.hp = math.floor(t.hp * sc + 0.5)
+		t.atk = math.floor(t.atk * (1 + (sc - 1) * 0.5) + 0.5)
+	end
+	local look = Worlds.look(id)
 		or {
 			skin = 0xd8c0b0,
 			hair = 0x1a1a22,
