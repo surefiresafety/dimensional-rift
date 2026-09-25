@@ -326,4 +326,15 @@ H.test("upgrades: bought level by level, priced upwards, capped", function()
 	H.eq(type(old.upgrades), "table", "old saves get an upgrades table")
 end)
 
+H.test("worlds open one after another", function()
+	local p = Progression.newProfile()
+	local order = RulesData.MAP_IDS
+	H.eq(Progression.worldUnlocked(p, order, order[1]), true, "the first")
+	H.eq(Progression.worldUnlocked(p, order, order[2]), false, "not the second yet")
+	p.cleared[order[1]] = true
+	H.eq(Progression.worldUnlocked(p, order, order[2]), true, "after clearing the first")
+	H.eq(Progression.worldUnlocked(p, order, order[3]), false, "one at a time")
+	H.eq(Progression.worldUnlocked(p, order, "nowhere"), false, "not a world")
+end)
+
 return H

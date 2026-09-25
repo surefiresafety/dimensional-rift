@@ -26,6 +26,7 @@ local Maps = require(Shared.Data.Maps)
 local Combat = require(script.Parent.Combat)
 local Profiles = require(script.Parent.Profiles)
 local Waves = require(script.Parent.Waves)
+local World = require(script.Parent.World)
 local Pickups = require(script.Parent.Pickups)
 
 local ProfileRemote = Remotes.get("Profile")
@@ -98,6 +99,7 @@ function Progress.snapshot(player: Player, p: Progression.Profile): { [string]: 
 		best = p.best,
 		cleared = sortedKeys(p.cleared),
 		upgrades = p.upgrades,
+		world = World.current,
 		tutorial = p.badges.tutorial == true,
 		lastStyle = p.lastStyle,
 		daily = {
@@ -446,6 +448,27 @@ asks.sync = function(player, _p)
 	return answer(true)
 end
 
+-- Travel: move the rift to another world the player has opened. Only
+-- between waves, or when they are alone, so nobody is pulled out mid-fight.
+asks.travel = function(player, p, mapId)
+	if type(mapId) ~= "string" or not Maps[mapId] then
+		return answer(false, "No such world.")
+	end
+	if not Progression.worldUnlocked(p, RulesData.MAP_IDS, mapId) then
+		return answer(false, "Clear the world before it first.")
+	end
+	if mapId == World.current then
+		return answer(false, "You are already there.")
+	end
+	local alone = #Players:GetPlayers() <= 1
+	if not alone and #Combat.enemies > 0 then
+		return answer(false, "Finish this wave first: everyone travels together.")
+	end
+	Combat.notice(nil, `{player.DisplayName} opens the rift onto {Maps[mapId].name}.`, "gold")
+	task.spawn(Waves.start, mapId)
+	return answer(true, "Travelling.")
+end
+
 asks.tutorialDone = function(player, p)
 	if not p.badges.tutorial then
 		p.badges.tutorial = true
@@ -594,6 +617,10 @@ function Progress.start()
 
 	Waves.onStarted(function()
 		table.clear(runs)
+		-- Everyone's menu shows which world the rift is on.
+		for _, player in Players:GetPlayers() do
+			mark(player)
+		end
 	end)
 
 	Waves.onWorldCleared(function(mapId)

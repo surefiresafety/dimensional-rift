@@ -41,6 +41,7 @@ local function signature(tab: string, d: any): string
 		then { d.daily }
 		elseif tab == "quests" then { d.quests, d.rerolled, d.shards }
 		elseif tab == "upgrades" then { d.upgrades, d.shards }
+		elseif tab == "worlds" then { d.cleared, d.best, d.world }
 		elseif tab == "stats" then {
 			stats = d.stats,
 			level = d.level,
@@ -59,6 +60,7 @@ local TABS = {
 	{ "daily", "Daily" },
 	{ "quests", "Quests" },
 	{ "upgrades", "Upgrades" },
+	{ "worlds", "Worlds" },
 	{ "boards", "Boards" },
 	{ "stats", "Stats" },
 }
@@ -331,6 +333,49 @@ renders.upgrades = function(d)
 	end
 end
 
+renders.worlds = function(d)
+	heading("THE RIFT'S WORLDS  ·  CLEAR ONE TO OPEN THE NEXT", 1)
+	for i, id in RulesData.MAP_IDS do
+		local m = Maps[id]
+		local cleared = table.find(d.cleared, id) ~= nil
+		local open = i == 1 or table.find(d.cleared, RulesData.MAP_IDS[i - 1]) ~= nil
+		local here = d.world == id
+		local card = Ui.make("Frame", {
+			LayoutOrder = 1 + i,
+			Size = UDim2.new(1, 0, 0, 54),
+			BackgroundColor3 = if here then Ui.ACCENT else Ui.INK,
+			BackgroundTransparency = if here then 0.55 else 0.1,
+			Parent = content,
+		}, { Ui.corner(12), Ui.stroke(if cleared then Ui.GOLD else Ui.LINE), Ui.pad(10) })
+		Ui.label({
+			Text = (if cleared then "✓  " elseif open then "" else "🔒  ") .. m.name,
+			Font = Ui.BOLD,
+			TextSize = 15,
+			Size = UDim2.new(1, -170, 0, 18),
+			Parent = card,
+		})
+		local best = d.best[id]
+		Ui.label({
+			Text = if open
+				then `{m.sub or ""}  ·  {#m.waves} waves{if best then `  ·  best wave {best}` else ""}`
+				else `Clear {Maps[RulesData.MAP_IDS[i - 1]].name} to open`,
+			TextSize = 12,
+			TextColor3 = Ui.DIM,
+			Position = UDim2.fromOffset(0, 20),
+			Size = UDim2.new(1, -170, 0, 16),
+			Parent = card,
+		})
+		local b = button(if here then "You are here" else "Travel", Ui.ACCENT, open and not here, card)
+		b.AnchorPoint = Vector2.new(1, 0.5)
+		b.Position = UDim2.new(1, 0, 0.5, 0)
+		if open and not here then
+			b.Activated:Connect(function()
+				request("travel", id)
+			end)
+		end
+	end
+end
+
 local function fetchBoard(name: string)
 	task.spawn(function()
 		local r = Profile.ask("board", name)
@@ -594,7 +639,7 @@ function Hub.build()
 			TextColor3 = Ui.DIM,
 			BackgroundColor3 = Ui.ACCENT,
 			BackgroundTransparency = 0.85,
-			Size = UDim2.fromOffset(88, 32),
+			Size = UDim2.fromOffset(78, 32),
 			Parent = tabs,
 		}, { Ui.corner(16) })
 		tabButtons[t[1]] = b
@@ -612,7 +657,7 @@ function Hub.build()
 			TextSize = 12,
 			TextColor3 = Ui.GOLD,
 			BackgroundColor3 = Ui.INK,
-			Size = UDim2.fromOffset(100, 32),
+			Size = UDim2.fromOffset(92, 32),
 			Parent = tabs,
 		}, { Ui.corner(16), Ui.stroke(Ui.GOLD, 1, 0.5) })
 		b.Activated:Connect(function()

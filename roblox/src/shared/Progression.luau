@@ -627,6 +627,16 @@ function Progression.nextWorld(order: { string }, mapId: string): string
 	return order[(i % #order) + 1]
 end
 
+--- A world is open to travel to once the one before it in the rift's order
+--- has been cleared (the first always is).
+function Progression.worldUnlocked(p: Profile, order: { string }, mapId: string): boolean
+	local i = table.find(order, mapId)
+	if not i then
+		return false
+	end
+	return i == 1 or p.cleared[order[i - 1]] == true
+end
+
 --- The best wave across every world: what the global board ranks.
 function Progression.bestWave(p: Profile): number
 	local best = 0
