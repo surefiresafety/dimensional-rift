@@ -51,7 +51,7 @@ local function applyStyle(ps: Combat.PState, styleId: string, keepHealth: boolea
 	ps.style = styleId
 	-- The player's own loadout for this character, if they saved one.
 	ps.slots = Progress.slotsFor(ps.player, styleId)
-	ps.maxSe = st.energy or Config.PLAYER_MAX_SE
+	ps.maxSe = (st.energy or Config.PLAYER_MAX_SE) * ps.spiritMul
 	ps.se = math.min(ps.se, ps.maxSe)
 	if ps.maxSe == math.huge then
 		ps.se = math.huge
@@ -75,8 +75,8 @@ local function applyStyle(ps: Combat.PState, styleId: string, keepHealth: boolea
 	local newHum = Combat.humanoidOf(ps.player)
 	local root = Combat.rootOf(ps.player)
 	if newHum then
-		newHum.MaxHealth = Config.PLAYER_MAX_HP
-		newHum.Health = hp or Config.PLAYER_MAX_HP
+		newHum.MaxHealth = Config.PLAYER_MAX_HP * Progress.upgradeMul(ps.player, "vitality")
+		newHum.Health = math.min(hp or newHum.MaxHealth, newHum.MaxHealth)
 		newHum.WalkSpeed = Config.WALK_SPEED
 	end
 	if root and not keepHealth then

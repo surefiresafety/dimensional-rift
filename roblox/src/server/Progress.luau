@@ -84,6 +84,7 @@ function Progress.snapshot(player: Player, p: Progression.Profile): { [string]: 
 		loadouts = p.loadouts,
 		best = p.best,
 		cleared = sortedKeys(p.cleared),
+		upgrades = p.upgrades,
 		lastStyle = p.lastStyle,
 		daily = {
 			ready = Progression.canClaimDaily(p, day),
@@ -180,7 +181,8 @@ end
 --- earned in a fight, not to rewards that are claimed.
 local function award(player: Player, p: Progression.Profile, xp: number, shards: number, claimed: boolean?)
 	local mul = if claimed then 1 else Progression.friendMul(friends[player] or 0)
-	p.shards += shards
+	-- Fortune: more shards from fighting.
+	p.shards += math.floor(shards * Progression.upgradeMul(p, "fortune") + 0.5)
 	local reached = Progression.addXp(p, xp * mul)
 	for _, level in reached do
 		Combat.notice(player, `Level {level}! +{Progression.levelReward(level)} Rift Shards.`, "gold")
@@ -216,6 +218,35 @@ local function unlock(player: Player, p: Progression.Profile, styleId: string, w
 	Combat.notice(player, `{Styles[styleId].name} joins your roster: {why}.`, "gold")
 	checkRoster(player, p)
 	mark(player)
+end
+
+--- An upgrade's multiplier for this player (1 before their save loads).
+function Progress.upgradeMul(player: Player, key: string): number
+	return Progression.upgradeMul(Profiles.get(player), key)
+end
+
+--- Puts the player's upgrades into their fight: damage, energy, speed, and
+--- health at once (keeping how hurt they are).
+function Progress.applyUpgrades(player: Player)
+	local ps = Combat.states[player]
+	local p = Profiles.get(player)
+	if not ps or not p then
+		return
+	end
+	ps.powerMul = Progression.upgradeMul(p, "power")
+	ps.moveMul = Progression.upgradeMul(p, "swiftness")
+	local spirit = Progression.upgradeMul(p, "spirit")
+	if ps.maxSe ~= math.huge then
+		ps.maxSe = ps.maxSe / ps.spiritMul * spirit
+	end
+	ps.spiritMul = spirit
+	local hum = Combat.humanoidOf(player)
+	if hum and hum.Health > 0 then
+		local frac = hum.Health / hum.MaxHealth
+		hum.MaxHealth = Config.PLAYER_MAX_HP * Progression.upgradeMul(p, "vitality")
+		hum.Health = hum.MaxHealth * frac
+	end
+	Combat.publish(ps)
 end
 
 --- Can this player pick this character? Before the save loads, only the
@@ -395,6 +426,18 @@ asks.sync = function(player, _p)
 	return answer(true)
 end
 
+asks.upgrade = function(player, p, key)
+	if type(key) ~= "string" then
+		return answer(false, "No such upgrade.")
+	end
+	local ok, why = Progression.buyUpgrade(p, key)
+	if ok then
+		Progress.applyUpgrades(player)
+		mark(player)
+	end
+	return answer(ok, if ok then "Upgraded." else why)
+end
+
 asks.board = function(_player, _p, name)
 	local rows = if name == "wave" then Profiles.top(BOARD_WAVE) elseif name == "xp" then Profiles.top(BOARD_XP) else {}
 	return answer(true, if Profiles.persistent then nil else "Global boards need DataStores.", { rows = rows })
@@ -415,6 +458,7 @@ local function onLoaded(player: Player, p: Progression.Profile)
 	refreshLeaderstats(player, p)
 
 	Progression.refreshQuests(p, today(), seedOf(player))
+	Progress.applyUpgrades(player)
 	-- Anything absorbed in earlier sessions can be slotted again.
 	local ps = Combat.states[player]
 	if ps then
@@ -594,8 +638,9 @@ function Progress.start()
 	Pickups.onShards = function(player, n)
 		local p = Profiles.get(player)
 		if p then
-			p.shards += n
-			Progression.bump(p, "shardsFound", n)
+			local got = math.floor(n * Progression.upgradeMul(p, "fortune") + 0.5)
+			p.shards += got
+			Progression.bump(p, "shardsFound", got)
 			mark(player, true)
 		end
 	end

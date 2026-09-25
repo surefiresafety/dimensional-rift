@@ -40,6 +40,7 @@ local function signature(tab: string, d: any): string
 	local part: any = if tab == "daily"
 		then { d.daily }
 		elseif tab == "quests" then { d.quests, d.rerolled, d.shards }
+		elseif tab == "upgrades" then { d.upgrades, d.shards }
 		elseif tab == "stats" then {
 			stats = d.stats,
 			level = d.level,
@@ -54,7 +55,13 @@ local function signature(tab: string, d: any): string
 	return tab .. HttpService:JSONEncode(part)
 end
 
-local TABS = { { "daily", "Daily" }, { "quests", "Quests" }, { "boards", "Boards" }, { "stats", "Stats" } }
+local TABS = {
+	{ "daily", "Daily" },
+	{ "quests", "Quests" },
+	{ "upgrades", "Upgrades" },
+	{ "boards", "Boards" },
+	{ "stats", "Stats" },
+}
 
 local function clear()
 	for _, c in content:GetChildren() do
@@ -271,6 +278,56 @@ renders.quests = function(d)
 		end
 		b.AnchorPoint = Vector2.new(1, 0.5)
 		b.Position = UDim2.new(1, 0, 0.5, 0)
+	end
+end
+
+renders.upgrades = function(d)
+	heading(`PERMANENT, FOR EVERY CHARACTER  ·  {Profile.shards(d.shards)} SHARDS`, 1)
+	for i, u in Progression.UPGRADES do
+		local level = (d.upgrades or {})[u.key] or 0
+		local maxed = level >= u.max
+		local cost = Progression.upgradeCost(u, level)
+		local card = Ui.make("Frame", {
+			LayoutOrder = 1 + i,
+			Size = UDim2.new(1, 0, 0, 62),
+			BackgroundColor3 = Ui.INK,
+			BackgroundTransparency = 0.1,
+			Parent = content,
+		}, { Ui.corner(12), Ui.stroke(), Ui.pad(10) })
+		Ui.label({
+			Text = u.name,
+			Font = Ui.BOLD,
+			TextSize = 16,
+			Size = UDim2.new(1, -170, 0, 20),
+			Parent = card,
+		})
+		Ui.label({
+			Text = `{u.text} a level  ·  now +{math.floor(level * u.per * 100 + 0.5)}%`,
+			TextSize = 12,
+			TextColor3 = Ui.DIM,
+			Position = UDim2.fromOffset(0, 22),
+			Size = UDim2.new(1, -170, 0, 16),
+			Parent = card,
+		})
+		-- Pips for each level.
+		for l = 1, u.max do
+			Ui.make("Frame", {
+				Position = UDim2.fromOffset((l - 1) * 16, 40),
+				Size = UDim2.fromOffset(12, 5),
+				BackgroundColor3 = if l <= level then Ui.GOLD else Ui.LINE,
+				BorderSizePixel = 0,
+				Parent = card,
+			}, { Ui.corner(2) })
+		end
+		local can = not maxed and d.shards >= cost
+		local b = button(if maxed then "Maxed" else `Buy · {cost}`, Ui.ACCENT, can, card)
+		b.AnchorPoint = Vector2.new(1, 0.5)
+		b.Position = UDim2.new(1, 0, 0.5, 0)
+		if can then
+			b.Activated:Connect(function()
+				request("upgrade", u.key)
+			end)
+		end
 	end
 end
 
@@ -537,7 +594,7 @@ function Hub.build()
 			TextColor3 = Ui.DIM,
 			BackgroundColor3 = Ui.ACCENT,
 			BackgroundTransparency = 0.85,
-			Size = UDim2.fromOffset(110, 32),
+			Size = UDim2.fromOffset(88, 32),
 			Parent = tabs,
 		}, { Ui.corner(16) })
 		tabButtons[t[1]] = b
@@ -555,7 +612,7 @@ function Hub.build()
 			TextSize = 12,
 			TextColor3 = Ui.GOLD,
 			BackgroundColor3 = Ui.INK,
-			Size = UDim2.fromOffset(120, 32),
+			Size = UDim2.fromOffset(100, 32),
 			Parent = tabs,
 		}, { Ui.corner(16), Ui.stroke(Ui.GOLD, 1, 0.5) })
 		b.Activated:Connect(function()

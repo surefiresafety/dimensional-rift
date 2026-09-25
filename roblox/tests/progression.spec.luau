@@ -301,4 +301,29 @@ H.test("combo ranks and rewards", function()
 	H.eq(shards, 8, "doubled from S rank")
 end)
 
+H.test("upgrades: bought level by level, priced upwards, capped", function()
+	local p = Progression.newProfile()
+	H.eq(Progression.upgradeMul(p, "power"), 1, "none yet")
+	H.eq(Progression.upgradeMul(nil, "power"), 1, "no profile")
+	local ok, why = Progression.buyUpgrade(p, "power")
+	H.eq(ok, false, "no shards")
+	assert(why and string.find(why, "150"), "says the price")
+	p.shards = 100000
+	H.eq((Progression.buyUpgrade(p, "power")), true, "bought")
+	H.eq(p.shards, 100000 - 150, "paid the first price")
+	H.near(Progression.upgradeMul(p, "power"), 1.05, 1e-9, "+5%")
+	local before = p.shards
+	Progression.buyUpgrade(p, "power")
+	H.eq(before - p.shards, math.floor(150 * 1.45 + 0.5), "the second level costs more")
+	for _ = 1, 20 do
+		Progression.buyUpgrade(p, "power")
+	end
+	H.eq(p.upgrades.power, 10, "capped at ten")
+	H.near(Progression.upgradeMul(p, "power"), 1.5, 1e-9, "+50% at the cap")
+	H.eq((Progression.buyUpgrade(p, "power")), false, "maxed")
+	H.eq((Progression.buyUpgrade(p, "nothing")), false, "unknown")
+	local old = Progression.reconcile({ shards = 5 })
+	H.eq(type(old.upgrades), "table", "old saves get an upgrades table")
+end)
+
 return H

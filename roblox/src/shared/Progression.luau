@@ -107,6 +107,7 @@ export type Profile = {
 	quests: { day: number, list: { Quest }, rerolled: boolean },
 	stats: { [string]: number },
 	badges: { [string]: boolean },
+	upgrades: { [string]: number }, -- permanent upgrades bought with shards
 	lastStyle: string?,
 }
 
@@ -129,6 +130,7 @@ function Progression.newProfile(): Profile
 		quests = { day = -1, list = {}, rerolled = false },
 		stats = {},
 		badges = {},
+		upgrades = {},
 		lastStyle = nil,
 	}
 end
@@ -492,6 +494,86 @@ function Progression.rerollQuest(p: Profile, index: number, seed: number): (bool
 	}
 	p.shards -= Progression.QUEST_REROLL_COST
 	p.quests.rerolled = true
+	return true, nil
+end
+
+-- Upgrades ----------------------------------------------------------------
+
+export type Upgrade = {
+	key: string,
+	name: string,
+	text: string, -- what one level does
+	per: number, -- added to the multiplier per level
+	max: number,
+	cost: number, -- the first level
+	growth: number, -- each level costs this much more than the last
+}
+
+-- Permanent, for every character: where shards go once the roster is full.
+Progression.UPGRADES = {
+	{ key = "vitality", name = "Vitality", text = "+6% health", per = 0.06, max = 10, cost = 120, growth = 1.45 },
+	{ key = "power", name = "Power", text = "+5% damage", per = 0.05, max = 10, cost = 150, growth = 1.45 },
+	{
+		key = "spirit",
+		name = "Spirit",
+		text = "+8% Spirit Energy and its regeneration",
+		per = 0.08,
+		max = 10,
+		cost = 120,
+		growth = 1.45,
+	},
+	{ key = "swiftness", name = "Swiftness", text = "+3% run speed", per = 0.03, max = 8, cost = 100, growth = 1.5 },
+	{
+		key = "fortune",
+		name = "Fortune",
+		text = "+10% Rift Shards from fighting",
+		per = 0.1,
+		max = 5,
+		cost = 250,
+		growth = 1.6,
+	},
+} :: { Upgrade }
+
+local function upgradeDef(key: string): Upgrade?
+	for _, u in Progression.UPGRADES do
+		if u.key == key then
+			return u
+		end
+	end
+	return nil
+end
+
+--- What the next level of an upgrade costs from `level`.
+function Progression.upgradeCost(u: Upgrade, level: number): number
+	return math.floor(u.cost * u.growth ^ level + 0.5)
+end
+
+--- The multiplier an upgrade gives at the player's level: 1 with none, or
+--- with no profile.
+function Progression.upgradeMul(p: Profile?, key: string): number
+	local u = upgradeDef(key)
+	if not p or not u then
+		return 1
+	end
+	return 1 + u.per * math.clamp(p.upgrades[key] or 0, 0, u.max)
+end
+
+--- Buys the next level of an upgrade.
+function Progression.buyUpgrade(p: Profile, key: string): (boolean, string?)
+	local u = upgradeDef(key)
+	if not u then
+		return false, "No such upgrade."
+	end
+	local level = p.upgrades[key] or 0
+	if level >= u.max then
+		return false, `{u.name} is maxed.`
+	end
+	local cost = Progression.upgradeCost(u, level)
+	if p.shards < cost then
+		return false, `Not enough Rift Shards: {cost} needed, {p.shards} held.`
+	end
+	p.shards -= cost
+	p.upgrades[key] = level + 1
 	return true, nil
 end
 

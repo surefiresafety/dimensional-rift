@@ -94,6 +94,10 @@ export type PState = {
 	looseSuit: { untilT: number, host: string, at: Vector3, part: BasePart }?,
 	-- A character with a takeover (the Vessel) gets one save per life.
 	takeoverUsed: boolean,
+	-- Permanent upgrades (Progress.applyUpgrades): 1 until the save loads.
+	powerMul: number,
+	spiritMul: number,
+	moveMul: number,
 }
 
 export type Enemy = {
@@ -232,6 +236,9 @@ function Combat.newState(player: Player): PState
 		symbioteCd = 0,
 		looseSuit = nil,
 		takeoverUsed = false,
+		powerMul = 1,
+		spiritMul = 1,
+		moveMul = 1,
 	}
 	Combat.states[player] = ps
 	return ps
@@ -385,7 +392,7 @@ function Combat.hitEnemy(e: Enemy, power: number, nature: string, from: Vector3?
 		defMul = e.defMul,
 		armor = e.t.armor,
 		ignoreDef = o.ignoreDef,
-		buffMul = if buff then buff.dmgMul else 1,
+		buffMul = (if buff then buff.dmgMul else 1) * (if by then by.powerMul else 1),
 		hungerMul = hungerMul,
 		roll = math.random(),
 	})
@@ -586,10 +593,10 @@ function Combat.step(dt: number)
 			end
 		end
 		if ps.se < ps.maxSe and now > ps.regenBlockedUntil then
-			ps.se = math.min(ps.maxSe, ps.se + Config.SE_REGEN_PER_SECOND * dt)
+			ps.se = math.min(ps.maxSe, ps.se + Config.SE_REGEN_PER_SECOND * ps.spiritMul * dt)
 		end
 		local buff = Combat.buffActive(ps)
-		hum.WalkSpeed = Config.WALK_SPEED * (if buff then buff.speedMul else 1)
+		hum.WalkSpeed = Config.WALK_SPEED * (if buff then buff.speedMul else 1) * ps.moveMul
 		if buff then
 			hum.Health = math.min(hum.MaxHealth, hum.Health + buff.regen * dt)
 			if buff.chain and now >= buff.chainNext then
