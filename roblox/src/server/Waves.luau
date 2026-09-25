@@ -86,7 +86,8 @@ function Waves.spawnCurrent()
 			packAt = Waves.spawnSpot(centre)
 		end
 		local jitter = if boss then Vector3.zero else Vector3.new(math.random(-4, 4), 0, math.random(-4, 4)) * STUDS
-		Enemies.spawn(id, (packAt :: Vector3) + jitter)
+		local affix = Rules.rollAffix(Waves.index + 1, boss, math.random(), math.random())
+		Enemies.spawn(id, (packAt :: Vector3) + jitter, affix)
 	end
 	local names = {}
 	for _, id in list do

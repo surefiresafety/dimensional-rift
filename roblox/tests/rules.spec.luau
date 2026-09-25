@@ -339,4 +339,31 @@ H.test("shooters aim before they shoot; chargers tell before they lunge", functi
 	)
 end)
 
+H.test("elites: none early, more later, never bosses", function()
+	H.eq(Rules.rollAffix(1, false, 0, 0), nil, "wave 1")
+	H.eq(Rules.rollAffix(2, false, 0, 0), nil, "wave 2")
+	H.eq(Rules.rollAffix(9, true, 0, 0), nil, "a boss")
+	H.eq(Rules.rollAffix(3, false, 0.079, 0) ~= nil, true, "8% at wave 3")
+	H.eq(Rules.rollAffix(3, false, 0.081, 0), nil, "and not more")
+	H.eq(Rules.rollAffix(40, false, 0.29, 0) ~= nil, true, "capped at 30%")
+	H.eq(Rules.rollAffix(40, false, 0.31, 0), nil, "never above")
+	H.eq((Rules.rollAffix(9, false, 0, 0.999) :: any).key, Rules.AFFIXES[#Rules.AFFIXES].key, "the last one")
+	local t: any = { name = "Grade 4", hp = 100, atk = 10, speed = 5, size = 1 }
+	Rules.applyAffix(t, Rules.AFFIXES[3]) -- giant
+	H.eq(t.name, "Giant Grade 4", "named")
+	H.eq(t.hp, 180, "tougher")
+	H.eq(t.atk, 13, "harder")
+	H.near(t.size, 1.3, 1e-9, "bigger")
+	H.eq(t.affix, "giant", "marked")
+	local a: any = { name = "X", hp = 10, atk = 1, speed = 1, armor = 0.5 }
+	Rules.applyAffix(a, Rules.AFFIXES[2]) -- armored
+	H.eq(a.armor, 0.6, "armour capped")
+end)
+
+H.test("a frenzied enemy winds up faster", function()
+	local ai = { state = "chase", stateUntil = 0 }
+	Rules.aiStep(ai, aiInput({ dist = 3, tempo = 0.7 }))
+	H.near(ai.stateUntil, 0.49, 1e-9, "0.7 x 0.7")
+end)
+
 return H

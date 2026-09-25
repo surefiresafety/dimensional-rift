@@ -128,6 +128,7 @@ export type Enemy = {
 	-- Roblox's standard R15 animations, played from the server so everyone
 	-- sees them: idle, walk, run and a slash for attacks.
 	anims: { [string]: AnimationTrack },
+	affix: Rules.Affix?, -- an elite's modifier
 	moving: string?,
 	-- Worn by Kenjaku's Body Swap: it fights for its wearer until this runs out.
 	allyOf: PState?,
@@ -520,6 +521,15 @@ function Combat.hurtPlayer(ps: PState, atk: number, nature: string, from: Enemy?
 	end
 	hum.Health = math.max(0, hum.Health - dmg)
 	Combat.fx("number", { at = root.Position + Vector3.new(0, 3, 0), text = tostring(dmg), tone = "hurt" })
+	-- A vampiric elite drinks what it deals.
+	local vamp = from and from.affix and from.affix.vampiric
+	if from and vamp and not from.dead then
+		from.hum.Health = math.min(from.hum.MaxHealth, from.hum.Health + dmg * vamp)
+		Combat.fx(
+			"number",
+			{ at = from.root.Position + Vector3.new(0, 4, 0), text = "+" .. Rules.round(dmg * vamp), tone = "heal" }
+		)
+	end
 	Combat.afterHurt(ps, dmg, nature)
 end
 

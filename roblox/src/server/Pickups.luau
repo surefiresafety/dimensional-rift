@@ -144,6 +144,10 @@ function Pickups.fromKill(e: Combat.Enemy)
 	elseif math.random() < 0.25 then
 		count, each = 1, 2
 	end
+	if e.affix then
+		-- An elite always pays.
+		count, each = math.max(count, 2), math.max(each, 3)
+	end
 	for _ = 1, count do
 		Pickups.drop(at, "shards", each)
 	end

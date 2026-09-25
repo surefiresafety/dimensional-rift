@@ -514,6 +514,9 @@ function Progress.start()
 			return
 		end
 		local xp, shards = Progression.killReward(e.id, e.t)
+		if e.affix then
+			xp *= 2 -- elites are worth twice the experience
+		end
 		award(player, p, xp, shards)
 		Progression.bump(p, "kills")
 		quest(player, p, "kill")

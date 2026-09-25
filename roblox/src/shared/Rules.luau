@@ -348,6 +348,65 @@ function Rules.bondStep(bond: number, max: number, hunger: number, sinceHurt: nu
 	return bond
 end
 
+-- Elites -------------------------------------------------------------------
+
+export type Affix = {
+	key: string,
+	name: string, -- goes in front of the enemy's name
+	color: number,
+	hp: number?, -- multipliers
+	atk: number?,
+	speed: number?,
+	size: number?,
+	armor: number?, -- added to the flat cut, capped at 0.6
+	tempo: number?,
+	vampiric: number?, -- share of damage dealt to players it heals
+	volatile: { power: number, radius: number, delay: number }?, -- explodes when it dies
+}
+
+Rules.AFFIXES = {
+	{ key = "frenzied", name = "Frenzied", color = 0xff4d5e, speed = 1.35, tempo = 0.7 },
+	{ key = "armored", name = "Armored", color = 0xb8c2d0, hp = 1.4, armor = 0.2 },
+	{ key = "giant", name = "Giant", color = 0xffb340, hp = 1.8, atk = 1.3, size = 1.3, speed = 0.85 },
+	{ key = "vampiric", name = "Vampiric", color = 0xc0294a, hp = 1.2, vampiric = 0.6 },
+	{
+		key = "volatile",
+		name = "Volatile",
+		color = 0xff8a3d,
+		speed = 1.1,
+		volatile = { power = 45, radius = 5, delay = 1 },
+	},
+} :: { Affix }
+
+--- Whether an enemy arriving in wave `wave` (1-based) is an elite, and which.
+--- None in the first two waves; then 8%, rising 1.5% a wave to 30%. Bosses
+--- are never elites. `roll` and `pick` are uniform 0..1.
+function Rules.rollAffix(wave: number, boss: boolean?, roll: number, pick: number): Affix?
+	if boss or wave < 3 then
+		return nil
+	end
+	local chance = math.min(0.3, 0.08 + (wave - 3) * 0.015)
+	if roll >= chance then
+		return nil
+	end
+	local list = Rules.AFFIXES
+	return list[math.clamp(math.floor(pick * #list) + 1, 1, #list)]
+end
+
+--- Applies an affix to a per-instance copy of an enemy template.
+function Rules.applyAffix(t: any, a: Affix)
+	t.name = a.name .. " " .. t.name
+	t.hp = math.floor(t.hp * (a.hp or 1) + 0.5)
+	t.atk = math.floor(t.atk * (a.atk or 1) + 0.5)
+	t.speed = t.speed * (a.speed or 1)
+	t.size = (t.size or 1) * (a.size or 1)
+	if a.armor then
+		t.armor = math.min(0.6, (t.armor or 0) + a.armor)
+	end
+	t.color = a.color
+	t.affix = a.key
+end
+
 -- Enemy behaviour ----------------------------------------------------------
 
 export type Ai = { state: string, stateUntil: number }
@@ -364,6 +423,7 @@ export type AiInput = {
 	shotReady: boolean, -- has a ranged attack off cooldown
 	charge: { tell: number?, time: number?, range: number? }?,
 	chargeReady: boolean,
+	tempo: number?, -- wind-ups and recoveries scale by this (Frenzied: 0.7)
 }
 
 --- One step of an enemy's mind. Mutates `ai` and says what happened, which
@@ -377,6 +437,7 @@ export type AiInput = {
 --- aim before a shot, a tell before a charge.
 function Rules.aiStep(ai: Ai, i: AiInput): string
 	local st = ai.state
+	local tempo = i.tempo or 1
 	if st == "idle" then
 		if i.alerted or i.dist < i.notice then
 			ai.state = "chase"
@@ -393,15 +454,15 @@ function Rules.aiStep(ai: Ai, i: AiInput): string
 		end
 		local c = i.charge
 		if c and i.chargeReady and i.dist > 6 and i.dist < (c.range or 26) then
-			ai.state, ai.stateUntil = "tell", i.now + (c.tell or 0.55)
+			ai.state, ai.stateUntil = "tell", i.now + (c.tell or 0.55) * tempo
 			return "tell"
 		end
 		if i.shotReady and i.dist > 4.5 and i.dist < 42 then
-			ai.state, ai.stateUntil = "aim", i.now + (if i.boss then 0.55 else 0.75)
+			ai.state, ai.stateUntil = "aim", i.now + (if i.boss then 0.55 else 0.75) * tempo
 			return "aim"
 		end
 		if i.dist <= i.reach then
-			ai.state, ai.stateUntil = "windup", i.now + (if i.boss then 0.9 else 0.7)
+			ai.state, ai.stateUntil = "windup", i.now + (if i.boss then 0.9 else 0.7) * tempo
 			return "windup"
 		end
 		return "chase"
@@ -414,7 +475,7 @@ function Rules.aiStep(ai: Ai, i: AiInput): string
 			return if st == "windup" then "winding" elseif st == "aim" then "aiming" else "telling"
 		end
 		if st == "windup" then
-			ai.state, ai.stateUntil = "recover", i.now + (if i.boss then 1.4 else 1.1)
+			ai.state, ai.stateUntil = "recover", i.now + (if i.boss then 1.4 else 1.1) * tempo
 			return "strike"
 		elseif st == "aim" then
 			ai.state = "chase"

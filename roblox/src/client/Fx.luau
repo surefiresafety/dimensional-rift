@@ -212,6 +212,19 @@ end
 handlers.telegraph = function(d)
 	local model = d.model :: Model?
 	local root = model and model:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not root and d.at then
+		-- A fixed spot on the ground (a volatile elite's blast).
+		local spot = Instance.new("Part")
+		spot.Anchored = true
+		spot.Transparency = 1
+		spot.CanCollide = false
+		spot.CanQuery = false
+		spot.Size = Vector3.one
+		spot.CFrame = CFrame.new(d.at * Vector3.new(1, 0, 1) + Vector3.new(0, 2.8, 0))
+		spot.Parent = layer
+		Debris:AddItem(spot, (d.duration or 1) + 0.5)
+		root = spot
+	end
 	if not root then
 		return
 	end

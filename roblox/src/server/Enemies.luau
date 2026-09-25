@@ -148,12 +148,15 @@ local function creatureBody(model: Model, t: any)
 end
 
 --- Spawns one enemy of type `id` at `at`. Returns nil at the server's cap.
-function Enemies.spawn(id: string, at: Vector3): Combat.Enemy?
+function Enemies.spawn(id: string, at: Vector3, affix: Rules.Affix?): Combat.Enemy?
 	local template = EnemyData[id]
 	if not template or #Combat.enemies >= Config.MAX_ENEMIES then
 		return nil
 	end
 	local t = deepCopy(template)
+	if affix then
+		Rules.applyAffix(t, affix)
+	end
 	local look = EnemyLooks[id]
 		or {
 			skin = 0xd8c0b0,
@@ -197,6 +200,7 @@ function Enemies.spawn(id: string, at: Vector3): Combat.Enemy?
 		state = "idle",
 		stateUntil = 0,
 		anims = {},
+		affix = affix,
 		alerted = false,
 		home = at,
 		wanderTo = nil,
@@ -213,6 +217,16 @@ function Enemies.spawn(id: string, at: Vector3): Combat.Enemy?
 	model.Parent = folder
 	root:SetNetworkOwner(nil) -- the server drives them
 	e.anims = loadAnims(hum)
+	if affix then
+		-- An elite glows its colour so it reads from across the arena.
+		local h = Instance.new("Highlight")
+		h.OutlineColor = Palette.color(affix.color)
+		h.FillColor = Palette.color(affix.color)
+		h.FillTransparency = 0.8
+		h.DepthMode = Enum.HighlightDepthMode.Occluded
+		h.Parent = model
+		model:SetAttribute("Affix", affix.name)
+	end
 	table.insert(Combat.enemies, e)
 	Combat.fx("burst", { at = at, color = look.top or 0xb06cff, count = 12 })
 	return e
@@ -321,6 +335,7 @@ function Enemies.think()
 			shotReady = e.t.ranged ~= nil and now >= e.nextShot,
 			charge = e.t.charge,
 			chargeReady = e.t.charge ~= nil and now >= e.nextCharge,
+			tempo = e.affix and e.affix.tempo,
 		})
 		e.alerted = false
 		if action ~= "lunging" then
@@ -439,5 +454,27 @@ function Enemies.think()
 		end
 	end
 end
+
+-- A volatile elite goes off a second after it dies: a ring to get out of,
+-- then the blast.
+Combat.onKilled(function(e)
+	local v = e.affix and e.affix.volatile
+	if not v then
+		return
+	end
+	local at = e.root.Position
+	local radius = v.radius * STUDS
+	Combat.fx("telegraph", { at = at, radius = radius, color = 0xff8a3d, duration = v.delay })
+	task.delay(v.delay, function()
+		Combat.fx("burst", { at = at, color = 0xff8a3d, count = 26 })
+		Combat.fx("ring", { at = at, radius = radius, color = 0xff8a3d })
+		for _, ps in Combat.states do
+			local root = Combat.rootOf(ps.player)
+			if root and (root.Position - at).Magnitude <= radius then
+				Combat.hurtPlayer(ps, v.power, "fire", nil)
+			end
+		end
+	end)
+end)
 
 return Enemies
