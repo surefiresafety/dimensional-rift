@@ -36,6 +36,9 @@ local BOARD_XP = "RiftExperience_v1"
 local Progress = {}
 
 local dirty: { [Player]: boolean } = {}
+local urgent: { [Player]: boolean } = {}
+local lastSent: { [Player]: number } = {}
+local badgePending: { [string]: boolean } = {}
 local friends: { [Player]: number } = {}
 local friendPairs: { [string]: boolean } = {}
 local lastAsk: { [Player]: number } = {}
@@ -92,17 +95,27 @@ function Progress.snapshot(player: Player, p: Progression.Profile): { [string]: 
 	}
 end
 
-local function mark(player: Player)
+--- Something the client should see. Most changes go out within a third of
+--- a second; quest progress ticking up in a fight (`soon`) at most every
+--- two seconds, so a fight does not resend the whole snapshot constantly.
+local function mark(player: Player, soon: boolean?)
 	dirty[player] = true
+	if not soon then
+		urgent[player] = true
+	end
 end
 Progress.mark = mark
 
 local function flush()
+	local now = os.clock()
 	for player in dirty do
-		dirty[player] = nil
-		local p = Profiles.get(player)
-		if p and player.Parent then
-			ProfileRemote:FireClient(player, Progress.snapshot(player, p))
+		if urgent[player] or now - (lastSent[player] or 0) >= 2 then
+			dirty[player], urgent[player] = nil, nil
+			lastSent[player] = now
+			local p = Profiles.get(player)
+			if p and player.Parent then
+				ProfileRemote:FireClient(player, Progress.snapshot(player, p))
+			end
 		end
 	end
 end
@@ -124,18 +137,28 @@ local function badge(player: Player, p: Progression.Profile, key: string)
 	if p.badges[key] then
 		return
 	end
-	p.badges[key] = true
 	local id = (Config.BADGES :: any)[key]
-	if type(id) == "number" and id > 0 then
-		task.spawn(function()
-			local ok, err = pcall(function()
-				BadgeService:AwardBadge(player.UserId, id)
-			end)
-			if not ok then
-				warn(`[Progress] badge {key} for {player.Name}: {err}`)
-			end
-		end)
+	if type(id) ~= "number" or id <= 0 then
+		p.badges[key] = true -- not set up: tracked, nothing to award
+		return
 	end
+	-- Recorded only once Roblox has it, so a failed award is tried again later.
+	local pendingKey = player.UserId .. ":" .. key
+	if badgePending[pendingKey] then
+		return
+	end
+	badgePending[pendingKey] = true
+	task.spawn(function()
+		local ok, err = pcall(function()
+			BadgeService:AwardBadge(player.UserId, id)
+		end)
+		badgePending[pendingKey] = nil
+		if ok then
+			p.badges[key] = true
+		else
+			warn(`[Progress] badge {key} for {player.Name}: {err}`)
+		end
+	end)
 end
 
 local function checkRoster(player: Player, p: Progression.Profile)
@@ -166,14 +189,20 @@ local function award(player: Player, p: Progression.Profile, xp: number, shards:
 		end
 	end
 	refreshLeaderstats(player, p)
-	mark(player)
+	-- A level-up shows at once; shards and experience from a kill can wait.
+	mark(player, #reached == 0 and not claimed)
 end
 
 local function quest(player: Player, p: Progression.Profile, kind: string, amount: number?)
-	for _, q in Progression.questEvent(p, kind, amount) do
+	local done, moved = Progression.questEvent(p, kind, amount)
+	for _, q in done do
 		Combat.notice(player, `Quest complete: {q.text}. Claim it from the menu (J).`, "gold")
 	end
-	mark(player)
+	if #done > 0 then
+		mark(player)
+	elseif moved then
+		mark(player, true)
+	end
 end
 
 local function unlock(player: Player, p: Progression.Profile, styleId: string, why: string)
@@ -229,11 +258,17 @@ local function pairKey(a: Player, b: Player): string
 	return x .. ":" .. y
 end
 
-local function recount()
+--- `leaving` is a player on their way out: still in GetPlayers during
+--- PlayerRemoving, but no longer anyone's bonus.
+local function recount(leaving: Player?)
+	local gone = if leaving then leaving.UserId else -1
 	for _, a in Players:GetPlayers() do
+		if a.UserId == gone then
+			continue
+		end
 		local n = 0
 		for _, b in Players:GetPlayers() do
-			if a ~= b and friendPairs[pairKey(a, b)] then
+			if a ~= b and b.UserId ~= gone and friendPairs[pairKey(a, b)] then
 				n += 1
 			end
 		end
@@ -344,6 +379,7 @@ asks.loadout = function(player, p, styleId, slots)
 	local ps = Combat.states[player]
 	if ps and ps.style == styleId and not ps.baseStyle then
 		ps.slots = Progress.slotsFor(player, styleId)
+		Combat.checkInfinity(ps)
 		Combat.publish(ps)
 	end
 	mark(player)
@@ -508,11 +544,17 @@ function Progress.start()
 		return result
 	end
 
-	Players.PlayerRemoving:Connect(function(player)
-		dirty[player] = nil
+	Players.PlayerRemoving:Connect(function(player: Player)
+		recount(player)
+		dirty[player], urgent[player], lastSent[player] = nil, nil, nil
 		friends[player] = nil
 		lastAsk[player] = nil
-		recount()
+		for key in friendPairs do
+			local a, b = string.match(key, "^(%d+):(%d+)$")
+			if tonumber(a) == player.UserId or tonumber(b) == player.UserId then
+				friendPairs[key] = nil
+			end
+		end
 	end)
 
 	-- Once a minute: play time, and a new day's quests for anyone online

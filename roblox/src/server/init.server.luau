@@ -11,7 +11,6 @@ local Remotes = require(Shared.Remotes)
 local Styles = require(Shared.Data.Styles)
 local RulesData = require(Shared.Data.Rules)
 local Arsenals = require(Shared.Data.Arsenals)
-local Skills = require(Shared.Data.Skills)
 
 local Combat = require(script.Combat)
 local Abilities = require(script.Abilities)
@@ -65,14 +64,7 @@ local function applyStyle(ps: Combat.PState, styleId: string, keepHealth: boolea
 	if not (set and ps.weapon and set.items[ps.weapon]) then
 		ps.weapon = if set then set.order[1] else nil
 	end
-	-- Infinity only stays up for a kit that can take it down again.
-	local canToggle = false
-	for _, id in ps.slots do
-		canToggle = canToggle or Skills[id].type == "toggle"
-	end
-	if not canToggle then
-		ps.infinity = false
-	end
+	Combat.checkInfinity(ps)
 	if not keepHealth then
 		table.clear(ps.history) -- nothing to rewind to
 	end
@@ -276,8 +268,10 @@ Players.PlayerRemoving:Connect(function(player)
 	lastSelect[player] = nil
 end)
 
-Profiles.start()
+-- Progress first, so it hears about every profile, including one that
+-- loads instantly (the in-memory store in Studio).
 Progress.start()
+Profiles.start()
 
 World.load(Config.START_MAP) -- the waves start when the first player picks a character
 

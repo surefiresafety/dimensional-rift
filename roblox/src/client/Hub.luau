@@ -3,6 +3,7 @@
 -- quests, the global boards and your numbers. It opens on its own when a
 -- daily reward is waiting, which is the first thing a returning player sees.
 
+local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -15,6 +16,8 @@ local Styles = require(Shared.Data.Styles)
 local Ui = require(script.Parent.Ui)
 local Profile = require(script.Parent.Profile)
 local Hud = require(script.Parent.Hud)
+local Loadout = require(script.Parent.Loadout)
+local Select = require(script.Parent.Select)
 
 local player = Players.LocalPlayer
 
@@ -28,6 +31,28 @@ local busy = false
 local boardName = "wave"
 local boardRows: { [string]: { any } } = {}
 local autoOpened = false
+local rendered = "" -- what the open tab was last drawn from
+
+--- The part of a snapshot a tab draws. A snapshot that leaves it unchanged
+--- (quest progress in a fight, while the Daily tab is open) redraws nothing,
+--- so a button is never swapped out from under a finger.
+local function signature(tab: string, d: any): string
+	local part: any = if tab == "daily"
+		then { d.daily }
+		elseif tab == "quests" then { d.quests, d.rerolled, d.shards }
+		elseif tab == "stats" then {
+			stats = d.stats,
+			level = d.level,
+			xp = d.xp,
+			shards = d.shards,
+			best = d.best,
+			cleared = d.cleared,
+			roster = #d.unlocked,
+			learned = #d.learned,
+		}
+		else { board = boardName, loaded = boardRows[boardName] ~= nil }
+	return tab .. HttpService:JSONEncode(part)
+end
 
 local TABS = { { "daily", "Daily" }, { "quests", "Quests" }, { "boards", "Boards" }, { "stats", "Stats" } }
 
@@ -413,9 +438,11 @@ function Hub.render()
 	clear()
 	local d = Profile.data
 	if not d then
+		rendered = ""
 		Ui.label({ Text = "Loading your save…", TextColor3 = Ui.DIM, Size = UDim2.new(1, 0, 0, 20), Parent = content })
 		return
 	end
+	rendered = signature(current, d)
 	renders[current](d)
 end
 
@@ -519,6 +546,31 @@ function Hub.build()
 			Hub.render()
 		end)
 	end
+	-- The other screens, from here too: on a phone there is no L or M key.
+	for i, t in { { "LOADOUT", "loadout" }, { "CHARACTERS", "characters" } } do
+		local b = Ui.make("TextButton", {
+			LayoutOrder = 10 + i,
+			Text = t[1],
+			Font = Ui.BOLD,
+			TextSize = 12,
+			TextColor3 = Ui.GOLD,
+			BackgroundColor3 = Ui.INK,
+			Size = UDim2.fromOffset(120, 32),
+			Parent = tabs,
+		}, { Ui.corner(16), Ui.stroke(Ui.GOLD, 1, 0.5) })
+		b.Activated:Connect(function()
+			if not player:GetAttribute("Style") then
+				Hud.log("Pick a character first.")
+				return
+			end
+			Hub.close()
+			if t[2] == "loadout" then
+				Loadout.open()
+			else
+				Select.show()
+			end
+		end)
+	end
 	content = Ui.make("ScrollingFrame", {
 		Position = UDim2.fromOffset(0, 94),
 		Size = UDim2.new(1, 0, 1, -94),
@@ -535,7 +587,7 @@ function Hub.build()
 	})
 
 	Profile.changed:Connect(function(new: any)
-		if gui.Enabled and current ~= "boards" then
+		if gui.Enabled and current ~= "boards" and signature(current, new) ~= rendered then
 			Hub.render()
 		end
 		-- The first time the save arrives with a reward waiting, show it.

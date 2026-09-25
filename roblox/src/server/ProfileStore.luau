@@ -73,23 +73,22 @@ function ProfileStore.new(store: Store, opts: Options): ProfileStore
 	local warnf = opts.warn or function(_: string) end
 
 	--- Reads a profile and takes its lock. Returns nil and a reason if the store
-	--- keeps failing. A fresh lock held by another server is waited on, and
-	--- taken over on the last attempt: better that than a player who can never
-	--- load (the other server's saves will then be refused).
+	--- keeps failing, or if another server still holds a fresh lock after every
+	--- retry. A fresh lock is never forced: its server may still be writing
+	--- the player's last save, and loading before it lands would lose that
+	--- progress or let a reward be claimed twice.
 	function self.load(this: ProfileStore, key: string): (any?, string?)
 		local lastErr = "unknown"
 		for attempt = 1, retries do
 			local loaded: any? = nil
 			local blocked = false
-			local force = attempt == retries
 			local ok, err = pcall(function()
 				this.store:UpdateAsync(key, function(old: any)
 					local data = if type(old) == "table" then old else {}
 					local lock = data.lock
 					local now = opts.now()
 					if
-						not force
-						and type(lock) == "table"
+						type(lock) == "table"
 						and lock.job ~= opts.jobId
 						and now - (tonumber(lock.time) or 0) < timeout
 					then

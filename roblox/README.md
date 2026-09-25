@@ -89,7 +89,7 @@ by the server; clients only ever ask.
 
 | | |
 | --- | --- |
-| Saving | Loaded on join, saved every 90 s, on leaving and on shutdown. A session lock stops two servers writing the same player: a second server waits for the first to let go, takes over a lock more than 30 minutes old, and a server that lost the lock can never overwrite newer progress. Failed reads and writes are retried. In Studio without API access it falls back to memory and says so. |
+| Saving | Loaded on join, saved every 90 s, on leaving and on shutdown. A session lock stops two servers writing the same player: a second server waits up to a minute for the first to let go and never forces a live lock (a player still held is asked to rejoin), takes over a lock untouched for five minutes (its server is gone), and a server that lost the lock can never overwrite newer progress. Saves for one player never overlap, and nothing is written after the save on leaving. Failed reads and writes are retried. In Studio without API access it falls back to memory and says so; a live server never does. |
 | Levels and Rift Shards | Experience and shards from every kill (more for alphas, story bosses and character bosses), every wave cleared and every world cleared (much more the first time). Each level pays shards. |
 | The roster | Six starters from all three universes (Threadrunner, Ren Tsumuji, Kurobane, Haru Takane, Kage Inukai, Hammer Maiden). Everyone else joins when you beat their boss in the rift, or for 350 Rift Shards (900 for the ten premium characters). Locked cards say how to win them. "Continue as …" puts you straight back in as your last character. |
 | Absorbed techniques and loadouts | Techniques absorbed from enemies are kept, and the loadout screen (L) puts any of them in any character's five slots. Saved per character. |
@@ -163,12 +163,13 @@ npm run test:roblox     # the Luau rules and data checks
   ```
 
   `globalTypes.d.luau` comes from the luau-lsp repository (`scripts/`).
-- 52 Lune tests pass. They check the ported rules against the web build's own formulas
+- 54 Lune tests pass. They check the ported rules against the web build's own formulas
   (damage over time matches to the point over several seconds at 60 fps), check
   that every exported reference resolves, check the progression rules (levels,
   rewards, the streak across a missed day, quests, loadouts, unlocks), and run the
-  save system against a fake DataStore (locks held, stolen, released, a store that
-  keeps failing, an old save repaired).
+  save system against a fake DataStore (a live lock waited on and never forced, a
+  dead one taken, a last save landing while the next server waits, a server that
+  lost its lock refused, a store that keeps failing, an old save repaired).
 - The repo's node suite, including the export freshness test.
 
 **Not checked:** anything that needs the Roblox engine to be running: physics, the

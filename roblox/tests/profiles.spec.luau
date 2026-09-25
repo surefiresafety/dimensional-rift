@@ -38,24 +38,60 @@ H.test("a new player gets a fresh profile, and it round-trips", function()
 	H.eq(again.learned.rasengan, true, "techniques kept")
 end)
 
-H.test("a profile held by another live server waits, then takes over", function()
+H.test("a profile held by another live server is waited on, never forced", function()
 	local store = ProfileStore.memory()
 	local a = server(store, "A")
 	local p = a:load("u2")
 	p.shards = 50
 	a:save("u2", p)
 	local start = clock
-	local b = server(store, "B", 3)
-	local q = b:load("u2")
-	assert(q, "B gets it on the last attempt")
-	H.eq(q.shards, 50, "with A's last save")
+	local none, why = server(store, "B", 3):load("u2")
+	H.eq(none, nil, "B does not take a fresh lock")
+	assert(why and string.find(why, "another server"), "and says why")
 	assert(clock > start, "it waited first")
-	-- A lost the lock: its next save must not roll B back.
+	H.eq((a:save("u2", p)), true, "A still holds it and can save")
+end)
+
+H.test("a server that lost its lock can never overwrite newer progress", function()
+	local store = ProfileStore.memory()
+	local a = server(store, "A")
+	local p = a:load("u9")
+	clock += 601 -- A goes quiet long enough to count as dead
+	local q = server(store, "B"):load("u9")
+	q.shards = 70
+	server(store, "B"):save("u9", q)
 	p.shards = 1
-	local ok, why = a:save("u2", p)
+	local ok, why = a:save("u9", p)
 	H.eq(ok, false, "A's save is refused")
 	assert(why, "and says why")
-	H.eq(store.data.u2.profile.shards, 50, "B's progress is safe")
+	H.eq(store.data.u9.profile.shards, 70, "B's progress is safe")
+end)
+
+H.test("the last save lands while the next server waits, and it gets that save", function()
+	local store = ProfileStore.memory()
+	local a = server(store, "A")
+	local p = a:load("u10")
+	p.shards = 88
+	-- A's release arrives during B's first wait.
+	local b = ProfileStore.new(store, {
+		jobId = "B",
+		reconcile = Progression.reconcile,
+		now = function()
+			return clock
+		end,
+		wait = function(s: number)
+			clock += s
+			if p then
+				a:save("u10", p, true)
+				p = nil :: any
+			end
+		end,
+		retries = 3,
+		lockTimeout = 600,
+	})
+	local q = b:load("u10")
+	assert(q, "loaded once A let go")
+	H.eq(q.shards, 88, "with A's last save")
 end)
 
 H.test("a lock from a dead server is taken at once", function()

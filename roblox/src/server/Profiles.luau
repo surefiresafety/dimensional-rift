@@ -25,9 +25,25 @@ local Profiles = {}
 Profiles.persistent = true -- false when running on the in-memory fallback
 
 local function openStore(): ProfileStore.Store
+	if not RunService:IsStudio() then
+		-- A live server always uses the real store. If DataStores are down,
+		-- loads fail and players are asked to rejoin; never quietly play on
+		-- without saving.
+		for attempt = 1, 5 do
+			local ok, s = pcall(function()
+				return DataStoreService:GetDataStore(STORE_NAME)
+			end)
+			if ok then
+				return s :: any
+			end
+			warn(`[Profiles] GetDataStore failed (attempt {attempt}): {s}`)
+			task.wait(attempt)
+		end
+		error("[Profiles] DataStoreService is unavailable")
+	end
 	local ok, store = pcall(function()
 		local s = DataStoreService:GetDataStore(STORE_NAME)
-		-- GetDataStore succeeds in Studio even without access; a read does not.
+		-- In Studio GetDataStore succeeds even without API access; a read does not.
 		s:GetAsync("__probe")
 		return s
 	end)
@@ -53,6 +69,12 @@ local store = ProfileStore.new(openStore(), {
 	warn = function(msg: string)
 		warn("[Profiles] " .. msg)
 	end,
+	-- Autosave refreshes the lock every 90 s, so a lock untouched for five
+	-- minutes belongs to a server that is gone. Anything younger is waited on
+	-- (up to a minute) and never forced: forcing could load a profile before
+	-- the old server's last save lands, and lose or repeat progress.
+	lockTimeout = 300,
+	retries = 30,
 })
 
 local loaded: { [Player]: Progression.Profile } = {}
@@ -69,8 +91,12 @@ function Profiles.get(player: Player): Progression.Profile?
 	return loaded[player]
 end
 
+--- Runs for every profile as it loads, and at once for any already loaded.
 function Profiles.onLoaded(fn: (Player, Progression.Profile) -> ())
 	table.insert(loadedHandlers, fn)
+	for player, profile in loaded do
+		task.spawn(fn, player, profile)
+	end
 end
 
 --- Runs just before every save: the place to copy live numbers into it.
@@ -89,15 +115,36 @@ local function beforeSave(player: Player, profile: Progression.Profile)
 	end
 end
 
+-- One save at a time per player, and nothing after the release has begun:
+-- an autosave landing after the release would put back an older copy.
+local busy: { [Player]: boolean } = {}
+local releasing: { [Player]: boolean } = {}
+
 function Profiles.save(player: Player, release: boolean?): boolean
-	local profile = loaded[player]
-	if not profile then
+	if not loaded[player] or releasing[player] then
 		return false
 	end
+	if release then
+		releasing[player] = true
+	end
+	while busy[player] do
+		task.wait(0.1)
+	end
+	local profile = loaded[player]
+	if not profile then
+		releasing[player] = nil
+		return false
+	end
+	busy[player] = true
 	beforeSave(player, profile)
 	local ok, err = store:save(keyOf(player), profile, release)
+	busy[player] = nil
 	if not ok then
 		warn(`[Profiles] could not save {player.Name}: {err}`)
+	end
+	if release then
+		loaded[player] = nil
+		releasing[player] = nil
 	end
 	return ok
 end
@@ -133,10 +180,7 @@ function Profiles.start()
 		task.spawn(load, p)
 	end
 	Players.PlayerRemoving:Connect(function(player)
-		if loaded[player] then
-			Profiles.save(player, true)
-			loaded[player] = nil
-		end
+		Profiles.save(player, true)
 	end)
 	-- Autosave, spread out so a full server does not save everyone at once.
 	task.spawn(function()
@@ -156,8 +200,14 @@ function Profiles.start()
 		for player in table.clone(loaded) do
 			pending += 1
 			task.spawn(function()
-				Profiles.save(player, true)
-				loaded[player] = nil
+				if releasing[player] then
+					-- Already being saved out by PlayerRemoving: wait for that.
+					while loaded[player] do
+						task.wait(0.1)
+					end
+				else
+					Profiles.save(player, true)
+				end
 				pending -= 1
 			end)
 		end
@@ -188,6 +238,7 @@ local function board(name: string): OrderedDataStore?
 end
 
 --- Posts a player's value to a board, if it changed since the last post.
+--- Yields.
 function Profiles.post(boardName: string, userId: number, value: number)
 	local posted = lastPosted[boardName] or {}
 	lastPosted[boardName] = posted
@@ -199,15 +250,14 @@ function Profiles.post(boardName: string, userId: number, value: number)
 		return
 	end
 	posted[userId] = value
-	task.spawn(function()
-		local ok, err = pcall(function()
-			(b :: OrderedDataStore):SetAsync(tostring(userId), math.floor(value))
-		end)
-		if not ok then
-			posted[userId] = nil
-			warn(`[Profiles] could not post to {boardName}: {err}`)
-		end
+	-- Called from inside a save, so the shutdown waits for it too.
+	local ok, err = pcall(function()
+		(b :: OrderedDataStore):SetAsync(tostring(userId), math.floor(value))
 	end)
+	if not ok then
+		posted[userId] = nil
+		warn(`[Profiles] could not post to {boardName}: {err}`)
+	end
 end
 
 local function nameOf(userId: number): string

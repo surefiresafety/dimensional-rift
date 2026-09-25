@@ -5,6 +5,7 @@
 -- cooldown, since the ability rail is hidden on a small screen.
 
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 
 local Ui = require(script.Parent.Ui)
 local Hud = require(script.Parent.Hud)
@@ -52,6 +53,7 @@ function TouchPad.build(h: Handlers)
 		Parent = gui,
 	})
 	local shades: { { shade: Frame, key: string } } = {}
+	local held: { [InputObject]: string } = {}
 	for _, b in LAYOUT do
 		local btn = Ui.make("TextButton", {
 			Text = b.label,
@@ -80,6 +82,9 @@ function TouchPad.build(h: Handlers)
 			if input.UserInputType ~= Enum.UserInputType.Touch then
 				return
 			end
+			if b.key == "sig" or b.key == "charge" then
+				held[input] = b.key
+			end
 			if b.key == "strike" then
 				h.strike()
 			elseif b.key == "sig" then
@@ -92,17 +97,39 @@ function TouchPad.build(h: Handlers)
 				h.cast(tonumber(b.key) :: number)
 			end
 		end)
-		btn.InputEnded:Connect(function(input)
-			if input.UserInputType ~= Enum.UserInputType.Touch then
-				return
-			end
-			if b.key == "sig" then
-				h.signature(false)
-			elseif b.key == "charge" then
-				h.charge(false)
-			end
-		end)
 	end
+	-- A held button lets go when that finger lifts, wherever it has slid to:
+	-- the button's own InputEnded never fires once the finger leaves it.
+	UserInputService.TouchEnded:Connect(function(input)
+		local key = held[input]
+		if not key then
+			return
+		end
+		held[input] = nil
+		if key == "sig" then
+			h.signature(false)
+		else
+			h.charge(false)
+		end
+	end)
+	-- Beside Roblox's jump button, wherever this device puts it.
+	task.spawn(function()
+		local touchGui = player:WaitForChild("PlayerGui"):WaitForChild("TouchGui", 10)
+		local frame = touchGui and touchGui:WaitForChild("TouchControlFrame", 5)
+		local jump = frame and frame:WaitForChild("JumpButton", 5)
+		if not jump or not jump:IsA("GuiObject") then
+			return
+		end
+		local function place()
+			local origin = gui.AbsolutePosition
+			local right = jump.AbsolutePosition.X - origin.X - 12
+			local bottom = jump.AbsolutePosition.Y + jump.AbsoluteSize.Y - origin.Y
+			pad.Position = UDim2.fromOffset(right, bottom)
+		end
+		place()
+		jump:GetPropertyChangedSignal("AbsolutePosition"):Connect(place)
+		jump:GetPropertyChangedSignal("AbsoluteSize"):Connect(place)
+	end)
 	-- Cooldowns: the slot's technique, or the ultimate.
 	task.spawn(function()
 		while gui.Parent do

@@ -228,12 +228,24 @@ function Combat.newState(player: Player): PState
 	return ps
 end
 
+--- Infinity only stays up for a kit that can take it down again: without a
+--- toggle in the slots it would be permanent invulnerability.
+function Combat.checkInfinity(ps: PState)
+	for _, id in ps.slots do
+		if Skills[id] and Skills[id].type == "toggle" then
+			return
+		end
+	end
+	ps.infinity = false
+end
+
 --- Publishes the numbers the HUD draws. Health rides on the Humanoid itself.
 function Combat.publish(ps: PState)
 	local p = ps.player
 	p:SetAttribute("SE", if ps.se == math.huge then -1 else math.floor(ps.se))
 	p:SetAttribute("MaxSE", if ps.maxSe == math.huge then -1 else ps.maxSe)
 	p:SetAttribute("Style", ps.style)
+	p:SetAttribute("BaseStyle", ps.baseStyle) -- set while transformed
 	p:SetAttribute("Slots", table.concat(ps.slots, ","))
 	p:SetAttribute("Infinity", ps.infinity)
 	local st = ps.style and Styles[ps.style]

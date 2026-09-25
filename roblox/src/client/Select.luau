@@ -28,6 +28,26 @@ local grid: ScrollingFrame
 local countLabel: TextLabel
 local cards: { { frame: Frame, world: string, find: string, id: string, pick: TextButton, lock: TextLabel } } = {}
 local continueButton: TextButton
+local pending: string? = nil -- asked for, not yet confirmed by the server
+
+--- Asks for a character. The screen closes when the server has put them in
+--- (their Style changes), not before: a refused pick leaves it open.
+local function choose(id: string)
+	local player = Players.LocalPlayer
+	if player:GetAttribute("Style") == id then
+		SelectStyle:FireServer(id)
+		Select.hide()
+		return
+	end
+	pending = id
+	SelectStyle:FireServer(id)
+	task.delay(3, function()
+		if pending == id then
+			pending = nil
+			Hud.log("That did not go through. Try again in a moment.")
+		end
+	end)
+end
 local rosterLabel: TextLabel
 local busy = false
 local world = "all"
@@ -181,8 +201,7 @@ local function card(id: string, st: any): Frame
 	}, { Ui.corner(18) })
 	pick.Activated:Connect(function()
 		if owns(id) then
-			SelectStyle:FireServer(id)
-			Select.hide()
+			choose(id)
 			return
 		end
 		if busy then
@@ -357,8 +376,7 @@ function Select.build()
 		local d = Profile.data
 		local last = d and d.lastStyle
 		if last and owns(last) then
-			SelectStyle:FireServer(last)
-			Select.hide()
+			choose(last)
 		end
 	end)
 	grid = Ui.make("ScrollingFrame", {
@@ -398,6 +416,12 @@ function Select.build()
 	refilter()
 	refreshLocks()
 	Profile.changed:Connect(refreshLocks)
+	player:GetAttributeChangedSignal("Style"):Connect(function()
+		if pending and player:GetAttribute("Style") == pending then
+			pending = nil
+			Select.hide()
+		end
+	end)
 end
 
 function Select.show()

@@ -400,18 +400,19 @@ function Progression.refreshQuests(p: Profile, today: number, seed: number): boo
 end
 
 --- Advances every unclaimed quest of that kind. Returns the ones this event
---- finished.
-function Progression.questEvent(p: Profile, kind: string, amount: number?): { Quest }
-	local done = {}
+--- finished, and whether any quest moved at all.
+function Progression.questEvent(p: Profile, kind: string, amount: number?): ({ Quest }, boolean)
+	local done, moved = {}, false
 	for _, q in p.quests.list do
 		if q.kind == kind and not q.claimed and q.progress < q.goal then
 			q.progress = math.min(q.goal, q.progress + (amount or 1))
+			moved = true
 			if q.progress >= q.goal then
 				table.insert(done, q)
 			end
 		end
 	end
-	return done
+	return done, moved
 end
 
 --- Claims a finished quest. Adds its shards; the caller adds its experience.

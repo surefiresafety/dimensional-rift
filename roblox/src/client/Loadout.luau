@@ -169,6 +169,11 @@ local function render()
 end
 
 function Loadout.open()
+	-- While transformed the kit on screen is the transform's, not theirs.
+	if player:GetAttribute("BaseStyle") then
+		Hud.log("Change back first (G), then set your loadout.")
+		return
+	end
 	styleId = styleNow()
 	local slots = (player:GetAttribute("Slots") :: string?) or ""
 	picked = if slots == "" then {} else string.split(slots, ",")
