@@ -103,7 +103,10 @@ Story.CHAPTERS = {
 				text = "Patchwork is feeding him. Every fighter who falls in here becomes thread.",
 			},
 		},
-		cleared = { speaker = "Threadrunner", text = "The Block is down. Nobody else gets turned into string. Not today." },
+		cleared = {
+			speaker = "Threadrunner",
+			text = "The Block is down. Nobody else gets turned into string. Not today.",
+		},
 	},
 	land_of_wind = {
 		chapter = "Stitch 6 of 9",

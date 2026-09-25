@@ -79,15 +79,15 @@ return function(K: any)
 
 	-- Nine Patches (terrain) and the crimson seams between them ----------------
 	local patches = {
-		{ "Asphalt", rgb(52, 50, 58) }, -- 0 City
-		{ "Grass", rgb(74, 104, 60) }, -- 40 Academy
-		{ "Concrete", rgb(118, 114, 108) }, -- 80 Colony
-		{ "Sand", rgb(196, 164, 112) }, -- 120 Wind
-		{ "Rock", rgb(112, 98, 86) }, -- 160 Earth
-		{ "Ground", rgb(84, 72, 60) }, -- 200 Water
-		{ "Cobblestone", rgb(110, 106, 100) }, -- 240 Kyoto
-		{ "Snow", rgb(210, 216, 226) }, -- 280 Lightning
-		{ "Slate", rgb(64, 60, 84) }, -- 320 Star Vault
+		{ mat = "Asphalt", color = rgb(52, 50, 58) }, -- 0 City
+		{ mat = "Grass", color = rgb(74, 104, 60) }, -- 40 Academy
+		{ mat = "Concrete", color = rgb(118, 114, 108) }, -- 80 Colony
+		{ mat = "Sand", color = rgb(196, 164, 112) }, -- 120 Wind
+		{ mat = "Rock", color = rgb(112, 98, 86) }, -- 160 Earth
+		{ mat = "Ground", color = rgb(84, 72, 60) }, -- 200 Water
+		{ mat = "Cobblestone", color = rgb(110, 106, 100) }, -- 240 Kyoto
+		{ mat = "Snow", color = rgb(210, 216, 226) }, -- 280 Lightning
+		{ mat = "Slate", color = rgb(64, 60, 84) }, -- 320 Star Vault
 	}
 	for i, p in patches do
 		local theta = (i - 1) * 40
@@ -103,8 +103,8 @@ return function(K: any)
 				h0 = -1.6,
 				h1 = 0,
 				yaw = -b,
-				material = p[1],
-				color = p[2],
+				material = p.mat,
+				color = p.color,
 			})
 		end
 		local sb = theta + 20
@@ -184,10 +184,9 @@ return function(K: any)
 
 	-- 80 Colony: gantry 20 whose beam runs out over a 2-high container stack; ramp to 5.2
 	-- (the Thread Walk's start is on the stack top)
-	local walkTop: { [number]: { number } } = {}
 	do
 		local b = 71
-		for i, r in { 37, 44 } do
+		for i, r in { 38, 49 } do
 			local x, z = at(b, r, 0)
 			K.box({
 				id = "colony/gantry/leg" .. i,
@@ -204,13 +203,13 @@ return function(K: any)
 				anchor = true,
 			})
 		end
-		local gx, gz = at(b, 42.25, 0)
+		local gx, gz = at(b, 43.5, 0)
 		K.box({
 			id = "colony/gantry",
 			kind = "beam",
 			x = gx,
 			z = gz,
-			w = 15.5,
+			w = 16,
 			d = 2,
 			h0 = 18.5,
 			h1 = 20,
@@ -218,11 +217,11 @@ return function(K: any)
 			color = rgb(200, 150, 40),
 			mat = "DiamondPlate",
 		})
-		local cx, cz = at(b, 48.5, 0)
+		local cx, cz = at(b, 43.5, 0)
 		K.container({ id = "colony/container1", x = cx, z = cz, yaw = -(b + 90), color = rgb(170, 70, 50) })
 		K.container({ id = "colony/container2", x = cx, z = cz, h0 = 2.6, yaw = -(b + 90), color = rgb(60, 110, 150) })
-		local fx, fz = at(b, 48.5, -3 - 9.1)
-		walkTop[71] = K.ramp({
+		local fx, fz = at(b, 43.5, -3 - 9.1)
+		K.ramp({
 			id = "colony/ramp",
 			x = fx,
 			z = fz,
@@ -237,11 +236,11 @@ return function(K: any)
 	-- 120 Wind: house (roof 6) with a ramp and landing, windcatcher 20 on the roof
 	do
 		local b = 111
-		local hx, hz = at(b, 46, 0)
+		local hx, hz = at(b, 43.5, 0)
 		K.house({ id = "wind/house", x = hx, z = hz, h = 6, size = 7, yaw = -b, rails = { "w" }, clutter = false })
-		local wx, wz = at(b, 44.3, 0)
+		local wx, wz = at(b, 41.75, 0)
 		K.windcatcher({ id = "wind/windcatcher", x = wx, z = wz, w = 3.5, h0 = 6, top = 20, yaw = -b })
-		local fx, fz = at(b, 51.5, -3.5 - 10.5)
+		local fx, fz = at(b, 49, -3.5 - 10.5)
 		K.ramp({
 			id = "wind/ramp",
 			x = fx,
@@ -322,7 +321,7 @@ return function(K: any)
 		local dx, dz = at(b, 46.25, 0)
 		K.deck({ id = "water/deck", x = dx, z = dz, w = 6.5, d = 7, h = 5, yaw = -b, posts = 4 })
 		local fx, fz = at(b, 47, 3.5 + 8.75)
-		walkTop[191] = K.ramp({
+		K.ramp({
 			id = "water/ramp",
 			x = fx,
 			z = fz,
@@ -404,25 +403,25 @@ return function(K: any)
 		end
 		local px, pz = at(b, 42.5, 0)
 		local tiers = {
-			{ "kyoto/pagoda", 8, 0, 12, rgb(150, 60, 44), "WoodPlanks", true },
-			{ "kyoto/pagoda/eave", 8.6, 12, 12.8, rgb(58, 62, 70), "Slate", false },
-			{ "kyoto/pagoda/upper", 5.5, 12.8, 15.2, rgb(150, 60, 44), "WoodPlanks", false },
-			{ "kyoto/pagoda/cap", 6.5, 15.2, 16, rgb(58, 62, 70), "Slate", false },
+			{ id = "kyoto/pagoda", w = 8, h0 = 0, h1 = 12, color = rgb(150, 60, 44), mat = "WoodPlanks" },
+			{ id = "kyoto/pagoda/eave", w = 8.6, h0 = 12, h1 = 12.8, color = rgb(58, 62, 70), mat = "Slate" },
+			{ id = "kyoto/pagoda/upper", w = 5.5, h0 = 12.8, h1 = 15.2, color = rgb(150, 60, 44), mat = "WoodPlanks" },
+			{ id = "kyoto/pagoda/cap", w = 6.5, h0 = 15.2, h1 = 16, color = rgb(58, 62, 70), mat = "Slate" },
 		}
 		for _, t in tiers do
 			K.box({
-				id = t[1],
+				id = t.id,
 				kind = "tower",
 				x = px,
 				z = pz,
-				w = t[2],
-				d = t[2],
-				h0 = t[3],
-				h1 = t[4],
+				w = t.w,
+				d = t.w,
+				h0 = t.h0,
+				h1 = t.h1,
 				yaw = -b,
-				color = t[5],
-				mat = t[6],
-				anchor = if t[7] then true else nil,
+				color = t.color,
+				mat = t.mat,
+				anchor = if t.id == "kyoto/pagoda" then true else nil, -- the 8 x 8 base
 			})
 		end
 	end
@@ -572,10 +571,10 @@ return function(K: any)
 	-- The Thread Walk (behind the spawn): container 5.2 -> roof 6 -> ledge 8 -> deck 5 --
 	-- Each platform carries a walk across it; rope bridges join them.
 	local plats = {
-		{ b = 71, r = 48.5, h = 5.2, t0 = -3, t1 = 2.6 },
-		{ b = 111, r = 47.6, h = 6, t0 = -3.3, t1 = 3.3 },
-		{ b = 151, r = 47.5, h = 8, t0 = -3.3, t1 = 6.6 },
-		{ b = 191, r = 47, h = 5, t0 = -3.3, t1 = 3.5 },
+		{ b = 71, r = 43.5, h = 5.2, t0 = -3, t1 = 2 },
+		{ b = 111, r = 45, h = 6, t0 = -2.3, t1 = 2.3 },
+		{ b = 151, r = 47.5, h = 8, t0 = -2.3, t1 = 5.6 },
+		{ b = 191, r = 47, h = 5, t0 = -2.3, t1 = 3.5 },
 	}
 	for i, p in plats do
 		local ax, az = at(p.b, p.r, p.t0)
@@ -597,39 +596,33 @@ return function(K: any)
 
 	-- Beyond: fragments, stitched pillars, sky threads --------------------------
 	local fragMats = {
-		{ "Asphalt", rgb(52, 50, 58), "Grass", rgb(74, 104, 60) },
-		{ "Sandstone", rgb(196, 164, 112), "Sand", rgb(206, 176, 122) },
-		{ "WoodPlanks", rgb(120, 92, 64), "Ground", rgb(84, 72, 60) },
-		{ "Slate", rgb(92, 94, 100), "Snow", rgb(210, 216, 226) },
-		{ "Brick", rgb(92, 70, 64), "Concrete", rgb(118, 114, 108) },
-		{ "Slate", rgb(64, 60, 84), "Neon", rgb(150, 140, 220) },
+		{ mat = "Asphalt", color = rgb(52, 50, 58), topMat = "Grass", top = rgb(74, 104, 60) },
+		{ mat = "Sandstone", color = rgb(196, 164, 112), topMat = "Sand", top = rgb(206, 176, 122) },
+		{ mat = "WoodPlanks", color = rgb(120, 92, 64), topMat = "Ground", top = rgb(84, 72, 60) },
+		{ mat = "Slate", color = rgb(92, 94, 100), topMat = "Snow", top = rgb(210, 216, 226) },
+		{ mat = "Brick", color = rgb(92, 70, 64), topMat = "Concrete", top = rgb(118, 114, 108) },
+		{ mat = "Slate", color = rgb(64, 60, 84), topMat = "Neon", top = rgb(150, 140, 220) },
 	}
-	local function fragment(
-		id: string,
-		b: number,
-		r: number,
-		h0: number,
-		h1: number,
-		m: { any },
-		solid: boolean,
-		lit: boolean
-	)
-		local x, z = K.around(b, r)
-		local w = if solid then 6 else 7
+	-- A collidable fragment: one 6 x h x 6 column of torn ground, a patch of another
+	-- world on top, a broken shelf and a crimson seam (decor, lit).
+	for i, b in { 20, 110, 200, 290 } do
+		local m = fragMats[i]
+		local h = ({ 26, 30, 34, 28 })[i]
+		local x, z = K.around(b, 64)
+		local id = "fragment" .. i
 		K.box({
 			id = id,
 			kind = "fragment",
-			set = if solid then "solid" else "decor",
 			x = x,
 			z = z,
-			w = w,
-			d = w,
-			h0 = h0,
-			h1 = h1,
+			w = 6,
+			d = 6,
+			h0 = 0,
+			h1 = h,
 			yaw = -b,
-			color = m[2],
-			mat = m[1],
-			anchor = if solid then true else nil,
+			color = m.color,
+			mat = m.mat,
+			anchor = true,
 			backdrop = true,
 		})
 		K.box({
@@ -638,43 +631,46 @@ return function(K: any)
 			set = "decor",
 			x = x,
 			z = z,
-			w = w + 0.4,
-			d = w + 0.4,
-			h0 = h1,
-			h1 = h1 + 0.6,
+			w = 6.6,
+			d = 6.6,
+			h0 = h,
+			h1 = h + 0.6,
 			yaw = -b,
-			color = m[4],
-			mat = if m[3] == "Neon" then "Neon" else "Grass",
+			color = m.top,
+			mat = m.topMat,
 			backdrop = true,
+			lean = { 4, 0, -3 },
+		})
+		local sx, sz = K.around(b, 60.4)
+		K.box({
+			id = id .. "/shelf",
+			kind = "fragment",
+			set = "decor",
+			x = sx,
+			z = sz,
+			w = 2.4,
+			d = 4.4,
+			h0 = h - 6,
+			h1 = h - 4.6,
+			yaw = -b,
+			color = m.color,
+			mat = m.mat,
+			backdrop = true,
+			lean = { 0, 0, -12 },
 		})
 		K.box({
-			id = id .. "/under",
+			id = id .. "/crack",
 			kind = "fragment",
 			set = "decor",
 			x = x,
 			z = z,
-			w = w * 0.7,
-			d = w * 0.7,
-			h0 = h0 - 3,
-			h1 = h0,
-			yaw = -b + 15,
-			color = rgb(70, 58, 50),
-			mat = "Rock",
-			backdrop = true,
-		})
-		K.box({
-			id = id .. "/root",
-			kind = "fragment",
-			set = "decor",
-			x = x,
-			z = z,
-			w = w * 0.35,
-			d = w * 0.35,
-			h0 = h0 - 5.5,
-			h1 = h0 - 3,
-			yaw = -b + 40,
-			color = rgb(56, 46, 40),
-			mat = "Rock",
+			w = 6.2,
+			d = 0.25,
+			h0 = h - 9,
+			h1 = h - 1,
+			yaw = -b + 60,
+			color = rgb(24, 20, 26),
+			mat = "Basalt",
 			backdrop = true,
 		})
 		K.box({
@@ -683,22 +679,19 @@ return function(K: any)
 			set = "decor",
 			x = x,
 			z = z,
-			w = w + 0.2,
+			w = 6.2,
 			d = 0.3,
-			h0 = h0 + 0.5,
-			h1 = h1 - 0.5,
+			h0 = 1,
+			h1 = h - 1,
 			yaw = -b + 30,
 			color = CRIMSON,
 			mat = "Neon",
 			backdrop = true,
-			light = if lit then { color = CRIMSON, range = 30, bright = 1.2 } else nil,
+			light = { color = CRIMSON, range = 30, bright = 1.2 },
 		})
 	end
-	-- the 4 collidable fragments at r 64 (anchors and flight-only perches)
-	for i, b in { 20, 110, 200, 290 } do
-		fragment("fragment" .. i, b, 64, 0, ({ 26, 30, 34, 28 })[i], fragMats[(i - 1) % #fragMats + 1], true, true)
-	end
-	-- 8 decor fragments at r 60-90
+
+	-- 8 decor fragments drifting at r 70-90: a torn block, its patch, its underside
 	for i, f in
 		{
 			{ 50, 78, 34 },
@@ -712,24 +705,68 @@ return function(K: any)
 		}
 	do
 		local m = fragMats[(i + 2) % #fragMats + 1]
-		fragment("drift" .. i, f[1], f[2], f[3], f[3] + 5 + (i % 3) * 2, m, false, false)
+		local x, z = K.around(f[1], f[2])
+		local h0, h1 = f[3], f[3] + 5 + (i % 3) * 2
+		local id = "drift" .. i
+		local tip = { (i % 3 - 1) * 7, 0, (i % 2) * 10 - 5 }
+		for _, p in
+			{
+				{ id = "", w = 7, h0 = h0, h1 = h1, color = m.color, mat = m.mat, turn = 0 },
+				{ id = "/top", w = 7.4, h0 = h1, h1 = h1 + 0.6, color = m.top, mat = m.topMat, turn = 0 },
+				{ id = "/under", w = 4.9, h0 = h0 - 3, h1 = h0, color = rgb(70, 58, 50), mat = "Rock", turn = 15 },
+				{ id = "/root", w = 2.4, h0 = h0 - 5.5, h1 = h0 - 3, color = rgb(56, 46, 40), mat = "Rock", turn = 40 },
+			}
+		do
+			K.box({
+				id = id .. p.id,
+				kind = "fragment",
+				set = "decor",
+				x = x,
+				z = z,
+				w = p.w,
+				d = p.w,
+				h0 = p.h0,
+				h1 = p.h1,
+				yaw = -f[1] + p.turn,
+				color = p.color,
+				mat = p.mat,
+				backdrop = true,
+				lean = tip,
+			})
+		end
+		K.box({
+			id = id .. "/seam",
+			kind = "glow",
+			set = "decor",
+			x = x,
+			z = z,
+			w = 7.2,
+			d = 0.3,
+			h0 = h0 + 0.5,
+			h1 = h1 - 0.5,
+			yaw = -f[1] + 30,
+			color = CRIMSON,
+			mat = "Neon",
+			backdrop = true,
+			lean = tip,
+		})
 	end
 
 	-- 9 stitched pillars 3 x 3 x 30 (the one on 270 gives way to the Spindle)
 	for i, p in
 		{
-			{ 0, 56, false },
-			{ 30, 56, true },
-			{ 40, 56, false },
-			{ 90, 56, false },
-			{ 150, 56, true },
-			{ 170, 56, false },
-			{ 210, 56, true },
-			{ 330, 57.5, false },
-			{ 240, 60, false },
+			{ b = 0, r = 56 },
+			{ b = 30, r = 56, lit = true },
+			{ b = 40, r = 56 },
+			{ b = 90, r = 56 },
+			{ b = 150, r = 55.5, lit = true },
+			{ b = 170, r = 56 },
+			{ b = 210, r = 56, lit = true },
+			{ b = 330, r = 57.5 },
+			{ b = 240, r = 60 },
 		}
 	do
-		local b, r = p[1], p[2]
+		local b, r = p.b, p.r
 		local x, z = K.around(b, r)
 		K.box({
 			id = "pillar" .. i,
@@ -760,7 +797,7 @@ return function(K: any)
 			color = CRIMSON,
 			mat = "Neon",
 			backdrop = true,
-			light = if p[3] then { color = CRIMSON, range = 28, bright = 1.2 } else nil,
+			light = if p.lit then { color = CRIMSON, range = 28, bright = 1.2 } else nil,
 		})
 	end
 
@@ -790,7 +827,17 @@ return function(K: any)
 
 	-- The Spindle (hero): a needle through a thimble on a spool of crimson thread --
 	local NEEDLE = rgb(196, 200, 210)
-	K.cyl({ id = "spindle/plinth", kind = "plinth", x = 0, z = -60, w = 14, h0 = 0, h1 = 2, color = BASALT, mat = "Basalt" })
+	K.cyl({
+		id = "spindle/plinth",
+		kind = "plinth",
+		x = 0,
+		z = -60,
+		w = 14,
+		h0 = 0,
+		h1 = 2,
+		color = BASALT,
+		mat = "Basalt",
+	})
 	K.cyl({
 		id = "spindle/spool",
 		kind = "spool",
@@ -885,8 +932,8 @@ return function(K: any)
 		color = rgb(181, 140, 60),
 		mat = "Metal",
 	})
-	-- Thread 1: from under the eye crown, through the slot, down to the spool.
-	K.beam({ a = { 0, -60, 65.8 }, b = { 3.9, -60, 11.5 }, color = CRIMSON, width = 0.5, emission = 1 })
+	-- Thread 1: from under the eye crown, through the slot, down to the top of the spool.
+	K.beam({ a = { 0, -60, 65.8 }, b = { 2.6, -60, 12.05 }, color = CRIMSON, width = 0.5, emission = 1 })
 	-- Thread 2: from the eye, swooping down into the rift (the portal ring's top, h 17).
 	K.beam({
 		a = { 0, -60, 63 },

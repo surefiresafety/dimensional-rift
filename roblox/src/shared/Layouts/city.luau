@@ -305,18 +305,17 @@ return function(K: any)
 	local H = 9
 	-- Walk-ups on the four approaches; the truss faces Ring Street.
 	local lit = 0
-	for _, w in
-		{
-			{ 16, -46, "s", "w", "e" },
-			{ -16, -46, "s", "w", "e" },
-			{ 16, 46, "n", "w", "e" },
-			{ -16, 46, "n", "w", "e" },
-			{ 46, -16, "w", "n", "s" },
-			{ 46, 16, "w", "n", "s" },
-			{ -46, -16, "e", "n", "s" },
-			{ -46, 16, "e", "n", "s" },
-		}
-	do
+	local walkups: { { any } } = {
+		{ 16, -46, "s", "w", "e" },
+		{ -16, -46, "s", "w", "e" },
+		{ 16, 46, "n", "w", "e" },
+		{ -16, 46, "n", "w", "e" },
+		{ 46, -16, "w", "n", "s" },
+		{ 46, 16, "w", "n", "s" },
+		{ -46, -16, "e", "n", "s" },
+		{ -46, 16, "e", "n", "s" },
+	}
+	for _, w in walkups do
 		lit += 1
 		K.walkup({
 			id = `walkup{w[1]}_{w[2]}`,
@@ -369,6 +368,11 @@ return function(K: any)
 			side = side,
 			color = rgb(110, 106, 118),
 		})
+		local gaps: { { any } } = {
+			{ if c[1] > 0 then "w" else "e", cz, 3.6 }, -- corner bridge along x
+			{ if c[2] > 0 then "n" else "s", cx, 3.6 }, -- corner bridge along z
+			{ if c[1] > 0 then "e" else "w", cz + 2 * c[2], 4.2 }, -- switchback top
+		}
 		K.railRect({
 			id = id .. "/rail",
 			x0 = cx - 7,
@@ -376,11 +380,7 @@ return function(K: any)
 			z0 = cz - 7,
 			z1 = cz + 7,
 			h = H,
-			gaps = {
-				{ if c[1] > 0 then "w" else "e", cz, 3.6 }, -- corner bridge along x
-				{ if c[2] > 0 then "n" else "s", cx, 3.6 }, -- corner bridge along z
-				{ if c[1] > 0 then "e" else "w", cz + 2 * c[2], 4.2 }, -- switchback top
-			},
+			gaps = gaps,
 		})
 	end
 	-- Sky-bridges (20 u) and corner bridges (17 u), underside 8.6.

@@ -52,7 +52,9 @@ local function draw(theme: string)
 			continue
 		end
 		local op = if r.set == "decor" then 0.45 elseif r.set == "core" or r.set == "foliage" then 0.35 else 0.95
-		local stroke = if r.set == "rail" then ` stroke="#101014" stroke-width="2"` else ` stroke="#000" stroke-opacity="0.35" stroke-width="0.6"`
+		local stroke = if r.set == "rail"
+			then ` stroke="#101014" stroke-width="2"`
+			else ` stroke="#000" stroke-opacity="0.35" stroke-width="0.6"`
 		local fill = hex(r.color)
 		if r.shape == "cyl" or r.shape == "ball" then
 			add(`<circle cx="{px(r.x)}" cy="{px(r.z)}" r="{r.w / 2 * S}" fill="{fill}" fill-opacity="{op}"{stroke}/>`)
@@ -65,7 +67,9 @@ local function draw(theme: string)
 			if r.run then
 				local x1, z1 = Layouts.toWorld(r.x, r.z, r.yaw, -r.w / 2, 0)
 				local x2, z2 = Layouts.toWorld(r.x, r.z, r.yaw, r.w / 2, 0)
-				add(`<line x1="{px(x1)}" y1="{px(z1)}" x2="{px(x2)}" y2="{px(z2)}" stroke="#fff" stroke-opacity="0.5" stroke-width="1"/>`)
+				add(
+					`<line x1="{px(x1)}" y1="{px(z1)}" x2="{px(x2)}" y2="{px(z2)}" stroke="#fff" stroke-opacity="0.5" stroke-width="1"/>`
+				)
 			end
 		end
 	end
