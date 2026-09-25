@@ -41,13 +41,24 @@ return function(K: any)
 	end
 
 	-- Ground dressing: raked gravel round the plaza and along the torii path ----
-	K.terrain({ op = "block", x = 0, z = 31, w = 10, d = 40, h0 = -1.67, h1 = 0, material = "Sand", color = rgb(204, 196, 178) })
+	K.terrain({
+		op = "block",
+		x = 0,
+		z = 31,
+		w = 10,
+		d = 40,
+		h0 = -1.67,
+		h1 = 0,
+		material = "Sand",
+		color = rgb(204, 196, 178),
+	})
 	K.terrain({ op = "cyl", x = 0, z = 0, w = 26, h0 = -1.67, h1 = 0, material = "Sand" })
 	K.terrain({ op = "block", x = 0, z = -24, w = 8, d = 12, h0 = -1.67, h1 = 0, material = "Sand" })
 	K.inlay({ id = "plaza", r = 12, w = 0.4, color = GLOW, fill = rgb(196, 188, 170), fillMat = "Sand" })
 
 	-- The octagonal wall (upper loop, h 6.5) -----------------------------------
-	local NAMES = { [0] = "e", [45] = "se", [90] = "s", [135] = "sw", [180] = "w", [225] = "nw", [270] = "n", [315] = "ne" }
+	local NAMES =
+		{ [0] = "e", [45] = "se", [90] = "s", [135] = "sw", [180] = "w", [225] = "nw", [270] = "n", [315] = "ne" }
 	for b = 0, 315, 45 do
 		local name = NAMES[b]
 		if b == 90 then
@@ -133,7 +144,10 @@ return function(K: any)
 		color = rgb(120, 92, 64),
 		mat = "WoodPlanks",
 	})
-	for i, p in { { -4.3, 52.8 }, { 4.3, 52.8 }, { 4.3, 55.2 }, { -4.3, 55.2 } } do
+	-- A tall gate canopy (underside 16.4) on 4 posts on the wall-walk and 2 on the
+	-- landings; it reaches over the landings so the court just inside the gate
+	-- has a swing anchor (design: roof to 10; see the report).
+	for i, p in { { -4.3, 52.8 }, { 4.3, 52.8 }, { 4.3, 55.2 }, { -4.3, 55.2 }, { 4.6, 49.8 }, { -4.6, 49.8 } } do
 		K.box({
 			id = "gate/post" .. i,
 			kind = "post",
@@ -142,22 +156,58 @@ return function(K: any)
 			w = 0.6,
 			d = 0.6,
 			h0 = WALK,
-			h1 = 9.4,
+			h1 = 16.4,
 			color = VERMILION,
 			mat = "Wood",
 		})
 	end
-	K.box({ id = "gate/roof", kind = "roof", x = 0, z = AP, w = 11.5, d = 5.5, h0 = 9.4, h1 = 10, color = TILE, mat = "Slate" })
+	K.box({
+		id = "gate/tie",
+		kind = "beam",
+		set = "decor",
+		x = 0,
+		z = 52.8,
+		w = 9.2,
+		d = 0.5,
+		h0 = 12,
+		h1 = 12.6,
+		color = VERMILION,
+		mat = "Wood",
+	})
+	K.box({
+		id = "gate/roof",
+		kind = "roof",
+		x = 0,
+		z = 53.05,
+		w = 17,
+		d = 7.5,
+		h0 = 16.4,
+		h1 = 17,
+		color = TILE,
+		mat = "Slate",
+	})
+	K.box({
+		id = "gate/roof2",
+		kind = "roof",
+		x = 0,
+		z = 53.05,
+		w = 12,
+		d = 4.5,
+		h0 = 17,
+		h1 = 17.8,
+		color = TILE,
+		mat = "Slate",
+	})
 	K.box({
 		id = "gate/ridge",
 		kind = "roof",
 		set = "decor",
 		x = 0,
-		z = AP,
-		w = 8,
+		z = 53.05,
+		w = 9,
 		d = 0.6,
-		h0 = 10,
-		h1 = 10.5,
+		h0 = 17.8,
+		h1 = 18.3,
 		color = GOLD,
 		mat = "Metal",
 		light = { color = GLOW, range = 26, bright = 1.2 },
@@ -180,17 +230,30 @@ return function(K: any)
 			landColor = PLASTER,
 			landMat = "SmoothPlastic",
 		})
-		K.rail({ id = "gate/rail" .. i, a = { 4.15 * s, 49.5 }, b = { 4.15 * s, 52.5 }, h = WALK, style = "timber", color = VERMILION })
+		K.rail({
+			id = "gate/rail" .. i,
+			a = { 4.15 * s, 49.5 },
+			b = { 4.15 * s, 52.5 },
+			h = WALK,
+			style = "timber",
+			color = VERMILION,
+		})
 	end
 
 	-- Wall accesses: tangential ramps with landings on the E, W and N flats -----
 	-- (each ramp and its landing centred on the flat, the landing against the wall)
-	for _, a in { { "e", 51, 7.2, 270 }, { "w", -51, 7.2, 270 }, { "n", -7.2, -51, 0 } } do
+	for _, a in
+		{
+			{ id = "e", x = 51, z = 7.2, run = 270 },
+			{ id = "w", x = -51, z = 7.2, run = 270 },
+			{ id = "n", x = -7.2, z = -51, run = 0 },
+		}
+	do
 		K.ramp({
-			id = "access/" .. a[1],
-			x = a[2],
-			z = a[3],
-			run = a[4],
+			id = "access/" .. a.id,
+			x = a.x,
+			z = a.z,
+			run = a.run,
 			w = 3,
 			rise = WALK,
 			len = 11.4,
@@ -284,7 +347,7 @@ return function(K: any)
 		z0 = -46,
 		z1 = -30,
 		h = 6,
-		gaps = { { "s", 0, 6 } },
+		gaps = { { "s", 0, 6 } :: { any } },
 		style = "timber",
 		color = VERMILION,
 	})
@@ -365,7 +428,7 @@ return function(K: any)
 	-- Pond garden: water, a red arched bridge, the tea pavilion and 4 rocks -----
 	K.water({ x = 36, z = 18, r = 9 })
 	K.bridge({ id = "pond/bridge", a = { 36, 10, 0 }, b = { 36, 26, 0 }, style = "arch", railColor = VERMILION })
-	K.teahouse({ id = "tea", x = 36, z = 4, run = 90, foot = { 36, -2.625 } })
+	K.teahouse({ id = "tea", x = 36, z = 5, run = 90, foot = { 36, -1.625 } })
 	for i, r in { { 27.5, 13, 2.4 }, { 27.5, 21.5, 2.2 }, { 45.5, 15, 2.6 }, { 43.5, 26.5, 2 } } do
 		K.ball({
 			id = "pond/rock" .. i,
@@ -390,7 +453,18 @@ return function(K: any)
 	for i, c in { { 38, -28 }, { -38, -28 }, { 20, 44 }, { -20, 44 }, { 46, 4 }, { -46, 4 }, { 14, 10 }, { -14, 10 } } do
 		K.tree({ id = "cedar" .. i, x = c[1], z = c[2], h = 34, kind = "cedar" })
 	end
-	for i, c in { { 0, 63 }, { 56.25, 63 }, { 123.75, 63 }, { 180, 63 }, { 236.25, 63 }, { 303.75, 63 }, { 45, 67 }, { 135, 67 } } do
+	for i, c in
+		{
+			{ 0, 63 },
+			{ 56.25, 63 },
+			{ 123.75, 63 },
+			{ 180, 63 },
+			{ 236.25, 63 },
+			{ 303.75, 63 },
+			{ 45, 67 },
+			{ 135, 67 },
+		}
+	do
 		local x, z = K.around(c[1], c[2])
 		K.tree({ id = "ringcedar" .. i, x = x, z = z, h = 44, kind = "cedar" })
 	end
