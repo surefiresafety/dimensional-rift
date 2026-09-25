@@ -129,7 +129,7 @@ return function(K: any)
 	for i, c in { { 12, -12 }, { 12, 12 }, { -12, 12 }, { -12, -12 } } do
 		K.mast({ id = "pylon" .. i, x = c[1], z = c[2], h = 26, w = 1.6, color = rgb(60, 64, 70) })
 		local b = K.bearing(c[1], c[2], 0, 0)
-		local sx, sz = K.around(K.bearing(0, 0, c[1], c[2]), math.sqrt(c[1] ^ 2 + c[2] ^ 2) + 0.9)
+		local sx, sz = K.around(K.bearing(0, 0, c[1], c[2]), math.sqrt(c[1] ^ 2 + c[2] ^ 2) - 0.95)
 		K.box({
 			id = "pylon" .. i .. "/sign",
 			kind = "sign",

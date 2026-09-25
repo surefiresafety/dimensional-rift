@@ -1034,6 +1034,7 @@ function Layouts.kit(theme: string, seed: number): (any, Plan)
 						h = s.top,
 						style = rails.style,
 						color = rails.color,
+						mat = rails.mat,
 						gaps = cuts,
 					})
 				end
