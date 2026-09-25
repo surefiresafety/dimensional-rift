@@ -1,74 +1,420 @@
 --!strict
--- Builds each world's arena from parts and terrain, so there is somewhere to
--- fight before anyone has built a map by hand. Each world has a theme (from
--- its `build` field in Data/Maps): a neon city, a burning ruin, two academies,
--- a star tomb, a desert, rock country, islands and a storm. Every theme lays
--- ground, cover inside the fighting ring, a skyline outside it, tall things
--- to swing from, weather, and the portal the rift came through.
+-- Builds each world's arena from its layout (Shared.Layouts): every part the
+-- layout lists, its terrain, water and hills, beams, and the Nav part that
+-- tells Waves where enemies may arrive and tells Nav where the stairs are.
+-- The theme adds what a layout does not: the weather, the time of day, the
+-- storm's lightning and the portal the rift came through.
 --
--- Distances are worked in web-build units and scaled by STUDS at the end, like
--- the rest of the port. Everything is anchored and seeded, so a world looks
--- the same every time.
+-- Layouts are worked in web-build units from the world's centre C and scaled
+-- by STUDS here. Everything is anchored and seeded, so a world looks the same
+-- every time. The layout checks in tests/layoutcheck.luau run against the
+-- same plan, so what is built is what was tested.
 
+local CollectionService = game:GetService("CollectionService")
+local PhysicsService = game:GetService("PhysicsService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config)
 local Palette = require(Shared.Palette)
+local Layouts = require(Shared.Layouts)
 local RulesData = require(Shared.Data.Rules)
 
 local STUDS = Config.STUDS_PER_UNIT
 
 local Arenas = {}
 
+-- Rails stop bodies but not shots; crowns stop swing rays but nothing else.
+for _, g in { "Rail", "ShotRay", "Foliage" } do
+	if not PhysicsService:IsCollisionGroupRegistered(g) then
+		PhysicsService:RegisterCollisionGroup(g)
+	end
+end
+PhysicsService:CollisionGroupSetCollidable("Rail", "ShotRay", false)
+PhysicsService:CollisionGroupSetCollidable("Foliage", "ShotRay", false)
+
 type Kit = {
 	model: Model,
-	rng: Random,
 	centre: Vector3, -- studs, on the ground
 	tint: Color3,
+	rng: Random,
+	plan: Layouts.Plan,
+	groups: { [string]: Model },
+	byId: { [string]: BasePart },
+	parts: number,
+	lights: number,
 }
 
--- Parts --------------------------------------------------------------------
+local function at(k: Kit, x: number, h: number, z: number): Vector3
+	return k.centre + Vector3.new(x, h, z) * STUDS
+end
 
-local function part(k: Kit, props: { [string]: any }): Part
-	local p = Instance.new("Part")
+local function material(name: string): Enum.Material
+	local ok, m = pcall(function()
+		return (Enum.Material :: any)[name]
+	end)
+	return if ok and m then m else Enum.Material.SmoothPlastic
+end
+
+-- Terrain colours are global, so every build starts from the defaults.
+local TOUCHED = {
+	Enum.Material.Grass,
+	Enum.Material.Asphalt,
+	Enum.Material.Ground,
+	Enum.Material.Cobblestone,
+	Enum.Material.Slate,
+	Enum.Material.Concrete,
+	Enum.Material.Sand,
+	Enum.Material.Rock,
+	Enum.Material.Snow,
+	Enum.Material.Basalt,
+	Enum.Material.Mud,
+	Enum.Material.Sandstone,
+	Enum.Material.Pavement,
+	Enum.Material.Limestone,
+	Enum.Material.Salt,
+}
+local DEFAULT_COLOUR: { [Enum.Material]: Color3 } = {}
+for _, m in TOUCHED do
+	DEFAULT_COLOUR[m] = workspace.Terrain:GetMaterialColor(m)
+end
+
+-- Parts ----------------------------------------------------------------------
+
+local FACES: { [string]: Enum.NormalId } = {
+	Front = Enum.NormalId.Front,
+	Back = Enum.NormalId.Back,
+	Left = Enum.NormalId.Left,
+	Right = Enum.NormalId.Right,
+	Top = Enum.NormalId.Top,
+	Bottom = Enum.NormalId.Bottom,
+}
+
+local function addLight(k: Kit, p: BasePart, l: Layouts.Light)
+	local colour = Palette.color(l.color or 0xffe0a0)
+	if l.kind == "spot" then
+		local s = Instance.new("SpotLight")
+		s.Color = colour
+		s.Range = math.min(l.range or 40, 60)
+		s.Brightness = l.bright or 2
+		s.Angle = l.angle or 60
+		s.Face = FACES[l.face or "Front"] or Enum.NormalId.Front
+		s.Shadows = false
+		s.Parent = p
+	else
+		local s = Instance.new("PointLight")
+		s.Color = colour
+		s.Range = math.min(l.range or 24, 60)
+		s.Brightness = l.bright or 1.5
+		s.Shadows = false
+		s.Parent = p
+	end
+	k.lights += 1
+end
+
+local function addText(p: BasePart, t: Layouts.Text)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = FACES[t.face or "Front"] or Enum.NormalId.Front
+	gui.LightInfluence = 0
+	gui.Brightness = 2.5
+	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+	gui.PixelsPerStud = 12
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	local fg = Palette.color(t.color or 0xffffff)
+	label.BackgroundColor3 = if t.bg and t.bg >= 0 then Palette.color(t.bg) else fg:Lerp(Color3.new(0, 0, 0), 0.8)
+	label.BackgroundTransparency = if t.bg == -1 then 1 else 0
+	label.TextColor3 = fg
+	label.Text = t.text
+	local ok, font = pcall(function()
+		return (Enum.Font :: any)[t.font or "Bangers"]
+	end)
+	label.Font = if ok and font then font else Enum.Font.Bangers
+	label.TextScaled = true
+	label.Parent = gui
+	gui.Parent = p
+end
+
+--- One layout record as a part.
+local function render(k: Kit, r: Layouts.Rec)
+	if r.ghost then
+		return
+	end
+	local p: BasePart
+	if r.shape == "wedge" then
+		p = Instance.new("WedgePart")
+	elseif r.shape == "truss" then
+		local t = Instance.new("TrussPart")
+		t.Style = Enum.Style.NoSupports
+		p = t
+	else
+		p = Instance.new("Part")
+	end
+	local h = r.h1 - r.h0
+	local cy = (r.h0 + r.h1) / 2
+	local cf = CFrame.new(at(k, r.x, cy, r.z)) * CFrame.Angles(0, math.rad(r.yaw), 0)
+	if r.slope then
+		-- A pitched slab: its top runs from slope[1] at local -X to slope[2] at +X.
+		local dh = r.slope[2] - r.slope[1]
+		local t = h - math.abs(dh)
+		local mid = (r.slope[1] + r.slope[2]) / 2 - t / 2
+		cf = CFrame.new(at(k, r.x, mid, r.z))
+			* CFrame.Angles(0, math.rad(r.yaw), 0)
+			* CFrame.Angles(0, 0, math.atan2(dh, r.w))
+		p.Size = Vector3.new(math.sqrt(r.w * r.w + dh * dh), t, r.d) * STUDS
+	elseif r.shape == "wedge" then
+		-- A WedgePart rises toward its local +Z; the layout's run is local +X.
+		cf *= CFrame.Angles(0, math.pi / 2, 0)
+		p.Size = Vector3.new(r.d, h, r.w) * STUDS
+	elseif r.shape == "cyl" then
+		(p :: Part).Shape = Enum.PartType.Cylinder
+		cf *= CFrame.Angles(0, 0, math.pi / 2)
+		p.Size = Vector3.new(h, r.w, r.w) * STUDS
+	elseif r.shape == "ball" then
+		(p :: Part).Shape = Enum.PartType.Ball
+		p.Size = Vector3.one * r.w * STUDS
+	elseif r.shape == "truss" then
+		p.Size = Vector3.new(2, math.floor(h * STUDS / 2 + 0.5) * 2, 2)
+	else
+		p.Size = Vector3.new(r.w, h, r.d) * STUDS
+	end
+	if r.lean then
+		cf *= CFrame.Angles(math.rad(r.lean[1]), math.rad(r.lean[2]), math.rad(r.lean[3]))
+	end
+	if r.tilt then
+		local t = r.tilt
+		local pivot = CFrame.new(at(k, t[1], t[2], t[3]))
+		cf = pivot * CFrame.Angles(math.rad(t[4]), math.rad(t[5]), math.rad(t[6])) * pivot:Inverse() * cf
+	end
+	p.CFrame = cf
 	p.Anchored = true
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
-	p.CastShadow = true
-	for key, v in props do
-		(p :: any)[key] = v
+	p.Color = Palette.color(r.color)
+	p.Material = material(r.mat)
+	p.Transparency = r.alpha or 0
+	p.Reflectance = r.refl or 0
+	p.Name = r.name or r.id
+	local set = r.set
+	if set == "decor" then
+		p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = false, false, false, false
+	elseif set == "rail" then
+		p.CollisionGroup = "Rail"
+		p.CanTouch = false
+	elseif set == "core" then
+		p.CanCollide, p.CanQuery, p.CanTouch, p.CastShadow = false, true, false, false
+	elseif set == "foliage" then
+		p.CollisionGroup = "Foliage"
+		p.CanCollide, p.CanQuery, p.CanTouch = false, true, false
 	end
-	p.Parent = k.model
-	return p
+	if r.mat == "Neon" then
+		p.CastShadow = false
+	end
+	if r.light then
+		addLight(k, p, r.light)
+	end
+	if r.text then
+		addText(p, r.text)
+	end
+	if r.fire then
+		local f = Instance.new("Fire")
+		f.Size = 6
+		f.Heat = 9
+		f.Parent = p
+	end
+	if r.smoke then
+		local s = Instance.new("Smoke")
+		s.Opacity = 0.2
+		s.RiseVelocity = 4
+		s.Parent = p
+	end
+	if r.spin then
+		p:SetAttribute("Spin", r.spin)
+		CollectionService:AddTag(p, "Spin")
+	end
+	-- Parts a highlight covers share a model, so one Highlight can hold them.
+	local parent: Instance = k.model
+	for prefix, g in k.groups do
+		if r.id == prefix or string.sub(r.id, 1, #prefix + 1) == prefix .. "/" then
+			parent = g
+		end
+	end
+	p.Parent = parent
+	k.byId[r.id] = p
+	k.parts += 1
 end
 
---- A point on the ground, `r` units out at angle `a` from the centre.
-local function around(k: Kit, a: number, r: number, y: number?): Vector3
-	return k.centre + Vector3.new(math.cos(a) * r, y or 0, math.sin(a) * r) * STUDS
+-- Terrain ----------------------------------------------------------------------
+
+local SPAN = 150 -- units from the centre that the ground covers
+
+local function terrain(k: Kit)
+	local P = k.plan
+	local T = workspace.Terrain
+	if P.ground then
+		local size = SPAN * 2 * STUDS
+		local m = material(P.ground.material)
+		T:FillBlock(CFrame.new(k.centre + Vector3.new(0, -2, 0)), Vector3.new(size, 4, size), m)
+		if P.ground.color then
+			T:SetMaterialColor(m, Palette.color(P.ground.color))
+		end
+	end
+	for _, t in P.terrain do
+		local m = material(t.material)
+		local centre = at(k, t.x, (t.h0 + t.h1) / 2, t.z)
+		if t.op == "ball" then
+			T:FillBall(centre, t.w / 2 * STUDS, m)
+		elseif t.op == "cyl" then
+			T:FillCylinder(CFrame.new(centre), (t.h1 - t.h0) * STUDS, t.w / 2 * STUDS, m)
+		else
+			T:FillBlock(
+				CFrame.new(centre) * CFrame.Angles(0, math.rad(t.yaw), 0),
+				Vector3.new(t.w, t.h1 - t.h0, t.d) * STUDS,
+				m
+			)
+		end
+	end
+	for name, c in P.colours do
+		T:SetMaterialColor(material(name), Palette.color(c))
+	end
+	-- Pools: water in the top 4 studs of the ground, level with the floor.
+	for _, w in P.water do
+		if w.r then
+			T:FillCylinder(CFrame.new(at(k, w.x, 0, w.z) - Vector3.new(0, 2, 0)), 4, w.r * STUDS, Enum.Material.Water)
+		else
+			T:FillBlock(
+				CFrame.new(at(k, w.x, 0, w.z) - Vector3.new(0, 2, 0)) * CFrame.Angles(0, math.rad(w.yaw or 0), 0),
+				Vector3.new((w.w :: number) * STUDS, 4, (w.d :: number) * STUDS),
+				Enum.Material.Water
+			)
+		end
+	end
 end
 
-local function light(p: BasePart, colour: Color3, range: number, brightness: number?)
-	local l = Instance.new("PointLight")
-	l.Color = colour
-	l.Range = range
-	l.Brightness = brightness or 1.5
-	l.Shadows = false
-	l.Parent = p
+--- A hill of terrain beyond the play space: its ground circle (radius 0.8 r,
+--- since it is sunk 0.6 r) starts no nearer than minGround, and never enters a
+--- keep-out sector (design §4.1).
+local function hill(k: Kit, rMin: number, rMax: number, m: Enum.Material)
+	local H = k.plan.hills :: any
+	for _ = 1, 6 do
+		local r = k.rng:NextNumber(rMin, rMax)
+		local d = H.minGround + k.rng:NextNumber(0, 74) + r * 0.8
+		local b = k.rng:NextNumber(0, 360)
+		local spread = math.deg(math.asin(math.min(1, 0.8 * r / d)))
+		local ok = true
+		for _, s in H.keepOut do
+			local diff = math.abs((b - s.bearing + 180) % 360 - 180)
+			if diff < s.halfWidth + spread then
+				ok = false
+				break
+			end
+		end
+		if ok then
+			local x, z = Layouts.around(b, d)
+			workspace.Terrain:FillBall(at(k, x, -0.6 * r, z), r * STUDS, m)
+			return
+		end
+	end
 end
+
+-- Beams and emitters -----------------------------------------------------------
+
+local function beams(k: Kit)
+	if #k.plan.beams == 0 then
+		return
+	end
+	local holder = Instance.new("Part")
+	holder.Name = "Threads"
+	holder.Anchored = true
+	holder.CanCollide, holder.CanQuery, holder.CanTouch, holder.CastShadow = false, false, false, false
+	holder.Transparency = 1
+	holder.Size = Vector3.one
+	holder.CFrame = CFrame.new(k.centre)
+	holder.Parent = k.model
+	for _, b in k.plan.beams do
+		local a0 = Instance.new("Attachment")
+		a0.WorldPosition = at(k, b.a[1], b.a[3], b.a[2])
+		a0.Parent = holder
+		local a1 = Instance.new("Attachment")
+		a1.WorldPosition = at(k, b.b[1], b.b[3], b.b[2])
+		a1.Parent = holder
+		local beam = Instance.new("Beam")
+		beam.Attachment0, beam.Attachment1 = a0, a1
+		beam.Color = ColorSequence.new(Palette.color(b.color))
+		beam.Width0, beam.Width1 = b.width, b.width
+		beam.Transparency = NumberSequence.new(b.alpha or 0)
+		beam.LightEmission = b.emission or 1
+		beam.CurveSize0, beam.CurveSize1 = b.curve0 or 0, b.curve1 or 0
+		beam.Segments = b.segments or 10
+		beam.FaceCamera = true
+		beam.Parent = holder
+	end
+end
+
+--- A ParticleEmitter from plain values: numbers, 0xRRGGBB colours, { lo, hi } ranges.
+local function emitter(p: BasePart, props: { [string]: any })
+	local e = Instance.new("ParticleEmitter")
+	for key, v in props do
+		if key == "Color" then
+			e.Color = ColorSequence.new(Palette.color(v))
+		elseif key == "Lifetime" or key == "Speed" or key == "Rotation" or key == "RotSpeed" then
+			(e :: any)[key] = if type(v) == "table" then NumberRange.new(v[1], v[2]) else NumberRange.new(v)
+		elseif key == "Size" or key == "Transparency" or key == "Squash" then
+			(e :: any)[key] = NumberSequence.new(v)
+		elseif key == "SpreadAngle" then
+			e.SpreadAngle = Vector2.new(v, v)
+		else
+			(e :: any)[key] = v
+		end
+	end
+	e.Parent = p
+end
+
+-- The Nav part -------------------------------------------------------------------
+
+--- Pads (where enemies arrive) and Links (the foot and top of every stair,
+--- ramp and ladder) as attachments on one invisible part at C.
+local function nav(k: Kit)
+	local n = Instance.new("Part")
+	n.Name = "Nav"
+	n.Anchored = true
+	n.CanCollide, n.CanQuery, n.CanTouch, n.CastShadow = false, false, false, false
+	n.Transparency = 1
+	n.Size = Vector3.one
+	n.CFrame = CFrame.new(k.centre)
+	for _, p in k.plan.pads do
+		local a = Instance.new("Attachment")
+		a.Name = "Pad"
+		a.Parent = n
+		a.WorldPosition = at(k, p.x, p.h, p.z)
+		a:SetAttribute("Radius", if p.boss then 8 else 6)
+		a:SetAttribute("Boss", p.boss)
+	end
+	for _, l in k.plan.access do
+		local a = Instance.new("Attachment")
+		a.Name = "Link"
+		a.Parent = n
+		a.WorldPosition = at(k, l.foot[1], l.foot[3], l.foot[2])
+		a:SetAttribute("Top", at(k, l.top[1], l.top[3], l.top[2]))
+	end
+	n.Parent = k.model
+	k.parts += 1
+end
+
+-- Atmosphere ----------------------------------------------------------------------
 
 local function weather(k: Kit, props: { [string]: any })
 	-- Each client keeps this part 30 studs over its own camera (Fx.start), so
 	-- the weather falls round the player rather than high up in the fog.
-	local sky = part(k, {
-		Name = "Weather",
-		Size = Vector3.new(120, 1, 120),
-		CFrame = CFrame.new(k.centre + Vector3.new(0, 30, 0)),
-		Transparency = 1,
-		CanCollide = false,
-		CanQuery = false,
-		CastShadow = false,
-	})
+	local sky = Instance.new("Part")
+	sky.Name = "Weather"
+	sky.Anchored = true
+	sky.Size = Vector3.new(120, 1, 120)
+	sky.CFrame = CFrame.new(k.centre + Vector3.new(0, 30, 0))
+	sky.Transparency = 1
+	sky.CanCollide, sky.CanQuery, sky.CanTouch, sky.CastShadow = false, false, false, false
 	local e = Instance.new("ParticleEmitter")
 	e.EmissionDirection = Enum.NormalId.Bottom
 	e.LightInfluence = 0.6
@@ -76,318 +422,8 @@ local function weather(k: Kit, props: { [string]: any })
 		(e :: any)[key] = v
 	end
 	e.Parent = sky
-end
-
--- Props --------------------------------------------------------------------
-
---- A block of a building with rows of lit windows as neon bands.
-local function building(
-	k: Kit,
-	at: Vector3,
-	w: number,
-	d: number,
-	h: number,
-	colour: Color3,
-	windows: Color3?,
-	tilt: CFrame?
-)
-	local body = part(k, {
-		Size = Vector3.new(w, h, d),
-		-- A tilt goes on before the windows and roof, so they lean with it.
-		CFrame = CFrame.lookAt(
-			at + Vector3.new(0, h / 2, 0),
-			k.centre * Vector3.new(1, 0, 1) + Vector3.new(0, h / 2, 0)
-		) * (tilt or CFrame.identity),
-		Color = colour,
-		Material = Enum.Material.Concrete,
-	})
-	if windows then
-		local rows = math.floor(h / (4 * STUDS))
-		for i = 1, math.min(rows, 10) do
-			if k.rng:NextNumber() < 0.75 then
-				part(k, {
-					Size = Vector3.new(w * 0.86, 0.9 * STUDS, 0.3),
-					CFrame = body.CFrame * CFrame.new(0, -h / 2 + i * 4 * STUDS, -d / 2 - 0.1),
-					Color = windows,
-					Material = Enum.Material.Neon,
-					CanCollide = false,
-					CastShadow = false,
-				})
-			end
-		end
-	end
-	-- Something on the roof, so the skyline is not all flat tops.
-	if k.rng:NextNumber() < 0.6 then
-		part(k, {
-			Size = Vector3.new(w * 0.3, 2 * STUDS, d * 0.3),
-			CFrame = body.CFrame * CFrame.new(k.rng:NextNumber(-0.2, 0.2) * w, h / 2 + STUDS, 0),
-			Color = colour:Lerp(Color3.new(0, 0, 0), 0.3),
-			Material = Enum.Material.Metal,
-		})
-	end
-	return body
-end
-
-local SIGNS = {
-	"RIFT NEWS 24/7",
-	"SHARD COLA",
-	"GRAND OPENING",
-	"NOW SHOWING",
-	"EVACUATE CALMLY",
-	"DAILY BUGLE",
-	"SALE 70% OFF",
-	"THE SKY IS FINE",
-	"MULTIVERSE TOURS",
-	"RAMEN ICHIBAN",
-}
-
---- A lit billboard on a building face.
-local function billboard(k: Kit, on: BasePart, colour: Color3)
-	local w = math.min(on.Size.X * 0.8, 18 * STUDS)
-	local h = w * 0.45
-	local sign = part(k, {
-		Size = Vector3.new(w, h, 0.6),
-		CFrame = on.CFrame
-			* CFrame.new(0, on.Size.Y / 2 - h / 2 - k.rng:NextNumber(1, 4) * STUDS, -on.Size.Z / 2 - 0.5),
-		Color = Color3.new(0.05, 0.05, 0.08),
-		Material = Enum.Material.SmoothPlastic,
-		CanCollide = false,
-	})
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = Enum.NormalId.Front
-	gui.LightInfluence = 0
-	gui.Brightness = 2.5
-	gui.PixelsPerStud = 12
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	local t = Instance.new("TextLabel")
-	t.Size = UDim2.fromScale(1, 1)
-	t.BackgroundColor3 = colour:Lerp(Color3.new(0, 0, 0), 0.55)
-	t.TextColor3 = colour:Lerp(Color3.new(1, 1, 1), 0.35)
-	t.Text = SIGNS[k.rng:NextInteger(1, #SIGNS)]
-	t.Font = Enum.Font.Bangers
-	t.TextScaled = true
-	t.Parent = gui
-	gui.Parent = sign
-	light(sign, colour, 30, 2)
-end
-
-local function lamp(k: Kit, at: Vector3, colour: Color3, height: number?)
-	local h = (height or 7) * STUDS
-	part(k, {
-		Size = Vector3.new(0.4 * STUDS, h, 0.4 * STUDS),
-		CFrame = CFrame.new(at + Vector3.new(0, h / 2, 0)),
-		Color = Color3.fromRGB(40, 40, 48),
-		Material = Enum.Material.Metal,
-	})
-	local bulb = part(k, {
-		Shape = Enum.PartType.Ball,
-		Size = Vector3.one * 1.2 * STUDS,
-		CFrame = CFrame.new(at + Vector3.new(0, h + 0.4 * STUDS, 0)),
-		Color = colour,
-		Material = Enum.Material.Neon,
-		CanCollide = false,
-		CastShadow = false,
-	})
-	light(bulb, colour, 28, 1.6)
-end
-
-local CAR_COLOURS = { 0xd8323c, 0xffd54a, 0x2f6fff, 0xe8e8e8, 0x222228, 0x3ddc97 }
-
-local function car(k: Kit, at: Vector3, yaw: number, wrecked: boolean?)
-	local body = part(k, {
-		Size = Vector3.new(2 * STUDS, 0.9 * STUDS, 4.2 * STUDS),
-		CFrame = CFrame.new(at + Vector3.new(0, 0.9 * STUDS, 0))
-			* CFrame.Angles(if wrecked then k.rng:NextNumber(-0.3, 0.3) else 0, yaw, if wrecked then 0.2 else 0),
-		Color = if wrecked
-			then Color3.fromRGB(60, 52, 48)
-			else Palette.color(CAR_COLOURS[k.rng:NextInteger(1, #CAR_COLOURS)]),
-		Material = if wrecked then Enum.Material.CorrodedMetal else Enum.Material.SmoothPlastic,
-	})
-	part(k, {
-		Size = Vector3.new(1.8 * STUDS, 0.7 * STUDS, 2.2 * STUDS),
-		CFrame = body.CFrame * CFrame.new(0, 0.8 * STUDS, 0.2 * STUDS),
-		Color = Color3.fromRGB(30, 40, 55),
-		Material = Enum.Material.Glass,
-		Transparency = 0.2,
-	})
-	for _, x in { -1, 1 } do
-		for _, z in { -1, 1 } do
-			part(k, {
-				Shape = Enum.PartType.Cylinder,
-				Size = Vector3.new(0.5 * STUDS, 0.9 * STUDS, 0.9 * STUDS),
-				CFrame = body.CFrame * CFrame.new(x * 1 * STUDS, -0.4 * STUDS, z * 1.4 * STUDS),
-				Color = Color3.fromRGB(20, 20, 20),
-				Material = Enum.Material.Rubber,
-			})
-		end
-	end
-	if not wrecked then
-		local head = part(k, {
-			Size = Vector3.new(1.6 * STUDS, 0.25 * STUDS, 0.1),
-			CFrame = body.CFrame * CFrame.new(0, 0, -2.1 * STUDS),
-			Color = Color3.fromRGB(255, 250, 220),
-			Material = Enum.Material.Neon,
-			CanCollide = false,
-		})
-		light(head, Color3.fromRGB(255, 244, 214), 18, 1)
-	else
-		local fire = Instance.new("Fire")
-		fire.Size = 6
-		fire.Heat = 9
-		fire.Parent = body
-	end
-end
-
-local function tree(k: Kit, at: Vector3, h: number, leaves: Color3, kind: string?)
-	local trunkH = h * 0.55
-	part(k, {
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(trunkH, 0.8 * STUDS, 0.8 * STUDS),
-		CFrame = CFrame.new(at + Vector3.new(0, trunkH / 2, 0)) * CFrame.Angles(0, 0, math.pi / 2),
-		Color = Color3.fromRGB(86, 60, 42),
-		Material = Enum.Material.Wood,
-	})
-	if kind == "cedar" then
-		for i = 0, 2 do
-			part(k, {
-				Shape = Enum.PartType.Ball,
-				Size = Vector3.new(1, 0.8, 1) * (h * (0.5 - i * 0.12)),
-				CFrame = CFrame.new(at + Vector3.new(0, trunkH + i * h * 0.16, 0)),
-				Color = leaves,
-				Material = Enum.Material.Grass,
-			})
-		end
-	else
-		for _ = 1, 3 do
-			part(k, {
-				Shape = Enum.PartType.Ball,
-				Size = Vector3.one * h * k.rng:NextNumber(0.35, 0.5),
-				CFrame = CFrame.new(
-					at
-						+ Vector3.new(
-							k.rng:NextNumber(-0.15, 0.15) * h,
-							trunkH + k.rng:NextNumber(0, 0.15) * h,
-							k.rng:NextNumber(-0.15, 0.15) * h
-						)
-				),
-				Color = leaves,
-				Material = if kind == "blossom" then Enum.Material.SmoothPlastic else Enum.Material.Grass,
-				CanCollide = false,
-			})
-		end
-	end
-end
-
-local function rock(k: Kit, at: Vector3, size: number, colour: Color3, material: Enum.Material?)
-	part(k, {
-		Size = Vector3.new(size * k.rng:NextNumber(0.8, 1.4), size * k.rng:NextNumber(0.6, 1.1), size),
-		CFrame = CFrame.new(at + Vector3.new(0, size * 0.3, 0))
-			* CFrame.Angles(k.rng:NextNumber(-0.4, 0.4), k.rng:NextNumber(0, 6.28), k.rng:NextNumber(-0.4, 0.4)),
-		Color = colour,
-		Material = material or Enum.Material.Slate,
-	})
-end
-
---- A tall, thin thing a web can hold: a spire, a trunk, an obelisk, a mast.
-local function spire(k: Kit, at: Vector3, h: number, colour: Color3, material: Enum.Material, tip: Color3?)
-	local w = 1.6 * STUDS
-	part(k, {
-		Name = "Mast",
-		Size = Vector3.new(w, h, w),
-		CFrame = CFrame.new(at + Vector3.new(0, h / 2, 0)) * CFrame.Angles(0, k.rng:NextNumber(0, 6.28), 0),
-		Color = colour,
-		Material = material,
-	})
-	if tip then
-		local t = part(k, {
-			Shape = Enum.PartType.Ball,
-			Size = Vector3.one * 2.4 * STUDS,
-			CFrame = CFrame.new(at + Vector3.new(0, h + 0.6 * STUDS, 0)),
-			Color = tip,
-			Material = Enum.Material.Neon,
-			CanCollide = false,
-		})
-		light(t, tip, 40, 1.2)
-	end
-end
-
-local function torii(k: Kit, at: Vector3, yaw: number, colour: Color3)
-	local cf = CFrame.new(at) * CFrame.Angles(0, yaw, 0)
-	for _, x in { -1, 1 } do
-		part(k, {
-			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(7 * STUDS, 0.8 * STUDS, 0.8 * STUDS),
-			CFrame = cf * CFrame.new(x * 3 * STUDS, 3.5 * STUDS, 0) * CFrame.Angles(0, 0, math.pi / 2),
-			Color = colour,
-			Material = Enum.Material.SmoothPlastic,
-		})
-	end
-	part(k, {
-		Size = Vector3.new(9 * STUDS, 0.6 * STUDS, 0.9 * STUDS),
-		CFrame = cf * CFrame.new(0, 7.1 * STUDS, 0),
-		Color = Color3.fromRGB(28, 22, 22),
-		Material = Enum.Material.SmoothPlastic,
-	})
-	part(k, {
-		Size = Vector3.new(7.5 * STUDS, 0.4 * STUDS, 0.6 * STUDS),
-		CFrame = cf * CFrame.new(0, 6 * STUDS, 0),
-		Color = colour,
-		Material = Enum.Material.SmoothPlastic,
-	})
-end
-
---- A hall with a sweeping two-tier roof: temples, dojos, houses.
-local function hall(k: Kit, at: Vector3, w: number, d: number, h: number, wall: Color3, roof: Color3)
-	-- Facing the centre at its own height, so a house up on stilts stays level.
-	local cf =
-		CFrame.lookAt(at + Vector3.new(0, h / 2, 0), k.centre * Vector3.new(1, 0, 1) + Vector3.new(0, at.Y + h / 2, 0))
-	local body =
-		part(k, { Size = Vector3.new(w, h, d), CFrame = cf, Color = wall, Material = Enum.Material.WoodPlanks })
-	for i, scale in { 1.3, 0.9 } do
-		part(k, {
-			Size = Vector3.new(w * scale, 0.8 * STUDS, d * scale),
-			CFrame = body.CFrame * CFrame.new(0, h / 2 + 0.4 * STUDS + (i - 1) * 0.8 * STUDS, 0),
-			Color = roof,
-			Material = Enum.Material.Slate,
-		})
-	end
-	local door = part(k, {
-		Size = Vector3.new(w * 0.25, h * 0.55, 0.3),
-		CFrame = body.CFrame * CFrame.new(0, -h * 0.225, -d / 2 - 0.1),
-		Color = Color3.fromRGB(255, 196, 120),
-		Material = Enum.Material.Neon,
-		CanCollide = false,
-	})
-	light(door, Color3.fromRGB(255, 190, 120), 20, 1)
-end
-
-local function lantern(k: Kit, at: Vector3, glow: Color3)
-	part(k, {
-		Size = Vector3.new(0.9, 3, 0.9) * STUDS,
-		CFrame = CFrame.new(at + Vector3.new(0, 1.5 * STUDS, 0)),
-		Color = Color3.fromRGB(120, 116, 110),
-		Material = Enum.Material.Slate,
-	})
-	local g = part(k, {
-		Size = Vector3.new(1.3, 1.1, 1.3) * STUDS,
-		CFrame = CFrame.new(at + Vector3.new(0, 3.5 * STUDS, 0)),
-		Color = glow,
-		Material = Enum.Material.Neon,
-	})
-	light(g, glow, 22, 1.2)
-end
-
-local function crystal(k: Kit, at: Vector3, h: number, colour: Color3)
-	local c = part(k, {
-		Size = Vector3.new(h * 0.35, h, h * 0.35),
-		CFrame = CFrame.new(at + Vector3.new(0, h * 0.4, 0))
-			* CFrame.Angles(k.rng:NextNumber(-0.35, 0.35), k.rng:NextNumber(0, 6.28), k.rng:NextNumber(-0.35, 0.35)),
-		Color = colour,
-		Material = Enum.Material.Neon,
-		Transparency = 0.15,
-		CanCollide = false,
-	})
-	light(c, colour, 24, 1.4)
+	sky.Parent = k.model
+	k.parts += 1
 end
 
 --- The rift itself: a ring of light standing over the centre.
@@ -396,28 +432,31 @@ local function portal(k: Kit, colour: Color3)
 	local base = k.centre + Vector3.new(0, r + 3 * STUDS, 0)
 	for i = 1, 28 do
 		local a = i / 28 * math.pi * 2
-		part(k, {
-			Size = Vector3.new(0.8, 1.7, 0.8) * STUDS,
-			CFrame = CFrame.new(base + Vector3.new(math.cos(a) * r, math.sin(a) * r, 0)) * CFrame.Angles(0, 0, a),
-			Color = colour,
-			Material = Enum.Material.Neon,
-			CanCollide = false,
-			CastShadow = false,
-		})
+		local seg = Instance.new("Part")
+		seg.Name = "RiftSegment"
+		seg.Anchored = true
+		seg.Size = Vector3.new(0.8, 1.7, 0.8) * STUDS
+		seg.CFrame = CFrame.new(base + Vector3.new(math.cos(a) * r, math.sin(a) * r, 0)) * CFrame.Angles(0, 0, a)
+		seg.Color = colour
+		seg.Material = Enum.Material.Neon
+		seg.CanCollide, seg.CanQuery, seg.CanTouch, seg.CastShadow = false, false, false, false
+		seg.Parent = k.model
 	end
-	local core = part(k, {
-		Name = "Rift",
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(0.2, r * 1.9, r * 1.9),
-		CFrame = CFrame.new(base) * CFrame.Angles(0, math.pi / 2, 0),
-		Color = colour:Lerp(Color3.new(0, 0, 0), 0.5),
-		Material = Enum.Material.ForceField,
-		Transparency = 0.2,
-		CanCollide = false,
-		CanQuery = false,
-		CastShadow = false,
-	})
-	light(core, colour, 60, 3)
+	local core = Instance.new("Part")
+	core.Name = "Rift"
+	core.Anchored = true
+	core.Shape = Enum.PartType.Cylinder
+	core.Size = Vector3.new(0.2, r * 1.9, r * 1.9)
+	core.CFrame = CFrame.new(base) * CFrame.Angles(0, math.pi / 2, 0)
+	core.Color = colour:Lerp(Color3.new(0, 0, 0), 0.5)
+	core.Material = Enum.Material.ForceField
+	core.Transparency = 0.2
+	core.CanCollide, core.CanQuery, core.CanTouch, core.CastShadow = false, false, false, false
+	local l = Instance.new("PointLight")
+	l.Color = colour
+	l.Range = 60
+	l.Brightness = 3
+	l.Parent = core
 	local swirl = Instance.new("ParticleEmitter")
 	swirl.Color = ColorSequence.new(colour, Color3.new(1, 1, 1))
 	swirl.LightEmission = 1
@@ -429,656 +468,347 @@ local function portal(k: Kit, colour: Color3)
 	swirl.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.5), NumberSequenceKeypoint.new(1, 0) })
 	swirl.Transparency = NumberSequence.new(0.2, 1)
 	swirl.Parent = core
+	core.Parent = k.model
+	k.parts += 29
+	k.lights += 1
 end
 
--- Ground -------------------------------------------------------------------
+type Theme = { clock: number, weather: (Kit) -> { [string]: any }, lightning: boolean? }
 
-local SPAN = 150 -- units from the centre that the ground covers
-
-local function ground(k: Kit, material: Enum.Material, colour: Color3?)
-	local size = SPAN * 2 * STUDS
-	workspace.Terrain:FillBlock(CFrame.new(k.centre + Vector3.new(0, -2, 0)), Vector3.new(size, 4, size), material)
-	if colour then
-		workspace.Terrain:SetMaterialColor(material, colour)
-	end
-end
-
---- A hill of terrain out beyond the fight: sunk so only its cap shows, and
---- far enough out that its foot never reaches where enemies arrive.
-local function hill(k: Kit, rMin: number, rMax: number, material: Enum.Material)
-	local r = k.rng:NextNumber(rMin, rMax)
-	local d = k.rng:NextNumber(56, 130) + r * 0.8
-	local at = around(k, k.rng:NextNumber(0, 6.28), d, -0.6 * r)
-	workspace.Terrain:FillBall(at, r * STUDS, material)
-end
-
-local function slab(k: Kit, at: Vector3, size: Vector3, colour: Color3, material: Enum.Material, yaw: number?)
-	return part(k, {
-		Size = size,
-		CFrame = CFrame.new(at + Vector3.new(0, size.Y / 2, 0)) * CFrame.Angles(0, yaw or 0, 0),
-		Color = colour,
-		Material = material,
-	})
-end
-
--- Themes -------------------------------------------------------------------
-
-type Theme = { clock: number, build: (Kit) -> () }
-
-local themes: { [string]: Theme } = {}
-
---- Neon city at night: roads, traffic, lamps, towers with billboards.
-themes.city = {
-	clock = 21,
-	build = function(k)
-		ground(k, Enum.Material.Asphalt, Color3.fromRGB(40, 38, 46))
-		-- A crossroads of lane markings through the centre.
-		for _, yaw in { 0, math.pi / 2 } do
-			for i = -14, 14 do
-				slab(
-					k,
-					k.centre + CFrame.Angles(0, yaw, 0):VectorToWorldSpace(Vector3.new(i * 8, 0, 0) * STUDS),
-					Vector3.new(4 * STUDS, 0.1, 0.4 * STUDS),
-					Color3.fromRGB(255, 214, 90),
-					Enum.Material.Neon,
-					yaw
-				).CanCollide =
-					false
-			end
-		end
-		-- Pavements round the plaza.
-		for i = 0, 7 do
-			local a = i / 8 * math.pi * 2 + math.pi / 8
-			slab(
-				k,
-				around(k, a, 46),
-				Vector3.new(26, 0.5, 10) * STUDS,
-				Color3.fromRGB(110, 106, 118),
-				Enum.Material.Concrete,
-				-a
-			)
-		end
-		-- Traffic caught in the rift: cover inside the ring.
-		for _ = 1, 16 do
-			car(k, around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(14, 48)), k.rng:NextNumber(0, 6.28))
-		end
-		for i = 1, 14 do
-			local a = i / 14 * math.pi * 2
-			lamp(k, around(k, a, 34), Color3.fromRGB(255, 226, 160))
-		end
-		-- Towers, every one lit, some with a billboard facing the plaza.
-		local neon = { 0xff3d7f, 0x3ae0ff, 0xffd54a, 0x9b6cff, 0x3ddc97 }
-		for i = 1, 30 do
-			local a = i / 30 * math.pi * 2 + k.rng:NextNumber(-0.05, 0.05)
-			local h = k.rng:NextNumber(40, 110) * STUDS
-			local b = building(
-				k,
-				around(k, a, k.rng:NextNumber(66, 100)),
-				k.rng:NextNumber(14, 24) * STUDS,
-				k.rng:NextNumber(14, 22) * STUDS,
-				h,
-				Color3.fromRGB(38, 34, 52):Lerp(k.tint, 0.1),
-				Color3.fromRGB(255, 232, 170)
-			)
-			if k.rng:NextNumber() < 0.55 then
-				billboard(k, b, Palette.color(neon[k.rng:NextInteger(1, #neon)]))
-			end
-		end
-		for i = 1, 12 do
-			local a = i / 12 * math.pi * 2 + 0.26
-			spire(
-				k,
-				around(k, a, k.rng:NextNumber(38, 50)),
-				k.rng:NextNumber(30, 40) * STUDS,
-				Color3.fromRGB(44, 40, 60),
-				Enum.Material.Metal,
-				k.tint
-			)
-		end
-		weather(k, {
-			Color = ColorSequence.new(Color3.fromRGB(255, 140, 90)),
-			LightEmission = 1,
-			Rate = 12,
-			Lifetime = NumberRange.new(6, 10),
-			Speed = NumberRange.new(3, 6),
-			Size = NumberSequence.new(0.3),
-			SpreadAngle = Vector2.new(30, 30),
-		})
-	end,
-}
-
---- The same city after the colony took it: broken towers, burning wrecks, ash.
-themes.ruin = {
-	clock = 18.3,
-	build = function(k)
-		ground(k, Enum.Material.Ground, Color3.fromRGB(70, 62, 56))
-		for _ = 1, 18 do
-			car(k, around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(12, 50)), k.rng:NextNumber(0, 6.28), true)
-		end
-		for _ = 1, 40 do
-			rock(
-				k,
-				around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(10, 60)),
-				k.rng:NextNumber(1.5, 4) * STUDS,
-				Color3.fromRGB(96, 90, 86),
-				Enum.Material.Concrete
-			)
-		end
-		for i = 1, 26 do
-			local a = i / 26 * math.pi * 2
-			building(
-				k,
-				around(k, a, k.rng:NextNumber(62, 96)),
-				k.rng:NextNumber(14, 22) * STUDS,
-				k.rng:NextNumber(14, 20) * STUDS,
-				k.rng:NextNumber(24, 70) * STUDS,
-				Color3.fromRGB(78, 72, 70),
-				if k.rng:NextNumber() < 0.3 then Color3.fromRGB(255, 120, 60) else nil,
-				-- Leaning, the way a building leans after the colony.
-				CFrame.Angles(k.rng:NextNumber(-0.08, 0.08), 0, k.rng:NextNumber(-0.08, 0.08))
-			)
-		end
-		for i = 1, 12 do
-			spire(
-				k,
-				around(k, i / 12 * math.pi * 2, k.rng:NextNumber(36, 48)),
-				k.rng:NextNumber(28, 38) * STUDS,
-				Color3.fromRGB(70, 64, 60),
-				Enum.Material.CorrodedMetal
-			)
-		end
-		weather(k, {
-			Color = ColorSequence.new(Color3.fromRGB(120, 110, 104)),
-			Rate = 60,
-			Lifetime = NumberRange.new(8, 12),
-			Speed = NumberRange.new(2, 4),
-			Size = NumberSequence.new(0.35),
-			SpreadAngle = Vector2.new(40, 40),
-		})
-	end,
-}
-
-local function academy(k: Kit, blossom: boolean)
-	ground(k, Enum.Material.Grass, Color3.fromRGB(78, 110, 64))
-	-- A stone path from the gate to the hall, across the courtyard.
-	for i = -10, 10 do
-		slab(
-			k,
-			k.centre + Vector3.new(0, 0, i * 5) * STUDS,
-			Vector3.new(7, 0.3, 4.4) * STUDS,
-			Color3.fromRGB(150, 146, 138),
-			Enum.Material.Cobblestone
-		)
-	end
-	torii(k, k.centre + Vector3.new(0, 0, 52) * STUDS, 0, Color3.fromRGB(200, 40, 34))
-	torii(k, k.centre + Vector3.new(0, 0, 28) * STUDS, 0, Color3.fromRGB(200, 40, 34))
-	for i = 1, 10 do
-		local a = i / 10 * math.pi * 2 + 0.3
-		hall(
-			k,
-			around(k, a, k.rng:NextNumber(64, 80)),
-			k.rng:NextNumber(18, 30) * STUDS,
-			k.rng:NextNumber(12, 18) * STUDS,
-			k.rng:NextNumber(8, 14) * STUDS,
-			Color3.fromRGB(150, 104, 70),
-			Color3.fromRGB(46, 50, 58)
-		)
-	end
-	for i = 1, 16 do
-		local a = i / 16 * math.pi * 2
-		lantern(k, around(k, a, 26), Color3.fromRGB(255, 200, 120))
-	end
-	local leaves = if blossom then Color3.fromRGB(255, 176, 204) else Color3.fromRGB(58, 104, 60)
-	for _ = 1, 26 do
-		tree(
-			k,
-			around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(30, 58)),
-			k.rng:NextNumber(10, 16) * STUDS,
-			leaves,
-			if blossom then "blossom" else nil
-		)
-	end
-	-- Old cedars tall enough to swing from.
-	for i = 1, 12 do
-		tree(
-			k,
-			around(k, i / 12 * math.pi * 2 + 0.2, k.rng:NextNumber(38, 50)),
-			k.rng:NextNumber(34, 44) * STUDS,
-			Color3.fromRGB(40, 78, 48),
-			"cedar"
-		)
-	end
-	-- The forest beyond the walls.
-	for _ = 1, 50 do
-		tree(
-			k,
-			around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(90, 140)),
-			k.rng:NextNumber(24, 40) * STUDS,
-			Color3.fromRGB(36, 70, 44),
-			"cedar"
-		)
-	end
-	weather(k, {
-		Color = ColorSequence.new(if blossom then Color3.fromRGB(255, 190, 214) else Color3.fromRGB(150, 190, 110)),
-		Rate = if blossom then 30 else 10,
+local function leaves(colour: Color3, rate: number): { [string]: any }
+	return {
+		Color = ColorSequence.new(colour),
+		Rate = rate,
 		Lifetime = NumberRange.new(10, 16),
 		Speed = NumberRange.new(2, 4),
 		RotSpeed = NumberRange.new(-90, 90),
 		Rotation = NumberRange.new(0, 360),
 		Size = NumberSequence.new(0.5),
 		SpreadAngle = Vector2.new(60, 60),
-	})
+	}
 end
 
-themes.academy = {
-	clock = 15,
-	build = function(k)
-		academy(k, false)
-	end,
-}
-themes.kyoto = {
-	clock = 17.2,
-	build = function(k)
-		academy(k, true)
-	end,
-}
-
---- A tomb under the stars: black stone, obelisks, crystals, a colonnade.
-themes.tomb = {
-	clock = 0,
-	build = function(k)
-		ground(k, Enum.Material.Basalt, Color3.fromRGB(34, 30, 44))
-		for i = 1, 24 do
-			local a = i / 24 * math.pi * 2
-			slab(
-				k,
-				around(k, a, 56),
-				Vector3.new(2.4, 18, 2.4) * STUDS,
-				Color3.fromRGB(60, 56, 76),
-				Enum.Material.Marble
-			)
-		end
-		for _ = 1, 30 do
-			crystal(
-				k,
-				around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(12, 52)),
-				k.rng:NextNumber(3, 8) * STUDS,
-				k.tint
-			)
-		end
-		for i = 1, 12 do
-			spire(
-				k,
-				around(k, i / 12 * math.pi * 2 + 0.13, k.rng:NextNumber(36, 48)),
-				k.rng:NextNumber(30, 42) * STUDS,
-				Color3.fromRGB(28, 26, 36),
-				Enum.Material.Basalt,
-				k.tint
-			)
-		end
-		for _ = 1, 24 do
-			slab(
-				k,
-				around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(70, 110)),
-				Vector3.new(k.rng:NextNumber(8, 16), k.rng:NextNumber(20, 60), k.rng:NextNumber(8, 16)) * STUDS,
-				Color3.fromRGB(40, 36, 52),
-				Enum.Material.Slate,
-				k.rng:NextNumber(0, 6.28)
-			)
-		end
-		weather(k, {
-			Color = ColorSequence.new(k.tint, Color3.new(1, 1, 1)),
-			LightEmission = 1,
-			Rate = 25,
-			Lifetime = NumberRange.new(6, 10),
-			Speed = NumberRange.new(0.5, 2),
-			Size = NumberSequence.new(0.25),
-			SpreadAngle = Vector2.new(180, 180),
-		})
-	end,
-}
-
---- Desert: dunes, sandstone domes and towers, blowing sand.
-themes.desert = {
-	clock = 13,
-	build = function(k)
-		ground(k, Enum.Material.Sand, Color3.fromRGB(214, 180, 120))
-		for _ = 1, 30 do
-			hill(k, 12, 30, Enum.Material.Sand)
-		end
-		for i = 1, 12 do
-			local at = around(k, i / 12 * math.pi * 2 + 0.2, k.rng:NextNumber(58, 72))
-			local r = k.rng:NextNumber(7, 11) * STUDS
-			slab(k, at, Vector3.new(r * 2, r, r * 2), Color3.fromRGB(206, 160, 104), Enum.Material.Sandstone)
-			part(k, {
-				Shape = Enum.PartType.Ball,
-				Size = Vector3.one * r * 1.9,
-				CFrame = CFrame.new(at + Vector3.new(0, r, 0)),
-				Color = Color3.fromRGB(214, 174, 118),
-				Material = Enum.Material.Sandstone,
-			})
-		end
-		for _ = 1, 26 do
-			rock(
-				k,
-				around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(12, 54)),
-				k.rng:NextNumber(2, 5) * STUDS,
-				Color3.fromRGB(188, 146, 96),
-				Enum.Material.Sandstone
-			)
-		end
-		for i = 1, 12 do
-			spire(
-				k,
-				around(k, i / 12 * math.pi * 2, k.rng:NextNumber(36, 48)),
-				k.rng:NextNumber(28, 38) * STUDS,
-				Color3.fromRGB(196, 150, 96),
-				Enum.Material.Sandstone
-			)
-		end
-		weather(k, {
-			Color = ColorSequence.new(Color3.fromRGB(230, 196, 140)),
-			Rate = 80,
-			Lifetime = NumberRange.new(4, 7),
-			Speed = NumberRange.new(10, 18),
-			Acceleration = Vector3.new(20, 0, 5),
-			Size = NumberSequence.new(0.3),
-			Transparency = NumberSequence.new(0.4),
-			SpreadAngle = Vector2.new(60, 60),
-		})
-	end,
-}
-
---- Rock country: boulders, standing spires, cliffs all round.
-themes.earth = {
-	clock = 16,
-	build = function(k)
-		ground(k, Enum.Material.Rock, Color3.fromRGB(128, 112, 94))
-		for _ = 1, 40 do
-			rock(
-				k,
-				around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(10, 56)),
-				k.rng:NextNumber(2, 6) * STUDS,
-				Color3.fromRGB(140, 118, 94),
-				Enum.Material.Rock
-			)
-		end
-		for i = 1, 14 do
-			spire(
-				k,
-				around(k, i / 14 * math.pi * 2, k.rng:NextNumber(34, 50)),
-				k.rng:NextNumber(30, 44) * STUDS,
-				Color3.fromRGB(118, 100, 82),
-				Enum.Material.Rock
-			)
-		end
-		for _ = 1, 40 do
-			hill(k, 16, 36, Enum.Material.Rock)
-		end
-		weather(k, {
-			Color = ColorSequence.new(Color3.fromRGB(180, 160, 130)),
-			Rate = 10,
-			Lifetime = NumberRange.new(8, 12),
-			Speed = NumberRange.new(1, 3),
-			Size = NumberSequence.new(0.4),
-			SpreadAngle = Vector2.new(60, 60),
-		})
-	end,
+local THEMES: { [string]: Theme } = {
+	city = {
+		clock = 21,
+		weather = function()
+			return {
+				Color = ColorSequence.new(Color3.fromRGB(255, 140, 90)),
+				LightEmission = 1,
+				Rate = 12,
+				Lifetime = NumberRange.new(6, 10),
+				Speed = NumberRange.new(3, 6),
+				Size = NumberSequence.new(0.3),
+				SpreadAngle = Vector2.new(30, 30),
+			}
+		end,
+	},
+	ruin = {
+		clock = 18.3,
+		weather = function()
+			return {
+				Color = ColorSequence.new(Color3.fromRGB(120, 110, 104)),
+				Rate = 60,
+				Lifetime = NumberRange.new(8, 12),
+				Speed = NumberRange.new(2, 4),
+				Size = NumberSequence.new(0.35),
+				SpreadAngle = Vector2.new(40, 40),
+			}
+		end,
+	},
+	academy = {
+		clock = 15,
+		weather = function()
+			return leaves(Color3.fromRGB(150, 190, 110), 10)
+		end,
+	},
+	kyoto = {
+		clock = 17.2,
+		weather = function()
+			return leaves(Color3.fromRGB(255, 190, 214), 30)
+		end,
+	},
+	tomb = {
+		clock = 0,
+		weather = function(k)
+			return {
+				Color = ColorSequence.new(k.tint, Color3.new(1, 1, 1)),
+				LightEmission = 1,
+				Rate = 25,
+				Lifetime = NumberRange.new(6, 10),
+				Speed = NumberRange.new(0.5, 2),
+				Size = NumberSequence.new(0.25),
+				SpreadAngle = Vector2.new(180, 180),
+			}
+		end,
+	},
+	desert = {
+		clock = 13,
+		weather = function()
+			return {
+				Color = ColorSequence.new(Color3.fromRGB(230, 196, 140)),
+				Rate = 80,
+				Lifetime = NumberRange.new(4, 7),
+				Speed = NumberRange.new(10, 18),
+				Acceleration = Vector3.new(20, 0, 5),
+				Size = NumberSequence.new(0.3),
+				Transparency = NumberSequence.new(0.4),
+				SpreadAngle = Vector2.new(60, 60),
+			}
+		end,
+	},
+	earth = {
+		clock = 16,
+		weather = function()
+			return {
+				Color = ColorSequence.new(Color3.fromRGB(180, 160, 130)),
+				Rate = 10,
+				Lifetime = NumberRange.new(8, 12),
+				Speed = NumberRange.new(1, 3),
+				Size = NumberSequence.new(0.4),
+				SpreadAngle = Vector2.new(60, 60),
+			}
+		end,
+	},
+	water = {
+		clock = 9.5,
+		weather = function()
+			return {
+				Color = ColorSequence.new(Color3.fromRGB(220, 235, 245)),
+				Rate = 20,
+				Lifetime = NumberRange.new(10, 14),
+				Speed = NumberRange.new(0.5, 1.5),
+				Size = NumberSequence.new(6),
+				Transparency = NumberSequence.new(0.85),
+				SpreadAngle = Vector2.new(180, 180),
+			}
+		end,
+	},
+	storm = {
+		clock = 19.2,
+		lightning = true,
+		weather = function()
+			return {
+				Color = ColorSequence.new(Color3.fromRGB(180, 200, 230)),
+				Rate = 300,
+				Lifetime = NumberRange.new(1.5, 2),
+				Speed = NumberRange.new(60, 80),
+				Size = NumberSequence.new(0.12),
+				Squash = NumberSequence.new(3),
+				Transparency = NumberSequence.new(0.3),
+				SpreadAngle = Vector2.new(5, 5),
+			}
+		end,
+	},
+	seam = {
+		clock = 0,
+		weather = function()
+			return {
+				Color = ColorSequence.new(Color3.fromRGB(255, 45, 85), Color3.fromRGB(255, 200, 210)),
+				LightEmission = 1,
+				Rate = 30,
+				Lifetime = NumberRange.new(4, 7),
+				Speed = NumberRange.new(2, 5),
+				Acceleration = Vector3.new(0, 6, 0), -- embers that rise
+				Size = NumberSequence.new(0.3),
+				SpreadAngle = Vector2.new(180, 180),
+			}
+		end,
+	},
 }
 
---- Islands: a grass island in open water, stilt houses, bridges, mist.
-themes.water = {
-	clock = 9.5,
-	build = function(k)
-		-- Open water 12 studs deep over a sand bed, with the island's top level
-		-- with the ground everything else stands on (y = 0). The baseplate
-		-- stops colliding here (OpenWater), so the sea can be swum.
-		k.model:SetAttribute("OpenWater", true)
-		local size = SPAN * 2 * STUDS
-		workspace.Terrain:FillBlock(
-			CFrame.new(k.centre + Vector3.new(0, -14, 0)),
-			Vector3.new(size, 4, size),
-			Enum.Material.Sand
-		)
-		workspace.Terrain:FillBlock(
-			CFrame.new(k.centre + Vector3.new(0, -6.6, 0)),
-			Vector3.new(size, 12, size),
-			Enum.Material.Water
-		)
-		workspace.Terrain:FillCylinder(
-			CFrame.new(k.centre + Vector3.new(0, -8, 0)),
-			16,
-			58 * STUDS,
-			Enum.Material.Grass
-		)
-		workspace.Terrain:SetMaterialColor(Enum.Material.Grass, Color3.fromRGB(88, 128, 72))
-		for i = 1, 10 do
-			local a = i / 10 * math.pi * 2
-			local at = around(k, a, 74)
-			-- Stilts from the sea bed up to a deck level with the island.
-			for _, dx in { -1, 1 } do
-				for _, dz in { -1, 1 } do
-					slab(
-						k,
-						at + Vector3.new(dx * 5 * STUDS, -12, dz * 4 * STUDS),
-						Vector3.new(0.8 * STUDS, 12, 0.8 * STUDS),
-						Color3.fromRGB(90, 66, 46),
-						Enum.Material.Wood
-					)
-				end
-			end
-			slab(
-				k,
-				at,
-				Vector3.new(14 * STUDS, 1.2, 12 * STUDS),
-				Color3.fromRGB(120, 92, 64),
-				Enum.Material.WoodPlanks,
-				-a
-			)
-			hall(
-				k,
-				at + Vector3.new(0, 1.2, 0),
-				11 * STUDS,
-				9 * STUDS,
-				6 * STUDS,
-				Color3.fromRGB(170, 140, 100),
-				Color3.fromRGB(60, 80, 100)
-			)
-			-- A walkway from the island's edge to the deck, at the same height.
-			slab(
-				k,
-				around(k, a, 64),
-				Vector3.new(14 * STUDS, 1.2, 3 * STUDS),
-				Color3.fromRGB(120, 92, 64),
-				Enum.Material.WoodPlanks,
-				-a
-			)
-		end
-		for _ = 1, 18 do
-			tree(
-				k,
-				around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(20, 52)),
-				k.rng:NextNumber(10, 16) * STUDS,
-				Color3.fromRGB(70, 120, 80)
-			)
-		end
-		for i = 1, 12 do
-			spire(
-				k,
-				around(k, i / 12 * math.pi * 2 + 0.1, k.rng:NextNumber(36, 48)),
-				k.rng:NextNumber(28, 38) * STUDS,
-				Color3.fromRGB(200, 200, 210),
-				Enum.Material.Concrete,
-				Color3.fromRGB(150, 220, 255)
-			)
-		end
-		weather(k, {
-			Color = ColorSequence.new(Color3.fromRGB(220, 235, 245)),
-			Rate = 20,
-			Lifetime = NumberRange.new(10, 14),
-			Speed = NumberRange.new(0.5, 1.5),
-			Size = NumberSequence.new(6),
-			Transparency = NumberSequence.new(0.85),
-			SpreadAngle = Vector2.new(180, 180),
-		})
-	end,
-}
-
---- A storm on a mountainside: slate crags, rain, lightning every few seconds.
-themes.storm = {
-	clock = 19.2,
-	build = function(k)
-		ground(k, Enum.Material.Slate, Color3.fromRGB(70, 74, 84))
-		for _ = 1, 34 do
-			rock(
-				k,
-				around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(12, 56)),
-				k.rng:NextNumber(2, 5) * STUDS,
-				Color3.fromRGB(78, 82, 94)
-			)
-		end
-		for i = 1, 14 do
-			spire(
-				k,
-				around(k, i / 14 * math.pi * 2, k.rng:NextNumber(34, 50)),
-				k.rng:NextNumber(30, 44) * STUDS,
-				Color3.fromRGB(58, 62, 72),
-				Enum.Material.Slate,
-				Color3.fromRGB(255, 240, 120)
-			)
-		end
-		for _ = 1, 36 do
-			hill(k, 18, 40, Enum.Material.Slate)
-		end
-		weather(k, {
-			Color = ColorSequence.new(Color3.fromRGB(180, 200, 230)),
-			Rate = 300,
-			Lifetime = NumberRange.new(1.5, 2),
-			Speed = NumberRange.new(60, 80),
-			Size = NumberSequence.new(0.12),
-			Squash = NumberSequence.new(3),
-			Transparency = NumberSequence.new(0.3),
-			SpreadAngle = Vector2.new(5, 5),
-		})
-		local flash = Instance.new("BoolValue")
-		flash.Name = "Lightning" -- World reads this and flashes the sky
-		flash.Parent = k.model
-	end,
-}
-
---- The Seam: the space between every world. Dark ground, pieces of the other
---- worlds hanging in the air, crimson threads stitched across the sky, and
---- stitched pillars to swing from.
-themes.seam = {
-	clock = 0,
-	build = function(k)
-		ground(k, Enum.Material.Basalt, Color3.fromRGB(40, 18, 24))
-		local crimson = Color3.fromRGB(255, 45, 85)
-		-- Threads: long glowing strands pulled taut across the sky.
-		for _ = 1, 26 do
-			local a = around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(40, 120), k.rng:NextNumber(25, 70))
-			local b = around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(40, 120), k.rng:NextNumber(25, 70))
-			local len = (b - a).Magnitude
-			part(k, {
-				Size = Vector3.new(0.35 * STUDS, 0.35 * STUDS, len),
-				CFrame = CFrame.lookAt(a:Lerp(b, 0.5), b),
-				Color = crimson,
-				Material = Enum.Material.Neon,
-				CanCollide = false,
-				CanQuery = false,
-				CastShadow = false,
-			})
-		end
-		-- Fragments of the nine worlds, torn loose and hanging in the void.
-		for i = 1, 14 do
-			local a = i / 14 * math.pi * 2 + k.rng:NextNumber(-0.1, 0.1)
-			local at = around(k, a, k.rng:NextNumber(70, 110), k.rng:NextNumber(8, 30))
-			local kind = i % 4
-			if kind == 0 then
-				building(
-					k,
-					at,
-					k.rng:NextNumber(12, 18) * STUDS,
-					k.rng:NextNumber(12, 18) * STUDS,
-					k.rng:NextNumber(20, 40) * STUDS,
-					Color3.fromRGB(38, 34, 52),
-					Color3.fromRGB(255, 232, 170),
-					CFrame.Angles(k.rng:NextNumber(-0.4, 0.4), 0, k.rng:NextNumber(-0.4, 0.4))
-				)
-			elseif kind == 1 then
-				torii(k, at, k.rng:NextNumber(0, 6.28), Color3.fromRGB(200, 40, 34))
-			elseif kind == 2 then
-				crystal(k, at, k.rng:NextNumber(6, 12) * STUDS, Color3.fromRGB(150, 110, 255))
-			else
-				rock(k, at, k.rng:NextNumber(6, 10) * STUDS, Color3.fromRGB(90, 60, 70))
-			end
-		end
-		-- Cover in the fight: shards of stitched stone.
-		for _ = 1, 22 do
-			rock(
-				k,
-				around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(14, 54)),
-				k.rng:NextNumber(2, 5) * STUDS,
-				Color3.fromRGB(70, 40, 50),
-				Enum.Material.Basalt
-			)
-		end
-		for i = 1, 12 do
-			spire(
-				k,
-				around(k, i / 12 * math.pi * 2, k.rng:NextNumber(36, 48)),
-				k.rng:NextNumber(30, 42) * STUDS,
-				Color3.fromRGB(50, 26, 34),
-				Enum.Material.Basalt,
-				crimson
-			)
-		end
-		weather(k, {
-			Color = ColorSequence.new(crimson, Color3.fromRGB(255, 200, 210)),
-			LightEmission = 1,
-			Rate = 30,
-			Lifetime = NumberRange.new(4, 7),
-			Speed = NumberRange.new(2, 5),
-			Acceleration = Vector3.new(0, 6, 0), -- embers that rise
-			Size = NumberSequence.new(0.3),
-			SpreadAngle = Vector2.new(180, 180),
-		})
-	end,
-}
-
-local THEME_OF: { [string]: string } = {
-	buildTimesSquare = "city",
-	buildCullingColony = "ruin",
-	buildJujutsuHigh = "academy",
-	buildKyoto = "kyoto",
-	buildStarCorridor = "tomb",
-	buildLandOfWind = "desert",
-	buildLandOfEarth = "earth",
-	buildLandOfWater = "water",
-	buildLandOfLightning = "storm",
-	buildSeam = "seam",
-}
+local function themeOf(map: any): string
+	return Layouts.THEME_OF[map.build or ""] or "city"
+end
 
 --- The time of day a world's theme is set at.
 function Arenas.clockFor(map: any): number
-	local t = themes[THEME_OF[map.build or ""] or "city"]
-	return t.clock
+	return THEMES[themeOf(map)].clock
+end
+
+--- A world's layout plan (the same one the tests check).
+function Arenas.plan(map: any): Layouts.Plan
+	local theme = themeOf(map)
+	local def = require(Shared.Layouts:FindFirstChild(theme) :: ModuleScript) :: any
+	return Layouts.plan(theme, def, map.seed or 1)
 end
 
 --- Builds a world's arena. Clears the terrain first; returns the model.
 function Arenas.build(mapId: string, map: any): Model
 	workspace.Terrain:Clear()
+	for m, c in DEFAULT_COLOUR do
+		workspace.Terrain:SetMaterialColor(m, c)
+	end
+	local theme = themeOf(map)
+	workspace.Terrain.WaterWaveSize = if theme == "water" then 0.15 else 0
 	local c = map.portalCenter or { x = 0, y = 0, z = 0 }
+	local plan = Arenas.plan(map)
 	local k: Kit = {
 		model = Instance.new("Model"),
-		rng = Random.new(map.seed or 1),
 		centre = Vector3.new(c.x, 0, c.z) * STUDS,
 		tint = Palette.color((RulesData.PORTAL_COLOR :: any)[mapId] or map.hemiSky or 0x8a6cff),
+		rng = Random.new(map.seed or 1),
+		plan = plan,
+		groups = {},
+		byId = {},
+		parts = 0,
+		lights = 0,
 	}
-	local theme = themes[THEME_OF[map.build or ""] or "city"]
-	theme.build(k)
+	for _, h in plan.highlights do
+		local g = Instance.new("Model")
+		g.Name = h.prefix
+		local hl = Instance.new("Highlight")
+		hl.FillTransparency = 1
+		hl.OutlineColor = Palette.color(h.color)
+		hl.DepthMode = Enum.HighlightDepthMode.Occluded
+		hl.Parent = g
+		g.Parent = k.model
+		k.groups[h.prefix] = g
+	end
+	terrain(k)
+	if plan.hills then
+		local H = plan.hills :: any
+		for _ = 1, H.count or 30 do
+			hill(k, H.rMin or 12, H.rMax or 30, material(H.material or "Rock"))
+		end
+	end
+	for _, r in plan.recs do
+		render(k, r)
+	end
+	for _, e in plan.emitters do
+		local p = k.byId[e.id]
+		if p then
+			emitter(p, e.props)
+		end
+	end
+	beams(k)
+	nav(k)
+	local t = THEMES[theme]
+	weather(k, t.weather(k))
+	if t.lightning then
+		local flash = Instance.new("BoolValue")
+		flash.Name = "Lightning" -- World reads this and flashes the sky
+		flash.Parent = k.model
+	end
+	if plan.openWater then
+		k.model:SetAttribute("OpenWater", true)
+	end
 	portal(k, k.tint)
+	k.model:SetAttribute("Theme", theme)
+	if k.parts > plan.budget.parts or k.lights > plan.budget.lights or k.parts > 900 or k.lights > 60 then
+		warn(
+			`{mapId}: {k.parts} parts and {k.lights} lights, over the budget {plan.budget.parts} / {plan.budget.lights}`
+		)
+	end
 	return k.model
+end
+
+-- The audit (Studio only) -----------------------------------------------------------
+
+--- Movement.findAnchor's fan with the facing passed in (design §4.4).
+local function fanAt(root: Vector3, look: Vector3, params: RaycastParams): Vector3?
+	local reach = 60 * STUDS
+	local right = look:Cross(Vector3.yAxis)
+	local best, bestScore = nil, -math.huge
+	for i = 0, 8 do
+		local el = math.rad(25 + 55 * i / 8)
+		for _, yaw in { -0.9, -0.45, 0, 0.45, 0.9 } do
+			local flat = CFrame.fromAxisAngle(Vector3.yAxis, yaw):VectorToWorldSpace(look)
+			local dir = CFrame.fromAxisAngle(right, el):VectorToWorldSpace(flat)
+			local hit = workspace:Raycast(root, dir * reach, params)
+			if hit and hit.Position.Y > root.Y + 4 * STUDS then
+				local score = hit.Position.Y * 2 + (hit.Position - root):Dot(look)
+				if score > bestScore then
+					best, bestScore = hit.Position, score
+				end
+			end
+		end
+	end
+	return best
+end
+
+--- Checks the built arena the way tests/layoutcheck checks its plan, but
+--- against the real parts, terrain and scatter (design §4.4). Studio only;
+--- warns on what fails. Run from the command bar:
+---   require(game.ServerScriptService.Server.Arenas).audit(nil, require(game.ReplicatedStorage.Shared.Worlds).get("times_square"))
+function Arenas.audit(model: Model?, map: any)
+	if not RunService:IsStudio() then
+		return
+	end
+	local arena = model or workspace:FindFirstChild("Arena") :: Model?
+	if not arena then
+		return
+	end
+	local plan = Arenas.plan(map)
+	local c = map.portalCenter or { x = 0, y = 0, z = 0 }
+	local C = Vector3.new(c.x, 0, c.z) * STUDS
+	local ignore: { Instance } = {}
+	for _, name in { "Enemies", "Worn", "Fx", "Pickups" } do
+		local f = workspace:FindFirstChild(name)
+		if f then
+			table.insert(ignore, f)
+		end
+	end
+	for _, pl in Players:GetPlayers() do
+		if pl.Character then
+			table.insert(ignore, pl.Character)
+		end
+	end
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = ignore
+	local bad = 0
+	local overlap = OverlapParams.new()
+	overlap.FilterType = Enum.RaycastFilterType.Include
+	overlap.FilterDescendantsInstances = { arena }
+	overlap.RespectCanCollide = true
+	for _, p in plan.pads do
+		local pos = C + Vector3.new(p.x, p.h, p.z) * STUDS
+		local down = workspace:Raycast(pos + Vector3.new(0, 6 * STUDS, 0), Vector3.new(0, -8 * STUDS, 0), params)
+		if not down or math.abs(down.Position.Y - pos.Y) > STUDS or down.Material == Enum.Material.Water then
+			warn(`audit: pad ({p.x}, {p.z}) has no floor at its height`)
+			bad += 1
+		end
+		local e = if p.boss then 16 else 12
+		local hh = if p.boss then 7 else 5
+		local box = CFrame.new(pos + Vector3.new(0, hh / 2 * STUDS, 0))
+		for _, part in workspace:GetPartBoundsInBox(box, Vector3.new(e, hh, e) * STUDS, overlap) do
+			if part.Position.Y + part.Size.Y / 2 > pos.Y + 0.3 * STUDS then
+				warn(`audit: pad ({p.x}, {p.z}) box holds {part:GetFullName()}`)
+				bad += 1
+			end
+		end
+	end
+	local points, fails, full = 0, 0, 0
+	for i = -5, 5 do
+		for j = -5, 5 do
+			local x, z = i * 10, j * 10
+			local r = math.sqrt(x * x + z * z)
+			if r >= 20 and r <= 50 then
+				local f = Layouts.floorAt(plan, x, z)
+				if not Layouts.skipped(plan, x, z, f) then
+					points += 1
+					local root = C + Vector3.new(x, f + 1.25, z) * STUDS
+					local ok, hs = 0, {}
+					for _, look in { -Vector3.zAxis, Vector3.xAxis, Vector3.zAxis, -Vector3.xAxis } do
+						local hit = fanAt(root, look, params)
+						local h = if hit then (hit.Y - C.Y) / STUDS - f else -1
+						table.insert(hs, string.format("%.1f", h))
+						if h >= 16 then
+							ok += 1
+						end
+					end
+					if ok == 4 then
+						full += 1
+					elseif ok < 3 then
+						fails += 1
+						warn(`audit: swing fails at ({x}, {z}): {table.concat(hs, " ")}`)
+					end
+				end
+			end
+		end
+	end
+	print(`audit {map.name}: {points} points, {fails} fail, {full} 4-of-4; {bad} pad problems`)
 end
 
 return Arenas

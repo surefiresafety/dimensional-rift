@@ -92,7 +92,7 @@ Nuime and Patchwork have stitched themselves into **Hyakunui, the Hundred-Seam**
 | | |
 | --- | --- |
 | Telling it | A card when each world opens (its chapter and what is happening), lines between waves and when its last boss falls, as subtitles. All the text is in `src/shared/Story.luau`. |
-| The Seam | Its own arena (floating pieces of the other worlds, crimson threads across the sky), and every enemy in it is stitched: an elite. Opens once the Land of Lightning is cleared. Data in `src/shared/Finale.luau`. |
+| The Seam | Its own arena (floating pieces of the other worlds, crimson threads across the sky), and every enemy in it is stitched: an elite. Opens once Thunderspire is cleared. Data in `src/shared/Finale.luau`. |
 | Hyakunui | Three phases (`src/server/FinaleFight.luau`): seam cuts telegraphed under every player; at two thirds it tears out the Tempest Fox and the Unbidden, which adapts to any nature that hits it three times; at a third it grasps for bodies, which lets Akuro out of the Vessel, starves a symbiote, or takes a quarter of anyone else's health. |
 | The ending | The rift closes: an ending card with an epilogue for the universe of the character who closed it, 1,000 shards and a badge (`rift_closed`) the first time. |
 | After it | Loose Threads: once everyone on a server has closed the rift, every world is harder (tougher enemies, more elites) and pays half as much again. |
@@ -109,7 +109,7 @@ Nuime and Patchwork have stitched themselves into **Hyakunui, the Hundred-Seam**
 | Drops | Health, Spirit Energy and Rift Shard orbs that drift to you. |
 | Combos | Hits within 3 s chain, ranked D to SSS on the HUD, and pay out experience and shards when they end. |
 | Radar | Enemies within 70 units: yellow unaware, red hunting, bosses bigger. A boss hunting you gets a health bar across the top. |
-| Worlds | Nine themed arenas built from parts and terrain (`Arenas.luau`): a neon Times Square at night, a burning ruin, two temple academies, a star tomb, a desert, rock country, islands and a thunderstorm, each with weather, cover, a skyline, things to swing from and the rift portal. |
+| Worlds | Ten arenas laid out in `src/shared/Layouts/` (one file per theme, from the approved design in `docs/design/worlds.md`) and built by `Arenas.luau`: The Crossroads, The Hidden Campus, The Ribbed Vault, The Walled Compound, The Sealed Block, Dunewatch, Quarry Hollow, Mistreach, Thunderspire and the Seam. Each has an upper route of decks, bridges and stairs, cover, anchors to swing from, a hero landmark, enemy spawn pads, weather and the rift portal. `lune run tests/world <theme>` checks one layout against the design's rules (pads, walkways, access, the swing fan, sightlines, budgets). Enemies path up stairs and ladders (`Nav.luau`) and throw rocks at players they cannot reach. |
 | Feel | Enemies animate (Roblox's default R15 set), topple and fade when they die; sounds for hits, casts, warnings and level-ups (`Config.SOUNDS`); camera shake; a down screen; a countdown between waves; a report when a world is cleared. Music per world in `Config.MUSIC` (empty until you paste ids). |
 
 ## Keeping players coming back

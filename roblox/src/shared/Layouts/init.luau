@@ -1588,7 +1588,7 @@ function Layouts.kit(theme: string, seed: number): (any, Plan)
 	function K.railRect(o: { [string]: any })
 		local x0, x1 = math.min(o.x0, o.x1) + 0.15, math.max(o.x0, o.x1) - 0.15
 		local z0, z1 = math.min(o.z0, o.z1) + 0.15, math.max(o.z0, o.z1) - 0.15
-		local edges = {
+		local edges: { [string]: { any } } = {
 			n = { { x0, z0 }, { x1, z0 }, x0 },
 			s = { { x0, z1 }, { x1, z1 }, x0 },
 			w = { { x0, z0 }, { x0, z1 }, z0 },

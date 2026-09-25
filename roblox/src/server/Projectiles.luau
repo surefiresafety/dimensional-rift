@@ -33,6 +33,7 @@ local live: { Shot } = {}
 
 local wallParams = RaycastParams.new()
 wallParams.FilterType = Enum.RaycastFilterType.Exclude
+wallParams.CollisionGroup = "ShotRay" -- rails and tree crowns let shots through
 
 --- Distance from point p to the segment a..b.
 local function segDistance(a: Vector3, b: Vector3, p: Vector3): number

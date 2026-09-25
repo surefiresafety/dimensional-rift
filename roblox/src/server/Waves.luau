@@ -19,6 +19,7 @@ local Combat = require(script.Parent.Combat)
 local Enemies = require(script.Parent.Enemies)
 local World = require(script.Parent.World)
 local Pickups = require(script.Parent.Pickups)
+local Nav = require(script.Parent.Nav)
 
 local STUDS = Config.STUDS_PER_UNIT
 local WaveRemote = Remotes.get("Wave")
@@ -56,26 +57,104 @@ local function announce()
 	WaveRemote:FireAllClients(World.current, Waves.index + 1, #Combat.enemies)
 end
 
---- A spot 20 to 50 units from the centre, and at least a notice range
---- plus a bit from every player, if there is one to be had.
-function Waves.spawnSpot(centre: Vector3): Vector3
+-- Pad -> stamp of its last pick. Keyed per build: cleared whenever the Nav part changes.
+local used: { [Attachment]: number } = {}
+local usedNav: Instance? = nil
+local stamp = 0
+local waveStart = 0 -- stamp when the current wave began (set by spawnCurrent)
+
+--- In-place Fisher-Yates.
+local function shuffle<T>(t: { T }): { T }
+	for i = #t, 2, -1 do
+		local j = math.random(i)
+		t[i], t[j] = t[j], t[i]
+	end
+	return t
+end
+
+--- Flat distance from `at` to the nearest living player's root (math.huge if none).
+local function playerGap(at: Vector3): number
+	local gap = math.huge
+	for player in Combat.states do
+		local root = Combat.rootOf(player)
+		if root then
+			gap = math.min(gap, ((root.Position - at) * Vector3.new(1, 0, 1)).Magnitude)
+		end
+	end
+	return gap
+end
+
+--- Where a pack (or a boss) arrives. With a Nav part the answer is always one of
+--- its Pad attachments and `centre` is ignored; without one it samples the ring
+--- round `centre`. Either way, out of notice range of every player if it can be.
+function Waves.spawnSpot(centre: Vector3, boss: boolean?): Vector3
+	local need = ((if boss then Config.ENEMY_NOTICE_BOSS else Config.ENEMY_NOTICE) + 6) * STUDS
+	local arena = workspace:FindFirstChild("Arena")
+	local nav = arena and arena:FindFirstChild("Nav")
+	if nav then
+		if nav ~= usedNav then
+			table.clear(used)
+			usedNav, stamp, waveStart = nav, 0, 0
+		end
+		local fresh, freshBoss, all = {}, {}, {}
+		for _, a in nav:GetChildren() do
+			if a:IsA("Attachment") and a.Name == "Pad" then
+				local isBoss = a:GetAttribute("Boss") == true
+				if boss and not isBoss then
+					continue
+				end
+				table.insert(all, a)
+				if (used[a] or 0) <= waveStart then -- not picked yet this wave
+					table.insert(if isBoss and not boss then freshBoss else fresh, a)
+				end
+			end
+		end
+		if #all > 0 then
+			-- Normal packs: this wave's unused non-boss pads, then unused boss pads,
+			-- both shuffled; then every pad, least recently used first. Bosses:
+			-- unused boss pads shuffled, then boss pads by LRU.
+			local order: { Attachment }
+			if #fresh > 0 then
+				order = shuffle(fresh)
+			elseif #freshBoss > 0 then
+				order = shuffle(freshBoss)
+			else
+				table.sort(all, function(p, q)
+					return (used[p] or 0) < (used[q] or 0)
+				end)
+				order = all
+			end
+			local pick, bestGap = order[1], -1
+			for _, a in order do
+				local gap = playerGap(a.WorldPosition)
+				if gap >= need then
+					pick = a
+					break
+				end
+				if gap > bestGap then
+					pick, bestGap = a, gap
+				end
+			end
+			stamp += 1
+			used[pick] = stamp
+			return pick.WorldPosition
+		end
+	end
+	-- No Nav, or a Nav with no pads (an authored map): sample the ring, and
+	-- keep out of anything solid and out of water.
 	local best, bestGap = centre, -1
 	for _ = 1, 12 do
 		local a = math.random() * math.pi * 2
 		local r = (20 + math.random() * 30) * STUDS
 		local spot = centre + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
-		local gap = math.huge
-		for player in Combat.states do
-			local root = Combat.rootOf(player)
-			if root then
-				gap = math.min(gap, ((root.Position - spot) * Vector3.new(1, 0, 1)).Magnitude)
+		if Nav.isClear(spot) then
+			local gap = playerGap(spot)
+			if gap >= need then
+				return spot
 			end
-		end
-		if gap >= (Config.ENEMY_NOTICE + 6) * STUDS then
-			return spot
-		end
-		if gap > bestGap then
-			best, bestGap = spot, gap
+			if gap > bestGap then
+				best, bestGap = spot, gap
+			end
 		end
 	end
 	return best
@@ -89,11 +168,12 @@ function Waves.spawnCurrent()
 	-- packs, so a wave is something to go and find rather than a crowd that
 	-- arrives on top of you. Bosses stand alone.
 	local centre = Vector3.new(c.x, 0, c.z) * STUDS
+	waveStart = stamp -- every pad is fresh again for a new wave
 	local packAt: Vector3? = nil
 	for i, id in list do
 		local boss = Worlds.enemy(id) and Worlds.enemy(id).boss
 		if boss or not packAt or (i % 3) == 1 then
-			packAt = Waves.spawnSpot(centre)
+			packAt = Waves.spawnSpot(centre, boss == true)
 		end
 		local jitter = if boss then Vector3.zero else Vector3.new(math.random(-4, 4), 0, math.random(-4, 4)) * STUDS
 		-- The Seam stitches everything into an elite; Loose Threads makes

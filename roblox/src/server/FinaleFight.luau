@@ -22,6 +22,7 @@ local Styles = require(Shared.Data.Styles)
 
 local Combat = require(script.Parent.Combat)
 local Enemies = require(script.Parent.Enemies)
+local Nav = require(script.Parent.Nav)
 
 local STUDS = Config.STUDS_PER_UNIT
 local StoryRemote = Remotes.get("Story")
@@ -136,7 +137,7 @@ function FinaleFight.step()
 				-- It tears two things out of its own stitching.
 				for i, id in { "tempest_fox", "the_unbidden" } do
 					local side = e.root.CFrame.RightVector * (if i == 1 then 1 else -1) * 8 * STUDS
-					local add = Enemies.spawn(id, e.root.Position + side)
+					local add = Enemies.spawn(id, Nav.clearSpot(e.root.Position + side))
 					if add then
 						add.alerted = true
 					end

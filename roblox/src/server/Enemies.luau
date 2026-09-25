@@ -16,6 +16,7 @@ local RulesData = require(Shared.Data.Rules)
 local Combat = require(script.Parent.Combat)
 local Looks = require(script.Parent.Looks)
 local Projectiles = require(script.Parent.Projectiles)
+local Nav = require(script.Parent.Nav)
 
 local STUDS = Config.STUDS_PER_UNIT
 
@@ -254,8 +255,8 @@ local function nearestPlayer(pos: Vector3): (Combat.PState?, BasePart?)
 	return best, bestRoot
 end
 
-local function shoot(e: Combat.Enemy, target: BasePart)
-	local r = e.t.ranged
+local function shoot(e: Combat.Enemy, target: BasePart, prof: any?)
+	local r = prof or e.t.ranged
 	for i = 1, (r.burst or 1) do
 		task.delay((i - 1) * 0.12, function()
 			if e.dead then
@@ -312,9 +313,7 @@ local function wander(e: Combat.Enemy, now: number, mul: number)
 		return
 	end
 	if not e.wanderTo or now >= e.nextWander or (e.root.Position - e.wanderTo).Magnitude < 2 * STUDS then
-		local a = math.random() * math.pi * 2
-		local r = math.random() * 12 * STUDS
-		e.wanderTo = e.home + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
+		e.wanderTo = Nav.wanderSpot(e.home)
 		e.nextWander = now + 3 + math.random() * 4
 	end
 	e.hum.WalkSpeed = e.t.speed * STUDS * 0.4 * mul
@@ -343,12 +342,13 @@ function Enemies.think()
 			notice = if e.t.boss then Config.ENEMY_NOTICE_BOSS else Config.ENEMY_NOTICE,
 			leash = Config.ENEMY_LEASH,
 			reach = Config.ENEMY_SWING_START + (size - 1),
-			shotReady = e.t.ranged ~= nil and now >= e.nextShot,
+			shotReady = (e.t.ranged ~= nil or e.tossing == true) and now >= e.nextShot,
 			charge = e.t.charge,
 			chargeReady = e.t.charge ~= nil and now >= e.nextCharge,
 			tempo = e.affix and e.affix.tempo,
 		})
 		e.alerted = false
+		Nav.updateToss(e, target, e.state ~= "idle")
 		if action ~= "lunging" then
 			e.hum.WalkSpeed = e.t.speed * STUDS * mul
 		end
@@ -360,15 +360,16 @@ function Enemies.think()
 			Combat.fx("alert", { model = e.model, color = 0xffd54a })
 			alertPack(e)
 			if target then
-				e.hum:MoveTo(target.Position)
+				Nav.moveTarget(e, target.Position)
 			end
 		elseif action == "giveup" then
 			e.model:SetAttribute("Hunting", false)
 			e.home = e.root.Position
+			Nav.reset(e)
 			wander(e, now, mul)
 		elseif action == "chase" then
 			if target and mul > 0 then
-				e.hum:MoveTo(target.Position)
+				Nav.moveTarget(e, target.Position)
 			end
 		elseif action == "windup" or action == "aim" or action == "tell" then
 			-- Plant, turn, and show what is coming.
@@ -403,9 +404,11 @@ function Enemies.think()
 				Combat.hurtPlayer(ps, e.t.atk, e.t.nature, e)
 			end
 		elseif action == "shoot" then
-			e.nextShot = now + e.t.ranged.cd * (0.8 + math.random() * 0.5)
+			-- A thrower's own shot, or a rock from a melee enemy that cannot reach.
+			local prof = e.t.ranged or Nav.toss(e)
+			e.nextShot = now + prof.cd * (0.8 + math.random() * 0.5)
 			if target then
-				shoot(e, target)
+				shoot(e, target, prof)
 			end
 		elseif action == "lunge" then
 			attackAnim(e, "lunge")
@@ -456,8 +459,8 @@ function Enemies.think()
 			end
 			for n = 1, math.min(sm.count or 2, (sm.max or 6) - mine) do
 				local a = math.random() * math.pi * 2
-				local child =
-					Enemies.spawn(sm.of, e.root.Position + Vector3.new(math.cos(a), 0, math.sin(a)) * (3 + n) * STUDS)
+				local near = e.root.Position + Vector3.new(math.cos(a), 0, math.sin(a)) * (3 + n) * STUDS
+				local child = Enemies.spawn(sm.of, Nav.clearSpot(near))
 				if child then
 					child.alerted = true
 					child.summoned = true

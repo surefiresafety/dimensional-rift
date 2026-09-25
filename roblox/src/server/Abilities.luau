@@ -204,6 +204,7 @@ local function clearPath(c: Ctx, from: Vector3, to: Vector3): Vector3
 		end
 	end
 	params.FilterDescendantsInstances = ignore
+	params.CollisionGroup = "ShotRay" -- rails and tree crowns do not stop a dash
 	local r = workspace:Raycast(from, to - from, params)
 	if r then
 		return r.Position - (to - from).Unit * 2

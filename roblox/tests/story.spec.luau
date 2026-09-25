@@ -106,4 +106,30 @@ H.test("the Seam opens after the ninth world, and a returning player carries on"
 	H.eq(old.closed, 0, "old saves have never closed the rift")
 end)
 
+H.test("the story calls the worlds by their Roblox names", function()
+	local OLD = {
+		"Times Square",
+		"Star Vault",
+		"Kyoto",
+		"Survival Colony",
+		"Land of",
+		"Mist Village",
+		"Storm Village",
+		"Desert Village",
+		"Stone Village",
+	}
+	local function scan(t: any)
+		for _, v in t do
+			if type(v) == "string" then
+				for _, old in OLD do
+					assert(not string.find(v, old, 1, true), `"{old}" in: {v}`)
+				end
+			elseif type(v) == "table" then
+				scan(v)
+			end
+		end
+	end
+	scan(Story)
+end)
+
 return H

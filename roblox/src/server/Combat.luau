@@ -139,6 +139,8 @@ export type Enemy = {
 	-- Worn by Kenjaku's Body Swap: it fights for its wearer until this runs out.
 	allyOf: PState?,
 	allyUntil: number,
+	-- A melee enemy that cannot reach its target lobs rocks instead (Nav).
+	tossing: boolean?,
 }
 
 local Combat = {}

@@ -13,6 +13,26 @@ local Story = require(Shared.Story)
 
 local Worlds = {}
 
+--- The names the Roblox build shows (the design's lead condition 2). Ids,
+--- build keys and saved progress are unchanged; the web build keeps its own.
+Worlds.NAMES = {
+	times_square = "The Crossroads",
+	jujutsu_high = "The Hidden Campus",
+	star_corridor = "The Ribbed Vault",
+	kyoto_academy = "The Walled Compound",
+	culling_colony = "The Sealed Block",
+	land_of_wind = "Dunewatch",
+	land_of_earth = "Quarry Hollow",
+	land_of_water = "Mistreach",
+	land_of_lightning = "Thunderspire",
+} :: { [string]: string }
+for id, name in Worlds.NAMES do
+	local map = (Maps :: any)[id]
+	if map then
+		map.name = name
+	end
+end
+
 --- The rift's order: the nine worlds, then the Seam.
 Worlds.ORDER = table.clone(RulesData.MAP_IDS) :: { string }
 table.insert(Worlds.ORDER, Story.FINAL)

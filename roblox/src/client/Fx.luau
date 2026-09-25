@@ -3,6 +3,7 @@
 -- are replayed from the start and velocity the server used, and removed when
 -- the server says they ended.
 
+local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local Lighting = game:GetService("Lighting")
@@ -415,7 +416,26 @@ function Fx.start()
 		end
 		Sfx.forFx(kind, payload)
 	end)
+	-- Parts tagged Spin (the lighthouse beam) turn about their own Y axis at
+	-- their Spin attribute, in degrees per second. Cached per arena.
+	local spinning: { BasePart } = {}
+	local function recache()
+		spinning = {}
+		for _, p in CollectionService:GetTagged("Spin") do
+			if p:IsA("BasePart") then
+				table.insert(spinning, p)
+			end
+		end
+	end
+	CollectionService:GetInstanceAddedSignal("Spin"):Connect(recache)
+	CollectionService:GetInstanceRemovedSignal("Spin"):Connect(recache)
+	recache()
 	RunService.RenderStepped:Connect(function(dt)
+		for _, p in spinning do
+			if p.Parent then
+				p.CFrame *= CFrame.Angles(0, math.rad((p:GetAttribute("Spin") :: number? or 0) * dt), 0)
+			end
+		end
 		-- The arena's weather falls round this player: keep its emitter over
 		-- the camera (a local move; the server's copy stays put).
 		local arena = workspace:FindFirstChild("Arena")

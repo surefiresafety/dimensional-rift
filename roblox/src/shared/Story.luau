@@ -59,7 +59,7 @@ Story.CHAPTERS = {
 	},
 	star_corridor = {
 		chapter = "Stitch 3 of 9",
-		intro = "Beneath the academy, the tombs of the Star Vault. Something down here has been reading very old names.",
+		intro = "Beneath the academy, the Ribbed Vault, a tomb under the stars. Something down here has been reading very old names.",
 		lines = {
 			[3] = {
 				speaker = "???",
@@ -87,12 +87,12 @@ Story.CHAPTERS = {
 		},
 		cleared = {
 			speaker = "Antidote",
-			text = "Kyoto's stitch is out. The elders will not forgive you. The rest of us might.",
+			text = "The Walled Compound's stitch is out. The elders will not forgive you. The rest of us might.",
 		},
 	},
 	culling_colony = {
 		chapter = "Stitch 5 of 9",
-		intro = "The Survival Colony: a points game, a city fenced in, fighters thrown at each other. The points were never for the players. They are Nuime's harvest.",
+		intro = "The Sealed Block: a points game, a city block fenced in, fighters thrown at each other. The points were never for the players. They are Nuime's harvest.",
 		lines = {
 			[3] = {
 				speaker = "Patchwork",
@@ -103,11 +103,11 @@ Story.CHAPTERS = {
 				text = "Patchwork is feeding him. Every fighter who falls in here becomes thread.",
 			},
 		},
-		cleared = { speaker = "Threadrunner", text = "Colony's down. Nobody else gets turned into string. Not today." },
+		cleared = { speaker = "Threadrunner", text = "The Block is down. Nobody else gets turned into string. Not today." },
 	},
 	land_of_wind = {
 		chapter = "Stitch 6 of 9",
-		intro = "The Desert Village, half buried in sand that fell from another sky. The Vessel was seen here. So was the king he carries.",
+		intro = "Dunewatch, a caravan fort half buried in sand that fell from another sky. The Vessel was seen here. So was the king he carries.",
 		lines = {
 			[3] = {
 				speaker = "Blackmaw",
@@ -125,7 +125,7 @@ Story.CHAPTERS = {
 	},
 	land_of_earth = {
 		chapter = "Stitch 7 of 9",
-		intro = "The Stone Village. Someone has been selling curses here by the thousand, and the buyer always pays in stitches.",
+		intro = "Quarry Hollow. Someone has been selling curses here by the thousand, and the buyer always pays in stitches.",
 		lines = {
 			[4] = { speaker = "Zero", text = "Nothing personal. Nuime paid first. You can outbid him, if you live." },
 			[8] = {
@@ -140,7 +140,7 @@ Story.CHAPTERS = {
 	},
 	land_of_water = {
 		chapter = "Stitch 8 of 9",
-		intro = "The Mist Village, islands in a grey sea. Nuime has come to hold this stitch himself.",
+		intro = "Mistreach, a stilt village in a grey sea. Nuime has come to hold this stitch himself.",
 		lines = {
 			[3] = {
 				speaker = "Nuime",
@@ -158,7 +158,7 @@ Story.CHAPTERS = {
 	},
 	land_of_lightning = {
 		chapter = "Stitch 9 of 9",
-		intro = "The Storm Village. Kazan, Thornbloom and Tidehollow guard the last stitch, the one that holds the Seam shut.",
+		intro = "Thunderspire, a monastery in the storm. Kazan, Thornbloom and Tidehollow guard the last stitch, the one that holds the Seam shut.",
 		lines = {
 			[3] = {
 				speaker = "Kazan",
