@@ -334,12 +334,13 @@ local function beams(k: Kit)
 	holder.CFrame = CFrame.new(k.centre)
 	holder.Parent = k.model
 	for _, b in k.plan.beams do
+		-- Parent first: an unparented attachment takes WorldPosition as an offset.
 		local a0 = Instance.new("Attachment")
-		a0.WorldPosition = at(k, b.a[1], b.a[3], b.a[2])
 		a0.Parent = holder
+		a0.WorldPosition = at(k, b.a[1], b.a[3], b.a[2])
 		local a1 = Instance.new("Attachment")
-		a1.WorldPosition = at(k, b.b[1], b.b[3], b.b[2])
 		a1.Parent = holder
+		a1.WorldPosition = at(k, b.b[1], b.b[3], b.b[2])
 		local beam = Instance.new("Beam")
 		beam.Attachment0, beam.Attachment1 = a0, a1
 		beam.Color = ColorSequence.new(Palette.color(b.color))
@@ -771,9 +772,18 @@ function Arenas.audit(model: Model?, map: any)
 		end
 		local e = if p.boss then 16 else 12
 		local hh = if p.boss then 7 else 5
-		local box = CFrame.new(pos + Vector3.new(0, hh / 2 * STUDS, 0))
-		for _, part in workspace:GetPartBoundsInBox(box, Vector3.new(e, hh, e) * STUDS, overlap) do
-			if part.Position.Y + part.Size.Y / 2 > pos.Y + 0.3 * STUDS then
+		-- An exact overlap (bounding boxes of ramps and turned decks are too big).
+		local probe = Instance.new("Part")
+		probe.Anchored = true
+		probe.CanCollide, probe.CanQuery, probe.CanTouch = false, false, false
+		probe.Transparency = 1
+		probe.Size = Vector3.new(e, hh, e) * STUDS
+		probe.CFrame = CFrame.new(pos + Vector3.new(0, hh / 2 * STUDS, 0))
+		probe.Parent = workspace
+		local inside = workspace:GetPartsInPart(probe, overlap)
+		probe:Destroy()
+		for _, part in inside do
+			if part.Position.Y + part.ExtentsSize.Y / 2 > pos.Y + 0.3 * STUDS then
 				warn(`audit: pad ({p.x}, {p.z}) box holds {part:GetFullName()}`)
 				bad += 1
 			end

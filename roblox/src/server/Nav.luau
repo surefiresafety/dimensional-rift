@@ -31,6 +31,7 @@ type St = {
 	linkTop: boolean,
 	checkAt: number,
 	checkPos: Vector3,
+	lastCall: number, -- when moveTarget last ran for it
 	sidestepUntil: number,
 	sidestepTo: Vector3?,
 	huntSince: number?,
@@ -54,6 +55,7 @@ local function stateOf(e: Combat.Enemy): St
 			linkTop = false,
 			checkAt = 0,
 			checkPos = e.root.Position,
+			lastCall = -math.huge,
 			sidestepUntil = 0,
 			sidestepTo = nil,
 			huntSince = nil,
@@ -72,8 +74,15 @@ local function navPart(): Instance?
 	return a and a:FindFirstChild("Nav")
 end
 
---- Casts that see only what stops bodies: the arena (not crowns, cores or decor) and the terrain.
+--- Casts that see only what stops bodies: the arena (not crowns, cores or decor)
+--- and the terrain. Built once per arena.
+local cachedParams: RaycastParams? = nil
+local cachedFor: Instance? = nil
 local function solidParams(): RaycastParams
+	local a0 = arena()
+	if cachedParams and cachedFor == a0 and (a0 == nil or a0.Parent ~= nil) then
+		return cachedParams
+	end
 	local p = RaycastParams.new()
 	p.FilterType = Enum.RaycastFilterType.Include
 	local list: { Instance } = { workspace.Terrain }
@@ -87,8 +96,19 @@ local function solidParams(): RaycastParams
 	end
 	p.FilterDescendantsInstances = list
 	p.RespectCanCollide = true
+	cachedParams, cachedFor = p, a0
 	return p
 end
+
+-- A block the size of standing room, for exact overlap tests (bounding boxes
+-- of ramps and turned decks are far bigger than the parts themselves).
+local probe = Instance.new("Part")
+probe.Name = "NavProbe"
+probe.Anchored = true
+probe.CanCollide, probe.CanQuery, probe.CanTouch, probe.CastShadow = false, false, false, false
+probe.Transparency = 1
+probe.Size = Vector3.new(3, 5, 3) * STUDS
+probe.Parent = workspace
 
 local function flat(v: Vector3): Vector3
 	return v * Vector3.new(1, 0, 1)
@@ -103,8 +123,8 @@ function Nav.isClear(pos: Vector3): boolean
 		o.FilterType = Enum.RaycastFilterType.Include
 		o.FilterDescendantsInstances = { a }
 		o.RespectCanCollide = true
-		local box = CFrame.new(pos + Vector3.new(0, 2.8 * STUDS, 0))
-		if #workspace:GetPartBoundsInBox(box, Vector3.new(3, 5, 3) * STUDS, o) > 0 then
+		probe.CFrame = CFrame.new(pos + Vector3.new(0, 2.8 * STUDS, 0))
+		if #workspace:GetPartsInPart(probe, o) > 0 then
 			return false
 		end
 	end
@@ -116,6 +136,12 @@ function Nav.isClear(pos: Vector3): boolean
 		return false
 	end
 	return hit.Material ~= Enum.Material.Water
+end
+
+--- The floor under `pos` (or `pos` itself if there is none within 8 u).
+function Nav.floorUnder(pos: Vector3): Vector3
+	local hit = workspace:Raycast(pos + Vector3.new(0, 1, 0), Vector3.new(0, -8 * STUDS, 0), solidParams())
+	return if hit then hit.Position else pos
 end
 
 --- The nearest Pad to `pos`, if the arena has any.
@@ -166,8 +192,11 @@ local function directClear(e: Combat.Enemy, to: Vector3): boolean
 	if dir.Magnitude < 0.5 then
 		return true
 	end
-	local size = e.t.size or 1
-	local hit = workspace:Spherecast(from, 1 * size * STUDS, dir, solidParams())
+	-- A spherecast ignores what its starting sphere already touches, so it
+	-- starts a radius behind the body: a wall it is pressed against still counts.
+	local r = 0.6 * (e.t.size or 1) * STUDS
+	local back = dir.Unit * r
+	local hit = workspace:Spherecast(from - back, r, dir + back, solidParams())
 	return hit == nil
 end
 
@@ -201,11 +230,12 @@ local function compute(e: Combat.Enemy, st: St, goal: Vector3, now: number)
 			st.wp = 2
 			st.goal = goal
 			st.noPath = false
-			st.link = nil
+			st.link, st.linkTop = nil, false
 		else
 			st.waypoints = nil
 			st.goal = goal
 			st.noPath = true
+			st.link, st.linkTop = nil, false -- pick a stair for this target afresh
 		end
 	end)
 end
@@ -243,6 +273,13 @@ function Nav.moveTarget(e: Combat.Enemy, target: Vector3)
 		return
 	end
 	local here = e.root.Position
+	-- Only judge "stuck" across consecutive chases: standing to aim, wind up
+	-- or recover is not being stuck.
+	if now - st.lastCall > 2 * Config.ENEMY_THINK_INTERVAL + 0.05 then
+		st.checkPos = here
+		st.checkAt = now + 0.8
+	end
+	st.lastCall = now
 	-- Stuck: barely moved in 0.8 s while trying to go somewhere.
 	if now >= st.checkAt then
 		if flat(here - st.checkPos).Magnitude < 0.5 * STUDS and flat(target - here).Magnitude > 3 * STUDS then
@@ -267,7 +304,7 @@ function Nav.moveTarget(e: Combat.Enemy, target: Vector3)
 	if math.abs(dy) <= 3 and directClear(e, target) then
 		st.waypoints = nil
 		st.noPath = false
-		st.link = nil
+		st.link, st.linkTop = nil, false
 		hum:MoveTo(target)
 		return
 	end
@@ -295,7 +332,9 @@ function Nav.moveTarget(e: Combat.Enemy, target: Vector3)
 	if st.noPath then
 		-- No path: make for the nearest stair or ladder that tops out near the target.
 		local link = st.link or linkFor(target, here)
-		st.link = link
+		if link ~= st.link then
+			st.link, st.linkTop = link, false
+		end
 		if link then
 			local foot = link.WorldPosition
 			local top = link:GetAttribute("Top") :: Vector3
@@ -327,7 +366,7 @@ function Nav.updateToss(e: Combat.Enemy, target: BasePart?, hunting: boolean)
 		if math.abs(dy) < 3 or (st.waypoints ~= nil and not st.noPath) then
 			e.tossing = false
 		end
-	elseif now - (st.huntSince :: number) > 4 and (st.noPath or (dy > 3 and near)) then
+	elseif now - (st.huntSince :: number) > 4 and (st.noPath or (dy > 3 and near and st.waypoints == nil)) then
 		e.tossing = true
 	end
 end

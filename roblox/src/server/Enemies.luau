@@ -364,7 +364,7 @@ function Enemies.think()
 			end
 		elseif action == "giveup" then
 			e.model:SetAttribute("Hunting", false)
-			e.home = e.root.Position
+			e.home = Nav.floorUnder(e.root.Position)
 			Nav.reset(e)
 			wander(e, now, mul)
 		elseif action == "chase" then

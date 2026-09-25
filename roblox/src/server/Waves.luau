@@ -142,19 +142,19 @@ function Waves.spawnSpot(centre: Vector3, boss: boolean?): Vector3
 	end
 	-- No Nav, or a Nav with no pads (an authored map): sample the ring, and
 	-- keep out of anything solid and out of water.
-	local best, bestGap = centre, -1
+	-- If nothing sampled is clear, the best spot by distance still beats the portal.
+	local best, bestGap, clear = centre, -1, false
 	for _ = 1, 12 do
 		local a = math.random() * math.pi * 2
 		local r = (20 + math.random() * 30) * STUDS
 		local spot = centre + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
-		if Nav.isClear(spot) then
-			local gap = playerGap(spot)
-			if gap >= need then
-				return spot
-			end
-			if gap > bestGap then
-				best, bestGap = spot, gap
-			end
+		local ok = Nav.isClear(spot)
+		local gap = playerGap(spot)
+		if ok and gap >= need then
+			return spot
+		end
+		if (ok and not clear) or (ok == clear and gap > bestGap) then
+			best, bestGap, clear = spot, gap, ok
 		end
 	end
 	return best
