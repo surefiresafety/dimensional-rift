@@ -15,6 +15,8 @@ local RulesData = require(Shared.Data.Rules)
 local Skills = require(Shared.Data.Skills)
 local Styles = require(Shared.Data.Styles)
 local Maps = require(Shared.Data.Maps)
+local Arsenals = require(Shared.Data.Arsenals)
+local Rules = require(Shared.Rules)
 
 local Ui = require(script.Parent.Ui)
 
@@ -23,6 +25,7 @@ local Hud = {}
 
 local gui: ScreenGui
 local hpFill: Frame, hpText: TextLabel, seFill: Frame, seText: TextLabel, nameText: TextLabel
+local status: TextLabel
 local waveTitle: TextLabel, waveSub: TextLabel, mapName: TextLabel
 local rail: Frame
 local logBox: Frame
@@ -60,6 +63,48 @@ local function bar(parent: Instance, y: number, colour: Color3): (Frame, TextLab
 		{ Ui.corner(5) }
 	)
 	return fill, label, value
+end
+
+local SYM = Color3.fromRGB(255, 107, 122)
+
+--- One line under the vitals for whatever this character carries: the drawn
+--- weapon, a stored or building charge, and the symbiote's three bars.
+local function statusText(now: number): string
+	local bits = {}
+	local weapon = player:GetAttribute("Weapon") :: string?
+	local style = player:GetAttribute("Style") :: string?
+	local set = style and (Arsenals :: any)[style]
+	if set then
+		local w = if weapon then set.items[weapon] else nil
+		table.insert(bits, if w then string.upper(w.name) else "NOTHING DRAWN")
+	end
+	local start = player:GetAttribute("ChargeStart") :: number?
+	if start then
+		local held = now - start
+		local tier = RulesData.OUTPUT_TIERS[Rules.outputTier(RulesData.OUTPUT_TIERS, held)]
+		table.insert(bits, `POWERING UP: {string.upper(tier.name)} {string.format("%.1f", held)}s`)
+	else
+		local output = player:GetAttribute("Output") :: string?
+		if output then
+			table.insert(bits, string.upper(output) .. " STORED")
+		end
+	end
+	local suit = player:GetAttribute("Suit") :: number?
+	if suit then
+		table.insert(bits, `SUIT {suit}/{player:GetAttribute("SuitMax")}`)
+	end
+	local hunger = player:GetAttribute("Hunger") :: number?
+	if hunger then
+		table.insert(bits, `HUNGER {hunger}%`)
+	end
+	local bond = player:GetAttribute("Bond") :: number?
+	if bond then
+		table.insert(bits, `BOND {bond}%`)
+	end
+	if player:GetAttribute("LooseSuit") then
+		table.insert(bits, "SUIT ON THE GROUND: F")
+	end
+	return table.concat(bits, "  ·  ")
 end
 
 local function renderRail()
@@ -155,8 +200,8 @@ function Hud.log(text: string, tone: string?)
 	local line = Ui.label({
 		Text = text,
 		TextSize = 14,
-		Font = if tone == "gold" then Ui.BOLD else Ui.BODY,
-		TextColor3 = if tone == "gold" then Ui.GOLD else Ui.TEXT,
+		Font = if tone == "gold" or tone == "sym" then Ui.BOLD else Ui.BODY,
+		TextColor3 = if tone == "gold" then Ui.GOLD elseif tone == "sym" then SYM else Ui.TEXT,
 		TextStrokeTransparency = 0.5,
 		AutomaticSize = Enum.AutomaticSize.Y,
 		Size = UDim2.new(1, 0, 0, 0),
@@ -215,6 +260,16 @@ function Hud.build()
 	local hpLabel, seLabel
 	hpFill, hpLabel, hpText = bar(vitals, 0, Ui.HP)
 	seFill, seLabel, seText = bar(vitals, 32, Ui.SE)
+	status = Ui.label({
+		Position = UDim2.fromOffset(20, 106),
+		Size = UDim2.fromOffset(520, 16),
+		TextSize = 11,
+		Font = Ui.BOLD,
+		TextColor3 = Ui.DIM,
+		TextStrokeTransparency = 0.6,
+		TextWrapped = false,
+		Parent = gui,
+	})
 	hpLabel.Text = "HEALTH"
 	seLabel.Text = "SPIRIT ENERGY"
 	nameText = hpLabel
@@ -334,6 +389,7 @@ function Hud.build()
 		local styleId = player:GetAttribute("Style") :: string?
 		nameText.Text = if styleId then string.upper(string.split(Styles[styleId].name, ":")[1]) else "HEALTH"
 		local now = workspace:GetServerTimeNow()
+		status.Text = statusText(now)
 		for _, t in tiles do
 			local c = cooldowns[t.key]
 			local k = if c and c.duration > 0 then math.clamp((c.readyAt - now) / c.duration, 0, 1) else 0

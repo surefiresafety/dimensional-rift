@@ -202,4 +202,63 @@ H.test("the bond: sound is worst, then fire, nothing else touches it", function(
 	H.eq(Rules.bondLoss("water", 10), 0, "water")
 end)
 
+H.test("the basic attack: fist, weapon, Black Flash", function()
+	local yuji = { m1 = 16, m1Range = 0.5, m1BlackFlash = 0.7 }
+	local fist = Rules.strike({ m1 = 26, m1Range = 2 }, nil, 0.5)
+	H.eq(fist.power, 26, "the style's own m1")
+	H.near(fist.reach, 4.8, 1e-9, "the style's extra reach")
+	H.eq(fist.knock, 5, "a plain knock")
+	H.eq(Rules.strike(nil, nil, 0.5).power, 16, "nobody: 16")
+	local spear = { name = "Spear", m1 = 34, knock = 4, ignoreDef = true }
+	local w = Rules.strike({ m1 = 26, m1Range = 2 }, spear, 0.5)
+	H.eq(w.power, 34, "the weapon replaces the fist")
+	H.near(w.reach, 2.8, 1e-9, "and none of the style's reach")
+	H.near(w.knock, 6.6, 1e-9, "40% of the weapon's knock on top")
+	H.eq(w.ignoreDef, true, "armour piercing")
+	local bf = Rules.strike(yuji, nil, 0.69)
+	H.eq(bf.blackFlash, true, "under the chance")
+	H.eq(bf.power, 40, "16 x 2.5")
+	H.eq(Rules.strike(yuji, nil, 0.7).blackFlash, false, "at the chance, no")
+end)
+
+H.test("hunger drains and says so at 75, 50, 30 and 15", function()
+	local h, mark = Rules.hungerStep(76, 0.5, 2)
+	H.eq(h, 75, "one a second at 0.5 for two")
+	H.eq(mark, 75, "crossed 75")
+	h, mark = Rules.hungerStep(75, 0.5, 2)
+	H.eq(mark, nil, "already at the mark does not repeat")
+	h = Rules.hungerStep(0.2, 0.8, 1)
+	H.eq(h, 0, "never under zero")
+	-- Venom (0.8 a second) empties from full in 125 seconds.
+	local v, t = 100, 0
+	while v > 0 do
+		v = Rules.hungerStep(v, 0.8, 1 / 60)
+		t += 1 / 60
+	end
+	H.near(t, 125, 0.05, "full to empty")
+end)
+
+H.test("the suit mends only when left alone, and knits at a quarter", function()
+	local sym = { suit = 260, regen = 9, regenAfter = 5 }
+	local hp, broken = Rules.suitRegen(sym, 0, true, 4, 1)
+	H.eq(hp, 0, "hurt four seconds ago: nothing")
+	H.eq(broken, true, "still torn")
+	hp, broken = Rules.suitRegen(sym, 50, true, 6, 1)
+	H.eq(hp, 59, "nine a second")
+	H.eq(broken, true, "59 is under a quarter of 260")
+	hp, broken = Rules.suitRegen(sym, 60, true, 6, 1)
+	H.eq(broken, false, "69 is over a quarter")
+	hp = Rules.suitRegen(sym, 259, false, 6, 1)
+	H.eq(hp, 260, "capped at the suit's health")
+end)
+
+H.test("the bond: starving strips it, time alone brings it back", function()
+	H.eq(Rules.bondStep(50, 100, 0, 10, 1), 44, "starving, six a second")
+	H.eq(Rules.bondStep(3, 100, 0, 10, 1), 0, "never under zero")
+	H.eq(Rules.bondStep(50, 100, 60, 10, 1), 53.5, "fed and left alone")
+	H.eq(Rules.bondStep(50, 100, 60, 3, 1), 50, "hurt three seconds ago")
+	H.eq(Rules.bondStep(0, 100, 60, 10, 1), 0, "gone is gone")
+	H.eq(Rules.bondStep(99, 100, 60, 10, 1), 100, "capped")
+end)
+
 return H

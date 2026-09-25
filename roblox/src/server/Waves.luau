@@ -67,6 +67,9 @@ Combat.onKilled(function(e, by)
 	if by then
 		by.kills += 1
 	end
+end)
+
+Combat.onGone(function()
 	announce()
 	if Waves.running and #Combat.enemies == 0 then
 		Waves.index += 1

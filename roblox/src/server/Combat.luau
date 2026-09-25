@@ -85,6 +85,7 @@ export type PState = {
 	suitHurtAt: number,
 	hunger: number,
 	bond: number,
+	bondWarned: boolean,
 	feeding: boolean,
 	feedTry: number,
 	symChat: number,
@@ -128,6 +129,12 @@ Combat.enemies = {} :: { Enemy }
 local killedHandlers: { (Enemy, PState?) -> () } = {}
 function Combat.onKilled(fn: (Enemy, PState?) -> ())
 	table.insert(killedHandlers, fn)
+end
+
+-- Anything leaving the fight: killed, or taken (Body Swap wears it).
+local goneHandlers: { (Enemy) -> () } = {}
+function Combat.onGone(fn: (Enemy) -> ())
+	table.insert(goneHandlers, fn)
 end
 
 function Combat.now(): number
@@ -194,6 +201,7 @@ function Combat.newState(player: Player): PState
 		suitHurtAt = -99,
 		hunger = 100,
 		bond = RulesData.BOND_MAX,
+		bondWarned = false,
 		feeding = false,
 		feedTry = 0,
 		symChat = 14,
@@ -267,26 +275,45 @@ function Combat.nearestEnemy(pos: Vector3, radius: number): Enemy?
 	return best
 end
 
-local function kill(e: Enemy, by: PState?)
-	if e.dead then
-		return
-	end
+-- Out of the live list first: anything listening (Waves) counts what is left.
+local function remove(e: Enemy)
 	e.dead = true
-	e.hum.Health = 0
-	-- Out of the live list first: anything listening (Waves) counts what is left.
 	local i = table.find(Combat.enemies, e)
 	if i then
 		table.remove(Combat.enemies, i)
 	end
+end
+
+local function kill(e: Enemy, by: PState?)
+	if e.dead then
+		return
+	end
+	remove(e)
+	e.hum.Health = 0
 	Combat.fx("burst", { at = e.root.Position, color = e.t.color or RulesData.NATURE[e.t.nature].color, count = 18 })
 	for _, fn in killedHandlers do
 		task.spawn(fn, e, by)
+	end
+	for _, fn in goneHandlers do
+		task.spawn(fn, e)
 	end
 	task.delay(1.5, function()
 		e.model:Destroy()
 	end)
 end
 Combat.kill = kill
+
+--- Takes an enemy out of the fight without killing it: no drop, no kill, but
+--- the wave counts it gone. The model is left for whoever took it.
+function Combat.take(e: Enemy)
+	if e.dead then
+		return
+	end
+	remove(e)
+	for _, fn in goneHandlers do
+		task.spawn(fn, e)
+	end
+end
 
 --- enemyTakeHit. `from` is where the blow came from, for knockback.
 function Combat.hitEnemy(e: Enemy, power: number, nature: string, from: Vector3?, onHit: Rules.OnHit?, by: PState?)
@@ -296,7 +323,12 @@ function Combat.hitEnemy(e: Enemy, power: number, nature: string, from: Vector3?
 	local o: Rules.OnHit = onHit or {}
 	local buff = Combat.buffActive(by)
 	local style = by and by.style and Styles[by.style]
-	local hungerMul = if style and style.symbiote and style.symbiote.hunger then Rules.hungerMul(nil) else 1
+	local hungerMul = if by
+			and style
+			and style.symbiote
+			and style.symbiote.hunger
+		then Rules.hungerMul(by.hunger)
+		else 1
 	local dmg, eff = rules:damageToEnemy({
 		power = power,
 		nature = nature,

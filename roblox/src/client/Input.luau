@@ -3,6 +3,7 @@
 -- important ones, so the game is playable on a phone from the start.
 
 local ContextActionService = game:GetService("ContextActionService")
+local UserInputService = game:GetService("UserInputService")
 local StarterGui = game:GetService("StarterGui")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = require(Shared.Remotes)
 local Signature = require(Shared.Signature)
+local Arsenals = require(Shared.Data.Arsenals)
 
 local Movement = require(script.Parent.Movement)
 local Select = require(script.Parent.Select)
@@ -18,6 +20,7 @@ local Hud = require(script.Parent.Hud)
 local player = Players.LocalPlayer
 local mouse = player:GetMouse()
 local CastRemote = Remotes.get("Cast")
+local ActionRemote = Remotes.get("Action")
 
 local Input = {}
 
@@ -40,6 +43,13 @@ local function cast(which: number | string)
 		return
 	end
 	CastRemote:FireServer(which, aim())
+end
+
+local function act(name: string)
+	if Select.isOpen() or not player:GetAttribute("Style") then
+		return
+	end
+	ActionRemote:FireServer(name, aim())
 end
 
 local KEYS = { Enum.KeyCode.One, Enum.KeyCode.Two, Enum.KeyCode.Three, Enum.KeyCode.Four, Enum.KeyCode.Five }
@@ -90,6 +100,52 @@ function Input.start()
 		return Enum.ContextActionResult.Sink
 	end, true, Enum.KeyCode.E)
 	ContextActionService:SetTitle("Signature", "E")
+
+	-- The basic attack. A click is read through UserInputService so a click on
+	-- the interface never swings; phones and pads get a button of their own.
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if not processed and input.UserInputType == Enum.UserInputType.MouseButton1 then
+			act("strike")
+		end
+	end)
+	ContextActionService:BindAction("Strike", function(_, state)
+		if state == Enum.UserInputState.Begin then
+			act("strike")
+		end
+		return Enum.ContextActionResult.Sink
+	end, true, Enum.KeyCode.ButtonR2)
+	ContextActionService:SetTitle("Strike", "Hit")
+
+	-- Hold B to power up; let go to store it for the next technique.
+	ContextActionService:BindAction("Charge", function(_, state)
+		if state == Enum.UserInputState.Begin then
+			act("chargeStart")
+		elseif state == Enum.UserInputState.End or state == Enum.UserInputState.Cancel then
+			ActionRemote:FireServer("chargeEnd")
+		end
+		return Enum.ContextActionResult.Sink
+	end, true, Enum.KeyCode.B)
+	ContextActionService:SetTitle("Charge", "B")
+
+	-- R: the next weapon, for a set that lives on R.
+	ContextActionService:BindAction("Cycle", function(_, state)
+		local style = player:GetAttribute("Style") :: string?
+		local a = style and (Arsenals :: any)[style]
+		if state == Enum.UserInputState.Begin and a and a.key == "r" then
+			act("cycle")
+			return Enum.ContextActionResult.Sink
+		end
+		return Enum.ContextActionResult.Pass
+	end, false, Enum.KeyCode.R)
+
+	-- F: put a symbiote that came off back on.
+	ContextActionService:BindAction("Rebond", function(_, state)
+		if state == Enum.UserInputState.Begin and player:GetAttribute("LooseSuit") then
+			act("rebond")
+			return Enum.ContextActionResult.Sink
+		end
+		return Enum.ContextActionResult.Pass
+	end, false, Enum.KeyCode.F)
 
 	ContextActionService:BindAction("Characters", function(_, state)
 		if state == Enum.UserInputState.Begin and player:GetAttribute("Style") then

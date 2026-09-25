@@ -42,9 +42,9 @@ rojo serve             # then, in Studio: Plugins > Rojo > Connect
 | `src/shared/Data/*.luau` | `ReplicatedStorage.Shared.Data` | **Generated** by `npm run export:roblox`. Every technique, character, enemy, boss and world. Do not edit these by hand. |
 | `src/shared/Rules.luau` | `ReplicatedStorage.Shared.Rules` | The combat maths: the nature wheel, damage, armour, crits, cost, cooldowns, status effects, waves. No Roblox APIs, so it runs under Lune. |
 | `src/shared/Config.luau` | | Roblox-only tuning. Holds `STUDS_PER_UNIT = 2.4`, the conversion from web-build units to studs. |
-| `src/shared/Remotes.luau` | | The six RemoteEvents and what each carries. |
+| `src/shared/Remotes.luau` | | The seven RemoteEvents and what each carries. |
 | `src/shared/Signature.luau` | | The E key for the characters whose signature is a technique. |
-| `src/server/` | `ServerScriptService.Server` | `Combat` (state, hitting enemies and players), `Abilities` (one handler per technique type), `Projectiles` (swept hits), `Enemies` (spawning and AI), `Waves`, `World` (lighting and a placeholder arena), `Looks` (bodies and hair). |
+| `src/server/` | `ServerScriptService.Server` | `Combat` (state, hitting enemies and players), `Abilities` (one handler per technique type, the basic attack, output charge), `Symbiote` (suit, hunger, bond, detaching), `Projectiles` (swept hits), `Enemies` (spawning and AI), `Waves`, `World` (lighting and a placeholder arena), `Looks` (bodies and hair). |
 | `src/client/` | `StarterPlayerScripts.Client` | `Hud`, `Select` (character select with universe filters and search), `Fx` (draws what the server reports), `Input`, `Movement` (web-swing and flight). |
 | `tests/` | | Lune tests: `lune run tests/run` (or `npm run test:roblox`). |
 
@@ -69,26 +69,31 @@ rojo serve             # then, in Studio: Plugins > Rojo > Connect
 | | |
 | --- | --- |
 | Characters | All 46, with their five techniques, pools, passives' numbers, energy and ultimates |
-| Technique types | 16 of 21, which covers 274 of the 282 techniques: projectile, melee, dash, beam, trap, pull, yank, teleport, buff, heal, shield, evade, freeze, clones, domain, toggle |
+| Technique types | All 21, so all 282 techniques can be cast: projectile, melee, dash, beam, trap, pull, yank, teleport, buff, heal, shield, evade, freeze, clones, domain, toggle, self (decoy), rewind (Reverse Time), switch (weapon and suit sets), possess (Body Swap), devour (Feed) |
+| Basic attack | Left click (or the Hit button, or R2). The style's own m1 and reach, Yuji's Black Flash chance, or the drawn weapon's m1, knockback, armour piercing and soul cut |
+| Weapon and suit sets | Toji, Maki, Iron Man and Top Hat switch with the technique in their slot, Yuji with R. The drawn one changes the basic attack and scales every technique marked `weaponScaled` (damage, cost, cooldown, reach, knockback, barrier breaking, the chain's pull, the soul cut) |
+| Output charge | Hold B: a tap is Minimum Output, 5 s Medium, 10 s Maximum, which also blasts everything within 14 units. The next technique spends it |
+| The symbiote | Suit health and its regeneration, hunger (it gets hungrier, says so, and hits harder the hungrier it is), Feed, the takeover when hunger hits zero (it transforms and feeds itself until it is over 55), the bond (fire and sound strip it, starving strips it, time alone restores it), coming off at zero bond, F to put it back on within a minute, Ironthread if you do not |
 | Ultimates | All technique ultimates, plus the Venom / Anti-Venom / Sukuna transforms and Mahoraga |
 | Combat rules | Nature wheel, armour, defence-down, buffs, lifesteal (including Berserker Rage's), crits and their ramp, knockback, enrage, burn/poison/bleed, root/paralyse/webbed/stun, shields with reflect and heal, Infinity, evasion |
 | Enemies | All 118, including the 46 character bosses and 32 alphas, with melee, ranged bursts and arcs, summons and enrage |
 | Worlds | All 9 worlds' waves, boss ladders and filler, their lighting and fog, and a placeholder skyline |
-| Screens | HUD (health, energy, ability rail with cooldowns, wave, log, banner) and Select Character |
-| Controls | 1–5, G, E / right mouse (signature), M. ContextActionService also adds touch buttons for phones. |
+| Screens | HUD (health, energy, a status line for the drawn weapon, stored charge, suit, hunger and bond, ability rail with cooldowns, wave, log, banner) and Select Character |
+| Controls | Left click (basic attack), 1–5, G, E (signature), B (hold to charge), R (Yuji's weapons), F (put the symbiote back on), M. ContextActionService also adds touch buttons for phones. |
 
 ## What is not ported yet
 
 Rough priority order:
 
-1. **Five technique types.** 7 equipped techniques use them and say "not in the Roblox
-   build yet" when cast. `switch` (Toji, Maki, Iron Man and Top Hat's weapon and suit
-   sets, with `Data/Arsenals`), `rewind` (Sasuke's Reverse Time), `possess` (Kenjaku),
-   `devour` (Venom's Feed) and `self` (a decoy).
-2. **The symbiote systems:** suit health, hunger, bond, the takeover at under 100 HP,
-   detaching, the lines of text, auto-tendrils (R), Doc Ock's arms.
-3. **Output charge (B)** and the Shadow Clone army. Ability handlers already take the
-   multiplier (`B`); nothing sets it yet.
+1. **The rest of the symbiote:** the panic (under 100 HP the suit covers him on its
+   own until G), auto-tendrils and auto-webbing (R), and Doc Ock's arms. Its lines
+   go to the combat log rather than a speech bubble.
+2. **The Shadow Clone army.** Multi Shadow Clone makes its usual three to five
+   helpers; the charged 1,000 / 5,000 / 10,000 army needs a cheaper kind of minion
+   than a humanoid first.
+3. **A body for the decoy and for Body Swap.** Shadow Clone's decoy works (it takes
+   the next hit) but has no second body on screen, and a worn enemy keeps its own
+   look.
 4. **The real arenas.** `World` builds a ring of blocks. Build each world in Studio as
    a Model named after its map id (`times_square`, `jujutsu_high`, …) under
    `ServerStorage.Maps`, and it replaces the placeholder automatically.
@@ -133,7 +138,7 @@ npm run test:roblox     # the Luau rules and data checks
   ```
 
   `globalTypes.d.luau` comes from the luau-lsp repository (`scripts/`).
-- 22 Lune tests pass. They check the ported rules against the web build's own formulas
+- 31 Lune tests pass. They check the ported rules against the web build's own formulas
   (damage over time matches to the point over several seconds at 60 fps), and check
   that every exported reference resolves.
 - The repo's node suite, including the export freshness test.

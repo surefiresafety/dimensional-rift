@@ -10,6 +10,7 @@ local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
 local Styles = require(Shared.Data.Styles)
 local RulesData = require(Shared.Data.Rules)
+local Arsenals = require(Shared.Data.Arsenals)
 
 local Combat = require(script.Combat)
 local Abilities = require(script.Abilities)
@@ -18,11 +19,13 @@ local Enemies = require(script.Enemies)
 local Waves = require(script.Waves)
 local World = require(script.World)
 local Looks = require(script.Looks)
+local Symbiote = require(script.Symbiote)
 local Signature = require(Shared.Signature)
 
 -- Create every remote before anyone can ask for one.
 local SelectStyle = Remotes.get("SelectStyle")
 local Cast = Remotes.get("Cast")
+local Action = Remotes.get("Action")
 
 Players.CharacterAutoLoads = false -- a character is chosen before anyone spawns
 
@@ -38,6 +41,11 @@ local function applyStyle(ps: Combat.PState, styleId: string, keepHealth: boolea
 	end
 	for _, id in st.pool do
 		ps.learned[id] = true
+	end
+	if not keepHealth then
+		-- A fresh start: nothing drawn, nothing to rewind to.
+		ps.weapon = nil
+		table.clear(ps.history)
 	end
 	local hum = Combat.humanoidOf(ps.player)
 	local hp = if hum and keepHealth then hum.Health else nil
@@ -78,6 +86,17 @@ Abilities.setTransform(transform)
 Combat.revert = function(ps)
 	transform(ps, nil)
 end
+-- The symbiote puts you back in the suit, or leaves you in Ironthread.
+Symbiote.setRestyle(function(ps, styleId)
+	ps.baseStyle, ps.transformUntil = nil, nil
+	local root = Combat.rootOf(ps.player)
+	local where = root and root.CFrame
+	applyStyle(ps, styleId, true)
+	local newRoot = Combat.rootOf(ps.player)
+	if newRoot and where then
+		newRoot.CFrame = where
+	end
+end)
 
 Players.PlayerAdded:Connect(function(player)
 	Combat.newState(player)
@@ -88,8 +107,11 @@ Players.PlayerAdded:Connect(function(player)
 			task.delay(4, function()
 				local ps = Combat.states[player]
 				if ps and ps.style and player.Parent then
-					ps.baseStyle = nil
+					ps.baseStyle, ps.transformUntil = nil, nil
 					ps.buff, ps.domain, ps.minions = nil, nil, {}
+					ps.output, ps.chargeStart, ps.decoy = nil, nil, false
+					player:SetAttribute("ChargeStart", nil)
+					Symbiote.reset(ps)
 					applyStyle(ps, ps.style)
 				end
 			end)
@@ -98,6 +120,10 @@ Players.PlayerAdded:Connect(function(player)
 end)
 
 Players.PlayerRemoving:Connect(function(player)
+	local ps = Combat.states[player]
+	if ps then
+		Symbiote.reset(ps)
+	end
 	Combat.states[player] = nil
 end)
 
@@ -106,7 +132,10 @@ SelectStyle.OnServerEvent:Connect(function(player, styleId)
 	if not ps or type(styleId) ~= "string" or not Styles[styleId] then
 		return
 	end
-	ps.baseStyle = nil
+	ps.baseStyle, ps.transformUntil = nil, nil
+	ps.output, ps.chargeStart = nil, nil
+	player:SetAttribute("ChargeStart", nil)
+	Symbiote.reset(ps)
 	applyStyle(ps, styleId)
 	if not Waves.running then
 		Waves.start(Config.START_MAP)
@@ -142,12 +171,56 @@ Cast.OnServerEvent:Connect(function(player, which, aim)
 	Abilities.cast(ps, which, aim)
 end)
 
+-- A direction, finite and roughly unit length. Nothing else is trusted.
+local function okAim(aim: any): boolean
+	return typeof(aim) == "Vector3" and aim.Magnitude == aim.Magnitude and aim.Magnitude <= 1.5
+end
+
+local lastAction: { [Player]: number } = {}
+Action.OnServerEvent:Connect(function(player, name, aim)
+	local ps = Combat.states[player]
+	if not ps or type(name) ~= "string" then
+		return
+	end
+	-- Letting go of B is never dropped, or a quick tap would leave you charging.
+	if name == "chargeEnd" then
+		Abilities.releaseCharge(ps)
+		return
+	end
+	local now = os.clock()
+	if now - (lastAction[player] or 0) < 0.05 then
+		return
+	end
+	lastAction[player] = now
+	if name == "strike" then
+		if okAim(aim) then
+			Abilities.strike(ps, aim)
+		end
+	elseif name == "chargeStart" then
+		Abilities.startCharge(ps)
+	elseif name == "cycle" then
+		-- Only a set that lives on R (Yuji's); the rest are a technique in a slot.
+		local a = ps.style and (Arsenals :: any)[ps.style]
+		if a and a.key == "r" then
+			Abilities.cycleWeapon(ps)
+		end
+	elseif name == "rebond" then
+		Symbiote.rebond(ps)
+	end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+	lastCast[player] = nil
+	lastAction[player] = nil
+end)
+
 World.load(Config.START_MAP) -- the waves start when the first player picks a character
 
 local thinkAcc = 0
 RunService.Heartbeat:Connect(function(dt)
 	Projectiles.step(dt)
 	Combat.step(dt)
+	Symbiote.step(dt)
 	thinkAcc += dt
 	if thinkAcc >= Config.ENEMY_THINK_INTERVAL then
 		thinkAcc = 0

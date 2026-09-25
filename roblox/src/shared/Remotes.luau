@@ -5,6 +5,10 @@
 --   Client -> server
 --     SelectStyle(styleId)                  pick a character
 --     Cast(slotIndex | "ult", aimDirection) use a technique
+--     Action(name, aimDirection?)           everything that is not a technique:
+--                                           "strike" (basic attack), "chargeStart"
+--                                           and "chargeEnd" (B), "cycle" (R, for a
+--                                           weapon set on R), "rebond" (F)
 --   Server -> client
 --     Cooldown(skillId, readyAt, duration)  readyAt is workspace:GetServerTimeNow()
 --     Fx(kind, payload)                     something to draw
@@ -14,7 +18,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local NAMES = { "SelectStyle", "Cast", "Cooldown", "Fx", "Notice", "Wave" }
+local NAMES = { "SelectStyle", "Cast", "Action", "Cooldown", "Fx", "Notice", "Wave" }
 
 local Remotes = {}
 

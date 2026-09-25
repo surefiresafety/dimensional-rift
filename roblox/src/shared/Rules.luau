@@ -259,7 +259,7 @@ function Rules.bondLoss(nature: string, dmg: number): number
 end
 
 --- The output tier a charge held for `held` seconds reaches.
-function Rules.outputTier(tiers: { { at: number } }, held: number): number
+function Rules.outputTier(tiers: { { at: number, [string]: any } }, held: number): number
 	local best = 1
 	for i, t in tiers do
 		if held >= t.at then
@@ -267,6 +267,85 @@ function Rules.outputTier(tiers: { { at: number } }, held: number): number
 		end
 	end
 	return best
+end
+
+export type Weapon = {
+	name: string,
+	m1: number,
+	mul: number?,
+	range: number?,
+	knock: number?,
+	cdMul: number?,
+	costMul: number?,
+	ignoreDef: boolean?,
+	breaksBarrier: boolean?,
+	pull: boolean?,
+	soul: { mul: number, delay: number }?,
+	color: number?,
+}
+
+export type Strike = { power: number, reach: number, knock: number, ignoreDef: boolean, blackFlash: boolean }
+
+--- The basic attack (strike). A drawn weapon replaces the style's own fist:
+--- its m1, and none of the style's extra reach. `roll` decides Black Flash for
+--- a style with m1BlackFlash, which hits for 40 cursed instead.
+function Rules.strike(
+	style: { m1: number?, m1Range: number?, m1BlackFlash: number? }?,
+	weapon: Weapon?,
+	roll: number
+): Strike
+	local reach = 2.8 + (if weapon then 0 else (style and style.m1Range or 0))
+	local chance = if style then style.m1BlackFlash or 0 else 0
+	if chance > 0 and roll < chance then
+		return { power = 16 * 2.5, reach = reach, knock = 9, ignoreDef = false, blackFlash = true }
+	end
+	return {
+		power = if weapon then weapon.m1 else (style and style.m1 or 16),
+		reach = reach,
+		knock = 5 + (if weapon then (weapon.knock or 0) * 0.4 else 0),
+		ignoreDef = weapon ~= nil and weapon.ignoreDef == true,
+		blackFlash = false,
+	}
+end
+
+--- Hunger falls by `drain` a second. Returns the new value and the line mark
+--- (75, 50, 30 or 15) it fell through this frame, if any.
+function Rules.hungerStep(hunger: number, drain: number, dt: number): (number, number?)
+	local after = math.max(0, hunger - drain * dt)
+	for _, mark in { 75, 50, 30, 15 } do
+		if hunger > mark and after <= mark then
+			return after, mark
+		end
+	end
+	return after, nil
+end
+
+--- The suit mends once it has been left alone for `regenAfter` seconds, and
+--- stops being torn once it is back over a quarter. Returns health, broken.
+function Rules.suitRegen(
+	sym: { suit: number, regen: number?, regenAfter: number? },
+	hp: number,
+	broken: boolean,
+	sinceHurt: number,
+	dt: number
+): (number, boolean)
+	if sinceHurt <= (sym.regenAfter or 5) or hp >= sym.suit then
+		return hp, broken
+	end
+	local after = math.min(sym.suit, hp + (sym.regen or 9) * dt)
+	return after, broken and after <= sym.suit * 0.25
+end
+
+--- The bond: fire and sound strip it (bondLoss); starving strips 6 a second;
+--- left alone for four seconds it comes back at 3.5 a second.
+function Rules.bondStep(bond: number, max: number, hunger: number, sinceHurt: number, dt: number): number
+	if hunger <= 0 then
+		return math.max(0, bond - 6 * dt)
+	end
+	if bond > 0 and bond < max and sinceHurt > 4 then
+		return math.min(max, bond + 3.5 * dt)
+	end
+	return bond
 end
 
 return Rules
