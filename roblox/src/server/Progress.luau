@@ -195,6 +195,8 @@ end
 
 --- Pays out experience and shards. The friends bonus applies to experience
 --- earned in a fight, not to rewards that are claimed.
+local unlock: (player: Player, p: Progression.Profile, styleId: string, why: string) -> () -- below
+
 local function award(player: Player, p: Progression.Profile, xp: number, shards: number, claimed: boolean?)
 	local mul = if claimed then 1 else Progression.friendMul(friends[player] or 0)
 	-- Fortune: more shards from fighting.
@@ -211,6 +213,16 @@ local function award(player: Player, p: Progression.Profile, xp: number, shards:
 	end
 	for _, level in reached do
 		Combat.notice(player, `Level {level}! +{Progression.levelReward(level)} Rift Shards.`, "gold")
+		if Progression.levelUnlocks(level) then
+			local all = {}
+			for id in Styles do
+				table.insert(all, id :: string)
+			end
+			local pick = Progression.milestoneCharacter(p, all, math.random())
+			if pick then
+				unlock(player, p, pick, `level {level}`)
+			end
+		end
 		if level >= 10 then
 			badge(player, p, "level_10")
 		end
@@ -235,7 +247,7 @@ local function quest(player: Player, p: Progression.Profile, kind: string, amoun
 	end
 end
 
-local function unlock(player: Player, p: Progression.Profile, styleId: string, why: string)
+function unlock(player: Player, p: Progression.Profile, styleId: string, why: string)
 	if p.unlocked[styleId] or not Styles[styleId] then
 		return
 	end

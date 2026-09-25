@@ -338,4 +338,16 @@ H.test("worlds open one after another", function()
 	H.eq(Progression.worldUnlocked(p, order, "nowhere"), false, "not a world")
 end)
 
+H.test("every fifth level brings a character, never a premium one", function()
+	H.eq(Progression.levelUnlocks(5), true, "5")
+	H.eq(Progression.levelUnlocks(6), false, "6")
+	local p = Progression.newProfile()
+	local all = { "naruto", "toji", "gojo", "maki" }
+	local pick = Progression.milestoneCharacter(p, all, 0)
+	H.eq(pick, "maki", "sorted, locked, not premium: maki then toji")
+	H.eq(Progression.milestoneCharacter(p, all, 0.99), "toji", "the other end")
+	p.unlocked.maki, p.unlocked.toji = true, true
+	H.eq(Progression.milestoneCharacter(p, all, 0.5), nil, "only premium left")
+end)
+
 return H

@@ -199,6 +199,27 @@ function Progression.levelOf(xp: number): (number, number, number)
 	return level, 0, 0
 end
 
+--- Every fifth level brings a new character with it.
+function Progression.levelUnlocks(level: number): boolean
+	return level % 5 == 0
+end
+
+--- The character a level milestone gives: one of the locked, non-premium
+--- ones, picked by `roll` (0..1); nil when there are none left.
+function Progression.milestoneCharacter(p: Profile, all: { string }, roll: number): string?
+	local locked = {}
+	for _, id in all do
+		if not p.unlocked[id] and not Progression.PREMIUM[id] then
+			table.insert(locked, id)
+		end
+	end
+	table.sort(locked)
+	if #locked == 0 then
+		return nil
+	end
+	return locked[math.clamp(math.floor(roll * #locked) + 1, 1, #locked)]
+end
+
 --- Shards for reaching a level: more the higher you go.
 function Progression.levelReward(level: number): number
 	return 20 + level * 5
