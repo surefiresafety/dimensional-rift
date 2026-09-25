@@ -4,6 +4,7 @@
 -- arithmetic lives in Shared.Rules; this file applies it to Roblox objects.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config)
@@ -69,6 +70,8 @@ export type PState = {
 	strikeReadyAt: number,
 	nextDodge: number,
 	invulnUntil: number,
+	dodgedAt: number, -- when the last dodge began: a hit soon after it is a perfect dodge
+	perfectUsed: boolean, -- one perfect per dodge
 	chargeStart: number?,
 	output: { dmg: number, cost: number, name: string, tier: number }?,
 	-- Weapon and suit sets, and the rewind history (oldest first).
@@ -85,6 +88,7 @@ export type PState = {
 	suitHurtAt: number,
 	hunger: number,
 	bond: number,
+	bondWarned: boolean,
 	feeding: boolean,
 	feedTry: number,
 	symChat: number,
@@ -92,6 +96,12 @@ export type PState = {
 	looseSuit: { untilT: number, host: string, at: Vector3, part: BasePart }?,
 	-- A character with a takeover (the Vessel) gets one save per life.
 	takeoverUsed: boolean,
+	-- Reloading the body (a transform): nothing else may start one meanwhile.
+	reloading: boolean,
+	-- Permanent upgrades (Progress.applyUpgrades): 1 until the save loads.
+	powerMul: number,
+	spiritMul: number,
+	moveMul: number,
 }
 
 export type Enemy = {
@@ -105,19 +115,32 @@ export type Enemy = {
 	defMul: number,
 	enraged: boolean,
 	dead: boolean,
-	nextAttack: number,
 	nextShot: number,
 	nextSummon: number,
-	-- A charger's telegraphed lunge: plant, flare, go.
+	-- Its mind (Rules.aiStep): idle until it notices someone, then chase,
+	-- and every attack telegraphed first.
 	state: string,
 	stateUntil: number,
+	alerted: boolean, -- hit, or told by a packmate: notices on its next think
+	home: Vector3, -- where it wanders around while idle
+	wanderTo: Vector3?,
+	nextWander: number,
 	lungeDir: Vector3?,
 	lungeHit: boolean,
 	nextCharge: number,
 	nextAura: number,
+	-- Roblox's standard R15 animations, played from the server so everyone
+	-- sees them: idle, walk, run and a slash for attacks.
+	anims: { [string]: AnimationTrack },
+	affix: Rules.Affix?, -- an elite's modifier
+	summoned: boolean, -- called up by another enemy: drops nothing
+	adapted: { [string]: number }?, -- the Unbidden: hits taken per nature
+	moving: string?,
 	-- Worn by Kenjaku's Body Swap: it fights for its wearer until this runs out.
 	allyOf: PState?,
 	allyUntil: number,
+	-- A melee enemy that cannot reach its target lobs rocks instead (Nav).
+	tossing: boolean?,
 }
 
 local Combat = {}
@@ -128,6 +151,27 @@ Combat.enemies = {} :: { Enemy }
 local killedHandlers: { (Enemy, PState?) -> () } = {}
 function Combat.onKilled(fn: (Enemy, PState?) -> ())
 	table.insert(killedHandlers, fn)
+end
+
+-- Things a player did, for quests and stats: "cast", "output", "crit",
+-- "strike" and "damage" (with the amount).
+local eventHandlers: { (PState, string, number) -> () } = {}
+function Combat.onEvent(fn: (PState, string, number) -> ())
+	table.insert(eventHandlers, fn)
+end
+function Combat.emit(ps: PState?, kind: string, amount: number?)
+	if not ps then
+		return
+	end
+	for _, fn in eventHandlers do
+		fn(ps, kind, amount or 1)
+	end
+end
+
+-- Anything leaving the fight: killed, or taken (Body Swap wears it).
+local goneHandlers: { (Enemy) -> () } = {}
+function Combat.onGone(fn: (Enemy) -> ())
+	table.insert(goneHandlers, fn)
 end
 
 function Combat.now(): number
@@ -181,6 +225,8 @@ function Combat.newState(player: Player): PState
 		strikeReadyAt = 0,
 		nextDodge = 0,
 		invulnUntil = 0,
+		dodgedAt = -99,
+		perfectUsed = false,
 		chargeStart = nil,
 		output = nil,
 		weapon = nil,
@@ -194,15 +240,31 @@ function Combat.newState(player: Player): PState
 		suitHurtAt = -99,
 		hunger = 100,
 		bond = RulesData.BOND_MAX,
+		bondWarned = false,
 		feeding = false,
 		feedTry = 0,
 		symChat = 14,
 		symbioteCd = 0,
 		looseSuit = nil,
 		takeoverUsed = false,
+		reloading = false,
+		powerMul = 1,
+		spiritMul = 1,
+		moveMul = 1,
 	}
 	Combat.states[player] = ps
 	return ps
+end
+
+--- Infinity only stays up for a kit that can take it down again: without a
+--- toggle in the slots it would be permanent invulnerability.
+function Combat.checkInfinity(ps: PState)
+	for _, id in ps.slots do
+		if Skills[id] and Skills[id].type == "toggle" then
+			return
+		end
+	end
+	ps.infinity = false
 end
 
 --- Publishes the numbers the HUD draws. Health rides on the Humanoid itself.
@@ -211,6 +273,7 @@ function Combat.publish(ps: PState)
 	p:SetAttribute("SE", if ps.se == math.huge then -1 else math.floor(ps.se))
 	p:SetAttribute("MaxSE", if ps.maxSe == math.huge then -1 else ps.maxSe)
 	p:SetAttribute("Style", ps.style)
+	p:SetAttribute("BaseStyle", ps.baseStyle) -- set while transformed
 	p:SetAttribute("Slots", table.concat(ps.slots, ","))
 	p:SetAttribute("Infinity", ps.infinity)
 	local st = ps.style and Styles[ps.style]
@@ -267,26 +330,70 @@ function Combat.nearestEnemy(pos: Vector3, radius: number): Enemy?
 	return best
 end
 
-local function kill(e: Enemy, by: PState?)
-	if e.dead then
-		return
-	end
+-- Out of the live list first: anything listening (Waves) counts what is left.
+local function remove(e: Enemy)
 	e.dead = true
-	e.hum.Health = 0
-	-- Out of the live list first: anything listening (Waves) counts what is left.
 	local i = table.find(Combat.enemies, e)
 	if i then
 		table.remove(Combat.enemies, i)
 	end
+end
+
+local function kill(e: Enemy, by: PState?)
+	if e.dead then
+		return
+	end
+	remove(e)
+	e.hum.Health = 0
 	Combat.fx("burst", { at = e.root.Position, color = e.t.color or RulesData.NATURE[e.t.nature].color, count = 18 })
 	for _, fn in killedHandlers do
 		task.spawn(fn, e, by)
+	end
+	for _, fn in goneHandlers do
+		task.spawn(fn, e)
+	end
+	-- It topples and fades rather than standing there until it vanishes.
+	for _, t in e.anims do
+		t:Stop(0.1)
+	end
+	e.root:ApplyImpulse((Vector3.new(math.random() - 0.5, 0.6, math.random() - 0.5) * 30) * e.root.AssemblyMass)
+	for _, d in e.model:GetDescendants() do
+		if d:IsA("BasePart") and d.Transparency < 1 then
+			TweenService:Create(d, TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+				Transparency = 1,
+			}):Play()
+		end
 	end
 	task.delay(1.5, function()
 		e.model:Destroy()
 	end)
 end
 Combat.kill = kill
+
+--- Takes an enemy out of the fight without killing it: no drop, no kill, but
+--- the wave counts it gone. The model is left for whoever took it.
+function Combat.take(e: Enemy)
+	if e.dead then
+		return
+	end
+	remove(e)
+	-- It is on your side now: off the radar, no boss bar, out of the enemies.
+	e.model:SetAttribute("Hunting", false)
+	e.model:SetAttribute("Boss", false)
+	for _, t in e.anims do
+		t:Stop(0.2)
+	end
+	local worn = workspace:FindFirstChild("Worn")
+	if not worn then
+		worn = Instance.new("Folder")
+		worn.Name = "Worn"
+		worn.Parent = workspace
+	end
+	e.model.Parent = worn
+	for _, fn in goneHandlers do
+		task.spawn(fn, e)
+	end
+end
 
 --- enemyTakeHit. `from` is where the blow came from, for knockback.
 function Combat.hitEnemy(e: Enemy, power: number, nature: string, from: Vector3?, onHit: Rules.OnHit?, by: PState?)
@@ -296,7 +403,22 @@ function Combat.hitEnemy(e: Enemy, power: number, nature: string, from: Vector3?
 	local o: Rules.OnHit = onHit or {}
 	local buff = Combat.buffActive(by)
 	local style = by and by.style and Styles[by.style]
-	local hungerMul = if style and style.symbiote and style.symbiote.hunger then Rules.hungerMul(nil) else 1
+	local hungerMul = if by
+			and style
+			and style.symbiote
+			and style.symbiote.hunger
+		then Rules.hungerMul(by.hunger)
+		else 1
+	-- The Unbidden learns each nature after three hits of it.
+	local adaptMul = 1
+	if e.t.adapts then
+		e.adapted = e.adapted or {}
+		local adapted
+		adaptMul, adapted = Rules.adapt(e.adapted :: { [string]: number }, nature)
+		if adapted and (e.adapted :: any)[nature] == 4 then
+			Combat.fx("number", { at = e.root.Position + Vector3.new(0, 5, 0), text = "ADAPTED", tone = "nve" })
+		end
+	end
 	local dmg, eff = rules:damageToEnemy({
 		power = power,
 		nature = nature,
@@ -304,11 +426,13 @@ function Combat.hitEnemy(e: Enemy, power: number, nature: string, from: Vector3?
 		defMul = e.defMul,
 		armor = e.t.armor,
 		ignoreDef = o.ignoreDef,
-		buffMul = if buff then buff.dmgMul else 1,
+		buffMul = (if buff then buff.dmgMul else 1) * (if by then by.powerMul else 1) * adaptMul,
 		hungerMul = hungerMul,
 		roll = math.random(),
 	})
+	Combat.emit(by, "damage", math.min(dmg, e.hum.Health))
 	e.hum.Health = math.max(0, e.hum.Health - dmg)
+	e.alerted = true -- nobody gets hit and keeps wandering
 
 	-- Lifesteal, from the technique or from a rage that feeds.
 	local leech = (o.leech or 0) + (if buff then buff.leech else 0)
@@ -368,7 +492,8 @@ end
 Combat.lastHitBy = {} :: { [Player]: string }
 
 --- hurtPlayer: Infinity, evasion, shields and decoys first, then the hit.
-function Combat.hurtPlayer(ps: PState, atk: number, nature: string, from: Enemy?)
+--- `passive`: damage over time (an aura) that a perfect dodge cannot answer.
+function Combat.hurtPlayer(ps: PState, atk: number, nature: string, from: Enemy?, passive: boolean?)
 	local hum = Combat.humanoidOf(ps.player)
 	local root = Combat.rootOf(ps.player)
 	if not hum or not root or hum.Health <= 0 then
@@ -382,6 +507,18 @@ function Combat.hurtPlayer(ps: PState, atk: number, nature: string, from: Enemy?
 		return say("INFINITY")
 	end
 	if now < ps.invulnUntil then
+		-- Slipping a blow in the first moments of a dodge is a perfect dodge:
+		-- energy back, and the moment called out.
+		if from and not passive and not ps.perfectUsed and now - ps.dodgedAt < 0.3 then
+			ps.perfectUsed = true
+			if ps.se ~= math.huge then
+				ps.se = math.min(ps.maxSe, ps.se + 60)
+			end
+			Combat.fx("number", { at = root.Position + Vector3.new(0, 4, 0), text = "PERFECT  +60 SE", tone = "se" })
+			Combat.fx("burst", { at = root.Position, color = 0xb06cff, count = 16 })
+			Combat.emit(ps, "perfect")
+			return
+		end
 		return say("DODGED")
 	end
 	if now < ps.evadeUntil then
@@ -430,6 +567,15 @@ function Combat.hurtPlayer(ps: PState, atk: number, nature: string, from: Enemy?
 	end
 	hum.Health = math.max(0, hum.Health - dmg)
 	Combat.fx("number", { at = root.Position + Vector3.new(0, 3, 0), text = tostring(dmg), tone = "hurt" })
+	-- A vampiric elite drinks what it deals.
+	local vamp = from and from.affix and from.affix.vampiric
+	if from and vamp and not from.dead then
+		from.hum.Health = math.min(from.hum.MaxHealth, from.hum.Health + dmg * vamp)
+		Combat.fx(
+			"number",
+			{ at = from.root.Position + Vector3.new(0, 4, 0), text = "+" .. Rules.round(dmg * vamp), tone = "heal" }
+		)
+	end
 	Combat.afterHurt(ps, dmg, nature)
 end
 
@@ -467,6 +613,9 @@ local function stepWorn(now: number)
 	end
 end
 
+-- The HUD's numbers go out ten times a second, not every frame.
+local nextPublish: { [PState]: number } = setmetatable({}, { __mode = "k" }) :: any
+
 --- Status effects, regen, buffs and anything else that runs on the clock.
 function Combat.step(dt: number)
 	local now = Combat.now()
@@ -500,10 +649,10 @@ function Combat.step(dt: number)
 			end
 		end
 		if ps.se < ps.maxSe and now > ps.regenBlockedUntil then
-			ps.se = math.min(ps.maxSe, ps.se + Config.SE_REGEN_PER_SECOND * dt)
+			ps.se = math.min(ps.maxSe, ps.se + Config.SE_REGEN_PER_SECOND * ps.spiritMul * dt)
 		end
 		local buff = Combat.buffActive(ps)
-		hum.WalkSpeed = Config.WALK_SPEED * (if buff then buff.speedMul else 1)
+		hum.WalkSpeed = Config.WALK_SPEED * (if buff then buff.speedMul else 1) * ps.moveMul
 		if buff then
 			hum.Health = math.min(hum.MaxHealth, hum.Health + buff.regen * dt)
 			if buff.chain and now >= buff.chainNext then
@@ -558,7 +707,10 @@ function Combat.step(dt: number)
 			ps.transformUntil = nil
 			Combat.revert(ps)
 		end
-		Combat.publish(ps)
+		if now >= (nextPublish[ps] or 0) then
+			nextPublish[ps] = now + 0.1
+			Combat.publish(ps)
+		end
 	end
 end
 

@@ -17,7 +17,7 @@ Ui.DISPLAY = Enum.Font.Bangers
 Ui.BODY = Enum.Font.GothamMedium
 Ui.BOLD = Enum.Font.GothamBold
 
-function Ui.make(className: string, props: { [string]: any }, children: { Instance }?): any
+function Ui.make(className: string, props: { [string]: any }, children: { any }?): any
 	local inst = Instance.new(className)
 	local parent = props.Parent
 	for k, v in props do
@@ -25,7 +25,7 @@ function Ui.make(className: string, props: { [string]: any }, children: { Instan
 			(inst :: any)[k] = v
 		end
 	end
-	local list: { Instance } = children or {}
+	local list: { any } = children or {}
 	for _, c in list do
 		c.Parent = inst
 	end
