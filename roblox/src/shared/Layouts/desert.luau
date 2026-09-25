@@ -209,7 +209,7 @@ return function(K: any)
 			-- windcatcher: at the roof centre on A, flush in the outer corner elsewhere
 			local wx, wz = hs.x, hs.z
 			if not isA then
-				wx, wz = hs.x + hs.sx * 2.25, hs.z + hs.sz * 2.25
+				wx, wz = hs.x + hs.sx * 2.5, hs.z + hs.sz * 2.5
 			end
 			K.windcatcher({ id = id .. "/wind", x = wx, z = wz, h0 = hs.h, top = 26, color = SANDSTONE })
 			-- rails on the two outer faces (clear of the windcatcher), with gaps at
@@ -232,8 +232,8 @@ return function(K: any)
 					table.insert(zGaps, { math.abs(26.6 - xFrom), 3 })
 				end
 			end
-			if false then edgeRail(id .. "/rail-x", { fx, zFrom }, { fx, zTo }, hs.h, xGaps)
-			edgeRail(id .. "/rail-z", { xFrom, fz }, { xTo, fz }, hs.h, zGaps) end
+			edgeRail(id .. "/rail-x", { fx, zFrom }, { fx, zTo }, hs.h, xGaps)
+			edgeRail(id .. "/rail-z", { xFrom, fz }, { xTo, fz }, hs.h, zGaps)
 		end
 		-- plank bridges between neighbours, landing mid-edge
 		for i = 1, 4 do
