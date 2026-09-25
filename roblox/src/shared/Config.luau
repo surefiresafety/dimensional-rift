@@ -24,9 +24,19 @@ Config.SPAWN_RING = 40 -- units from the world's portal centre that enemies arri
 Config.MAX_ENEMIES = 24 -- a hard ceiling so summons cannot flood the server
 
 -- Enemies.
-Config.ENEMY_MELEE_REACH = 2.4 -- units, multiplied by the enemy's size
-Config.ENEMY_MELEE_COOLDOWN = 1.1
-Config.ENEMY_THINK_INTERVAL = 0.2
+Config.ENEMY_THINK_INTERVAL = 0.1
+-- How close (web units, 2.4 studs each) a player has to come before an enemy
+-- notices them. Until then it wanders near where it arrived. Bosses see a
+-- little further. A hit, or a packmate within ENEMY_PACK spotting you, wakes
+-- it too; past ENEMY_LEASH it gives up and goes back to wandering.
+Config.ENEMY_NOTICE = 18
+Config.ENEMY_NOTICE_BOSS = 26
+Config.ENEMY_PACK = 9
+Config.ENEMY_LEASH = 60
+-- A swing starts inside this reach (plus the enemy's size) and lands if the
+-- player is still inside the hit reach when the wind-up ends.
+Config.ENEMY_SWING_START = 3.2
+Config.ENEMY_SWING_HIT = 4.2
 
 -- Badges. Create them on the Creator Dashboard and paste each id here; 0 means
 -- the badge is not set up and is skipped. Progress is tracked either way.

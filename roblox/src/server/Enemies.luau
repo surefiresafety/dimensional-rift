@@ -133,11 +133,14 @@ function Enemies.spawn(id: string, at: Vector3): Combat.Enemy?
 		defMul = 1,
 		enraged = false,
 		dead = false,
-		nextAttack = now + 1,
 		nextShot = now + (if t.ranged then t.ranged.cd * math.random() else 0),
 		nextSummon = now + (if t.summon then t.summon.every else 0),
 		state = "idle",
 		stateUntil = 0,
+		alerted = false,
+		home = at,
+		wanderTo = nil,
+		nextWander = 0,
 		lungeHit = false,
 		nextCharge = now + (if t.charge then t.charge.cd * (0.5 + math.random()) else 0),
 		nextAura = now + (if t.aura then t.aura.every or 0.6 else 0),
@@ -199,7 +202,39 @@ local function shoot(e: Combat.Enemy, target: BasePart)
 	end
 end
 
---- One think for every enemy: chase, strike in reach, shoot at range, summon.
+local function faceTowards(e: Combat.Enemy, at: Vector3)
+	local flat = Vector3.new(at.X, e.root.Position.Y, at.Z)
+	if (flat - e.root.Position).Magnitude > 0.1 then
+		e.root.CFrame = CFrame.lookAt(e.root.Position, flat)
+	end
+end
+
+--- Wakes everything close to `e` that has not seen anyone yet: a pack hunts
+--- together.
+local function alertPack(e: Combat.Enemy)
+	for _, o in Combat.enemies do
+		if o ~= e and not o.dead and o.state == "idle" then
+			if (o.root.Position - e.root.Position).Magnitude < Config.ENEMY_PACK * STUDS then
+				o.alerted = true
+			end
+		end
+	end
+end
+
+--- Somewhere near where it arrived to amble towards while it has seen nobody.
+local function wander(e: Combat.Enemy, now: number)
+	if not e.wanderTo or now >= e.nextWander or (e.root.Position - e.wanderTo).Magnitude < 2 * STUDS then
+		local a = math.random() * math.pi * 2
+		local r = math.random() * 12 * STUDS
+		e.wanderTo = e.home + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
+		e.nextWander = now + 3 + math.random() * 4
+	end
+	e.hum.WalkSpeed = e.t.speed * STUDS * 0.4
+	e.hum:MoveTo(e.wanderTo :: Vector3)
+end
+
+--- One think for every enemy (every Config.ENEMY_THINK_INTERVAL): the state
+--- machine in Rules.aiStep decides; this moves, telegraphs and hits.
 function Enemies.think()
 	local now = Combat.now()
 	for _, e in table.clone(Combat.enemies) do
@@ -208,22 +243,97 @@ function Enemies.think()
 		end
 		local ps, target = nearestPlayer(e.root.Position)
 		local mul = Rules.speedMul(e.status)
-		e.hum.WalkSpeed = e.t.speed * STUDS * mul
-		if not ps or not target then
+		local size = e.t.size or 1
+		local dist = if target then (target.Position - e.root.Position).Magnitude / STUDS else math.huge
+		local canAct = mul > 0 and not e.status.stun and not e.status.paralyze
+		local action = Rules.aiStep(e, {
+			now = now,
+			dist = dist,
+			canAct = canAct,
+			alerted = e.alerted,
+			boss = e.t.boss,
+			notice = if e.t.boss then Config.ENEMY_NOTICE_BOSS else Config.ENEMY_NOTICE,
+			leash = Config.ENEMY_LEASH,
+			reach = Config.ENEMY_SWING_START + (size - 1),
+			shotReady = e.t.ranged ~= nil and now >= e.nextShot,
+			charge = e.t.charge,
+			chargeReady = e.t.charge ~= nil and now >= e.nextCharge,
+		})
+		e.alerted = false
+		if action ~= "lunging" then
+			e.hum.WalkSpeed = e.t.speed * STUDS * mul
+		end
+
+		if action == "idle" then
+			wander(e, now)
+		elseif action == "notice" then
+			Combat.fx("alert", { model = e.model, color = 0xffd54a })
+			alertPack(e)
+			if target then
+				e.hum:MoveTo(target.Position)
+			end
+		elseif action == "giveup" then
+			e.home = e.root.Position
+			wander(e, now)
+		elseif action == "chase" then
+			if target and mul > 0 then
+				e.hum:MoveTo(target.Position)
+			end
+		elseif action == "windup" or action == "aim" or action == "tell" then
+			-- Plant, turn, and show what is coming.
 			e.hum:MoveTo(e.root.Position)
-			continue
-		end
-		local d = (target.Position - e.root.Position).Magnitude
-		if mul > 0 then
-			e.hum:MoveTo(target.Position)
-		else
+			if target then
+				faceTowards(e, target.Position)
+			end
+			Combat.fx("telegraph", {
+				model = e.model,
+				radius = (1.6 + size) * STUDS,
+				color = if action == "windup" then 0xff3b3b elseif action == "aim" then 0xffd54a else 0xff8a3d,
+				duration = e.stateUntil - now,
+			})
+			if action == "tell" and target then
+				local flat = (target.Position - e.root.Position) * Vector3.new(1, 0, 1)
+				e.lungeDir = if flat.Magnitude > 0.01 then flat.Unit else e.root.CFrame.LookVector
+			end
+		elseif action == "winding" or action == "aiming" or action == "telling" or action == "recover" then
+			e.hum:MoveTo(e.root.Position)
+			if target and action ~= "recover" then
+				faceTowards(e, target.Position)
+			end
+		elseif action == "strike" then
+			Combat.fx("slash", {
+				at = e.root.Position + e.root.CFrame.LookVector * STUDS * size,
+				dir = e.root.CFrame.LookVector,
+				reach = (Config.ENEMY_SWING_HIT + size - 1) * STUDS,
+				color = 0xff3b3b,
+			})
+			if ps and dist <= Config.ENEMY_SWING_HIT + (size - 1) then
+				Combat.hurtPlayer(ps, e.t.atk, e.t.nature, e)
+			end
+		elseif action == "shoot" then
+			e.nextShot = now + e.t.ranged.cd * (0.8 + math.random() * 0.5)
+			if target then
+				shoot(e, target)
+			end
+		elseif action == "lunge" then
+			e.lungeHit = false
+			local dir = e.lungeDir or e.root.CFrame.LookVector
+			e.hum.WalkSpeed = (e.t.charge.speed or 22) * STUDS
+			e.hum:MoveTo(e.root.Position + dir * 60 * STUDS)
+			Combat.fx("burst", { at = e.root.Position, color = 0xff8a3d, count = 12 })
+		elseif action == "lunging" then
+			if ps and not e.lungeHit and dist < 2.9 + (size - 1) then
+				e.lungeHit = true
+				Combat.hurtPlayer(ps, Rules.round(e.t.charge.power or e.t.atk * 1.7), e.t.nature, e)
+				Combat.fx("burst", { at = e.root.Position, color = 0xff8a3d, count = 16 })
+			end
+		elseif action == "endLunge" then
+			e.hum:MoveTo(e.root.Position)
+			e.nextCharge = now + (e.t.charge.cd or 7) * (0.8 + math.random() * 0.4)
+		elseif action == "hold" or action == "cancel" then
 			e.hum:MoveTo(e.root.Position)
 		end
-		local reach = (Config.ENEMY_MELEE_REACH + (e.t.size or 1)) * STUDS
-		if mul > 0 and d <= reach and now >= e.nextAttack then
-			e.nextAttack = now + Config.ENEMY_MELEE_COOLDOWN
-			Combat.hurtPlayer(ps, e.t.atk, e.t.nature, e)
-		end
+
 		-- Regeneration, and a damaging aura every 0.6 s (updateEnemies).
 		if e.t.regen and e.hum.Health < e.hum.MaxHealth then
 			e.hum.Health = math.min(e.hum.MaxHealth, e.hum.Health + e.t.regen * Config.ENEMY_THINK_INTERVAL)
@@ -239,21 +349,9 @@ function Enemies.think()
 				end
 			end
 		end
-		-- Shoots from 4.5 to 42 units, like the web build.
-		local r = e.t.ranged
-		if
-			r
-			and not e.status.stun
-			and not e.status.paralyze
-			and d > 4.5 * STUDS
-			and d < 42 * STUDS
-			and now >= e.nextShot
-		then
-			e.nextShot = now + r.cd * (0.8 + math.random() * 0.5)
-			shoot(e, target)
-		end
+		-- Summoners call up help once they are in a fight.
 		local sm = e.t.summon
-		if sm and now >= e.nextSummon then
+		if sm and e.state ~= "idle" and now >= e.nextSummon then
 			e.nextSummon = now + sm.every
 			local mine = 0
 			for _, o in Combat.enemies do
@@ -261,9 +359,13 @@ function Enemies.think()
 					mine += 1
 				end
 			end
-			for i = 1, math.min(sm.count or 2, (sm.max or 6) - mine) do
+			for n = 1, math.min(sm.count or 2, (sm.max or 6) - mine) do
 				local a = math.random() * math.pi * 2
-				Enemies.spawn(sm.of, e.root.Position + Vector3.new(math.cos(a), 0, math.sin(a)) * (3 + i) * STUDS)
+				local child =
+					Enemies.spawn(sm.of, e.root.Position + Vector3.new(math.cos(a), 0, math.sin(a)) * (3 + n) * STUDS)
+				if child then
+					child.alerted = true
+				end
 			end
 		end
 	end

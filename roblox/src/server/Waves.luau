@@ -45,13 +45,47 @@ local function announce()
 	WaveRemote:FireAllClients(World.current, Waves.index + 1, #Combat.enemies)
 end
 
+--- A spot 20 to 50 units from the centre, and at least a notice range
+--- plus a bit from every player, if there is one to be had.
+function Waves.spawnSpot(centre: Vector3): Vector3
+	local best, bestGap = centre, -1
+	for _ = 1, 12 do
+		local a = math.random() * math.pi * 2
+		local r = (20 + math.random() * 30) * STUDS
+		local spot = centre + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
+		local gap = math.huge
+		for player in Combat.states do
+			local root = Combat.rootOf(player)
+			if root then
+				gap = math.min(gap, ((root.Position - spot) * Vector3.new(1, 0, 1)).Magnitude)
+			end
+		end
+		if gap >= (Config.ENEMY_NOTICE + 6) * STUDS then
+			return spot
+		end
+		if gap > bestGap then
+			best, bestGap = spot, gap
+		end
+	end
+	return best
+end
+
 function Waves.spawnCurrent()
 	local map = Maps[World.current :: string]
 	local list = Rules.waveList(map, Waves.index)
 	local c = map.portalCenter or { x = 0, y = 0, z = 0 }
+	-- Spread over the arena and out of sight range of everyone, in small
+	-- packs, so a wave is something to go and find rather than a crowd that
+	-- arrives on top of you. Bosses stand alone.
+	local centre = Vector3.new(c.x, 0, c.z) * STUDS
+	local packAt: Vector3? = nil
 	for i, id in list do
-		local a = ((i - 1) / math.max(1, #list)) * math.pi * 2 + Waves.index * 0.4
-		Enemies.spawn(id, Vector3.new(c.x + math.sin(a) * 17, 0, c.z + math.cos(a) * 17) * STUDS)
+		local boss = EnemyData[id] and EnemyData[id].boss
+		if boss or not packAt or (i % 3) == 1 then
+			packAt = Waves.spawnSpot(centre)
+		end
+		local jitter = if boss then Vector3.zero else Vector3.new(math.random(-4, 4), 0, math.random(-4, 4)) * STUDS
+		Enemies.spawn(id, (packAt :: Vector3) + jitter)
 	end
 	local names = {}
 	for _, id in list do

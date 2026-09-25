@@ -261,4 +261,82 @@ H.test("the bond: starving strips it, time alone brings it back", function()
 	H.eq(Rules.bondStep(99, 100, 60, 10, 1), 100, "capped")
 end)
 
+local function aiInput(over: { [string]: any }): Rules.AiInput
+	local i: any = {
+		now = 0,
+		dist = 100,
+		canAct = true,
+		alerted = false,
+		boss = false,
+		notice = 18,
+		leash = 60,
+		reach = 3.2,
+		shotReady = false,
+		charge = nil,
+		chargeReady = false,
+	}
+	for k, v in over do
+		i[k] = v
+	end
+	return i
+end
+
+H.test("enemies wander until someone comes close, or they are hit", function()
+	local ai = { state = "idle", stateUntil = 0 }
+	H.eq(Rules.aiStep(ai, aiInput({ dist = 30 })), "idle", "too far to notice")
+	H.eq(Rules.aiStep(ai, aiInput({ dist = math.huge })), "idle", "nobody at all")
+	H.eq(Rules.aiStep(ai, aiInput({ dist = 17 })), "notice", "inside the notice range")
+	H.eq(ai.state, "chase", "and now it hunts")
+	local hit = { state = "idle", stateUntil = 0 }
+	H.eq(Rules.aiStep(hit, aiInput({ dist = 50, alerted = true })), "notice", "a hit wakes it at any range")
+	local boss = { state = "idle", stateUntil = 0 }
+	H.eq(Rules.aiStep(boss, aiInput({ dist = 22, notice = 26 })), "notice", "a boss sees further")
+end)
+
+H.test("a chaser gives up past its leash", function()
+	local ai = { state = "chase", stateUntil = 0 }
+	H.eq(Rules.aiStep(ai, aiInput({ dist = 61 })), "giveup", "too far")
+	H.eq(ai.state, "idle", "back to wandering")
+end)
+
+H.test("a swing is wound up before it lands, and then it recovers", function()
+	local ai = { state = "chase", stateUntil = 0 }
+	H.eq(Rules.aiStep(ai, aiInput({ dist = 10 })), "chase", "closing in")
+	H.eq(Rules.aiStep(ai, aiInput({ dist = 3 })), "windup", "in reach: winds up")
+	H.eq(Rules.aiStep(ai, aiInput({ dist = 3, now = 0.5 })), "winding", "not yet")
+	H.eq(Rules.aiStep(ai, aiInput({ dist = 3, now = 0.7 })), "strike", "0.7 s later it lands")
+	H.eq(Rules.aiStep(ai, aiInput({ dist = 3, now = 1.0 })), "recover", "then a gap to punish")
+	H.eq(Rules.aiStep(ai, aiInput({ dist = 3, now = 1.8 })), "chase", "and again")
+	local boss = { state = "chase", stateUntil = 0 }
+	Rules.aiStep(boss, aiInput({ dist = 3, boss = true }))
+	H.eq(Rules.aiStep(boss, aiInput({ dist = 3, now = 0.8, boss = true })), "winding", "a boss winds up longer")
+end)
+
+H.test("stunning an enemy mid wind-up cancels the attack", function()
+	local ai = { state = "chase", stateUntil = 0 }
+	Rules.aiStep(ai, aiInput({ dist = 3 }))
+	H.eq(Rules.aiStep(ai, aiInput({ dist = 3, now = 0.3, canAct = false })), "cancel", "stunned")
+	H.eq(ai.state, "chase", "it has to start over")
+	H.eq(Rules.aiStep(ai, aiInput({ dist = 3, now = 0.4, canAct = false })), "hold", "and cannot while stunned")
+end)
+
+H.test("shooters aim before they shoot; chargers tell before they lunge", function()
+	local ai = { state = "chase", stateUntil = 0 }
+	H.eq(Rules.aiStep(ai, aiInput({ dist = 20, shotReady = true })), "aim", "aims first")
+	H.eq(Rules.aiStep(ai, aiInput({ dist = 20, now = 0.8 })), "shoot", "then fires")
+	H.eq(Rules.aiStep(ai, aiInput({ dist = 50, shotReady = true })), "chase", "out of shooting range")
+	local c = { state = "chase", stateUntil = 0 }
+	local charge = { tell = 0.5, time = 0.7, range = 24 }
+	H.eq(Rules.aiStep(c, aiInput({ dist = 12, charge = charge, chargeReady = true })), "tell", "the tell")
+	H.eq(Rules.aiStep(c, aiInput({ dist = 12, now = 0.5, charge = charge })), "lunge", "then the lunge")
+	H.eq(Rules.aiStep(c, aiInput({ dist = 12, now = 0.9, charge = charge })), "lunging", "for its time")
+	H.eq(Rules.aiStep(c, aiInput({ dist = 12, now = 1.2, charge = charge })), "endLunge", "then it stops")
+	local close = { state = "chase", stateUntil = 0 }
+	H.eq(
+		Rules.aiStep(close, aiInput({ dist = 4, charge = charge, chargeReady = true })),
+		"chase",
+		"too close to charge: it walks in"
+	)
+end)
+
 return H

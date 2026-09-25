@@ -348,4 +348,95 @@ function Rules.bondStep(bond: number, max: number, hunger: number, sinceHurt: nu
 	return bond
 end
 
+-- Enemy behaviour ----------------------------------------------------------
+
+export type Ai = { state: string, stateUntil: number }
+
+export type AiInput = {
+	now: number,
+	dist: number, -- to the nearest player, in web-build units; math.huge if none
+	canAct: boolean, -- not stunned, rooted or paralysed
+	alerted: boolean, -- hit, or a packmate has seen someone
+	boss: boolean?,
+	notice: number, -- how close someone has to come before it sees them
+	leash: number, -- how far away before it loses interest
+	reach: number, -- starts a swing this close
+	shotReady: boolean, -- has a ranged attack off cooldown
+	charge: { tell: number?, time: number?, range: number? }?,
+	chargeReady: boolean,
+}
+
+--- One step of an enemy's mind. Mutates `ai` and says what happened, which
+--- the server turns into movement, telegraphs and hits:
+---   idle (wander), notice, chase, hold, giveup,
+---   windup, winding, strike (the swing lands now),
+---   aim, aiming, shoot,
+---   tell, telling, lunge, lunging, endLunge,
+---   recover, cancel.
+--- Every attack is announced before it lands: a wind-up before a swing, an
+--- aim before a shot, a tell before a charge.
+function Rules.aiStep(ai: Ai, i: AiInput): string
+	local st = ai.state
+	if st == "idle" then
+		if i.alerted or i.dist < i.notice then
+			ai.state = "chase"
+			return "notice"
+		end
+		return "idle"
+	elseif st == "chase" then
+		if i.dist > i.leash then
+			ai.state = "idle"
+			return "giveup"
+		end
+		if not i.canAct then
+			return "hold"
+		end
+		local c = i.charge
+		if c and i.chargeReady and i.dist > 6 and i.dist < (c.range or 26) then
+			ai.state, ai.stateUntil = "tell", i.now + (c.tell or 0.55)
+			return "tell"
+		end
+		if i.shotReady and i.dist > 4.5 and i.dist < 42 then
+			ai.state, ai.stateUntil = "aim", i.now + (if i.boss then 0.55 else 0.75)
+			return "aim"
+		end
+		if i.dist <= i.reach then
+			ai.state, ai.stateUntil = "windup", i.now + (if i.boss then 0.9 else 0.7)
+			return "windup"
+		end
+		return "chase"
+	elseif st == "windup" or st == "aim" or st == "tell" then
+		if not i.canAct then
+			ai.state = "chase"
+			return "cancel"
+		end
+		if i.now < ai.stateUntil then
+			return if st == "windup" then "winding" elseif st == "aim" then "aiming" else "telling"
+		end
+		if st == "windup" then
+			ai.state, ai.stateUntil = "recover", i.now + (if i.boss then 1.4 else 1.1)
+			return "strike"
+		elseif st == "aim" then
+			ai.state = "chase"
+			return "shoot"
+		end
+		ai.state, ai.stateUntil = "lunge", i.now + ((i.charge and i.charge.time) or 0.65)
+		return "lunge"
+	elseif st == "lunge" then
+		if i.now >= ai.stateUntil then
+			ai.state, ai.stateUntil = "recover", i.now + 0.65
+			return "endLunge"
+		end
+		return "lunging"
+	elseif st == "recover" then
+		if i.now >= ai.stateUntil then
+			ai.state = "chase"
+			return "chase"
+		end
+		return "recover"
+	end
+	ai.state = "idle"
+	return "idle"
+end
+
 return Rules

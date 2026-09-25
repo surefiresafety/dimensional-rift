@@ -106,12 +106,16 @@ export type Enemy = {
 	defMul: number,
 	enraged: boolean,
 	dead: boolean,
-	nextAttack: number,
 	nextShot: number,
 	nextSummon: number,
-	-- A charger's telegraphed lunge: plant, flare, go.
+	-- Its mind (Rules.aiStep): idle until it notices someone, then chase,
+	-- and every attack telegraphed first.
 	state: string,
 	stateUntil: number,
+	alerted: boolean, -- hit, or told by a packmate: notices on its next think
+	home: Vector3, -- where it wanders around while idle
+	wanderTo: Vector3?,
+	nextWander: number,
 	lungeDir: Vector3?,
 	lungeHit: boolean,
 	nextCharge: number,
@@ -369,6 +373,7 @@ function Combat.hitEnemy(e: Enemy, power: number, nature: string, from: Vector3?
 	})
 	Combat.emit(by, "damage", math.min(dmg, e.hum.Health))
 	e.hum.Health = math.max(0, e.hum.Health - dmg)
+	e.alerted = true -- nobody gets hit and keeps wandering
 
 	-- Lifesteal, from the technique or from a rage that feeds.
 	local leech = (o.leech or 0) + (if buff then buff.leech else 0)

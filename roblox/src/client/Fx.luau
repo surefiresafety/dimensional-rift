@@ -164,6 +164,70 @@ handlers.dash = function(d)
 	fade(p, 0.35, Vector3.new(0.1, 0.1, length))
 end
 
+-- It has seen you: a "!" over its head.
+handlers.alert = function(d)
+	local model = d.model :: Model?
+	local head = model and (model:FindFirstChild("Head") or model:FindFirstChild("HumanoidRootPart")) :: BasePart?
+	if not head then
+		return
+	end
+	local bb = Instance.new("BillboardGui")
+	bb.Size = UDim2.fromOffset(40, 50)
+	bb.StudsOffsetWorldSpace = Vector3.new(0, 3.5, 0)
+	bb.AlwaysOnTop = true
+	bb.Adornee = head
+	local t = Instance.new("TextLabel")
+	t.BackgroundTransparency = 1
+	t.Size = UDim2.fromScale(1, 1)
+	t.Text = "!"
+	t.Font = Enum.Font.Bangers
+	t.TextScaled = true
+	t.TextColor3 = Palette.color(d.color or 0xffd54a)
+	t.TextStrokeTransparency = 0
+	t.Parent = bb
+	bb.Parent = layer
+	local scale = Instance.new("UIScale")
+	scale.Scale = 0.2
+	scale.Parent = t
+	TweenService:Create(scale, TweenInfo.new(0.25, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+	task.delay(1.1, function()
+		TweenService:Create(t, TweenInfo.new(0.3), { TextTransparency = 1, TextStrokeTransparency = 1 }):Play()
+		Debris:AddItem(bb, 0.35)
+	end)
+end
+
+-- What it is about to do: a ring on the ground under it that pulses until
+-- the attack comes. Red a swing, yellow a shot, orange a charge.
+handlers.telegraph = function(d)
+	local model = d.model :: Model?
+	local root = model and model:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not root then
+		return
+	end
+	local duration = math.max(0.15, d.duration or 0.7)
+	local ring = part(
+		Enum.PartType.Cylinder,
+		Vector3.new(0.3, d.radius * 2, d.radius * 2),
+		CFrame.new(root.Position.X, root.Position.Y - 2.6, root.Position.Z) * CFrame.Angles(0, 0, math.pi / 2),
+		d.color,
+		0.55
+	)
+	local started = os.clock()
+	local conn: RBXScriptConnection
+	conn = RunService.RenderStepped:Connect(function()
+		local t = os.clock() - started
+		if t >= duration or not root.Parent then
+			conn:Disconnect()
+			fade(ring, 0.15, Vector3.new(0.3, d.radius * 2.6, d.radius * 2.6))
+			return
+		end
+		ring.CFrame = CFrame.new(root.Position.X, root.Position.Y - 2.6, root.Position.Z)
+			* CFrame.Angles(0, 0, math.pi / 2)
+		-- Faster and brighter as the hit gets closer.
+		ring.Transparency = 0.15 + 0.5 * math.abs(math.sin(t * (10 + 25 * t / duration)))
+	end)
+end
+
 handlers.banner = function(d)
 	Hud.banner(d.text, d.color)
 end
