@@ -182,11 +182,12 @@ return function(K: any)
 		K.tree({ id = "academy/cedar", x = cx, z = cz, h = 30, kind = "cedar" })
 	end
 
-	-- 80 Colony: gantry 20 over a 2-high container stack, ramp to 5.2 (Thread Walk start)
+	-- 80 Colony: gantry 20 whose beam runs out over a 2-high container stack; ramp to 5.2
+	-- (the Thread Walk's start is on the stack top)
 	local walkTop: { [number]: { number } } = {}
 	do
 		local b = 71
-		for i, r in { 38, 46 } do
+		for i, r in { 37, 44 } do
 			local x, z = at(b, r, 0)
 			K.box({
 				id = "colony/gantry/leg" .. i,
@@ -203,13 +204,13 @@ return function(K: any)
 				anchor = true,
 			})
 		end
-		local gx, gz = at(b, 42, 0)
+		local gx, gz = at(b, 42.25, 0)
 		K.box({
 			id = "colony/gantry",
 			kind = "beam",
 			x = gx,
 			z = gz,
-			w = 13,
+			w = 15.5,
 			d = 2,
 			h0 = 18.5,
 			h1 = 20,
@@ -217,9 +218,10 @@ return function(K: any)
 			color = rgb(200, 150, 40),
 			mat = "DiamondPlate",
 		})
-		K.container({ id = "colony/container1", x = gx, z = gz, yaw = -(b + 90), color = rgb(170, 70, 50) })
-		K.container({ id = "colony/container2", x = gx, z = gz, h0 = 2.6, yaw = -(b + 90), color = rgb(60, 110, 150) })
-		local fx, fz = at(b, 42, -3 - 9.1)
+		local cx, cz = at(b, 48.5, 0)
+		K.container({ id = "colony/container1", x = cx, z = cz, yaw = -(b + 90), color = rgb(170, 70, 50) })
+		K.container({ id = "colony/container2", x = cx, z = cz, h0 = 2.6, yaw = -(b + 90), color = rgb(60, 110, 150) })
+		local fx, fz = at(b, 48.5, -3 - 9.1)
 		walkTop[71] = K.ramp({
 			id = "colony/ramp",
 			x = fx,
@@ -235,11 +237,11 @@ return function(K: any)
 	-- 120 Wind: house (roof 6) with a ramp and landing, windcatcher 20 on the roof
 	do
 		local b = 111
-		local hx, hz = at(b, 42, 0)
+		local hx, hz = at(b, 46, 0)
 		K.house({ id = "wind/house", x = hx, z = hz, h = 6, size = 7, yaw = -b, rails = { "w" }, clutter = false })
-		local wx, wz = at(b, 43.5, 1.5)
-		K.windcatcher({ id = "wind/windcatcher", x = wx, z = wz, w = 4, h0 = 6, top = 20, yaw = -b })
-		local fx, fz = at(b, 47.5, -3.5 - 10.5)
+		local wx, wz = at(b, 44.3, 0)
+		K.windcatcher({ id = "wind/windcatcher", x = wx, z = wz, w = 3.5, h0 = 6, top = 20, yaw = -b })
+		local fx, fz = at(b, 51.5, -3.5 - 10.5)
 		K.ramp({
 			id = "wind/ramp",
 			x = fx,
@@ -319,7 +321,7 @@ return function(K: any)
 		local b = 191
 		local dx, dz = at(b, 46.25, 0)
 		K.deck({ id = "water/deck", x = dx, z = dz, w = 6.5, d = 7, h = 5, yaw = -b, posts = 4 })
-		local fx, fz = at(b, 45.5, 3.5 + 8.75)
+		local fx, fz = at(b, 47, 3.5 + 8.75)
 		walkTop[191] = K.ramp({
 			id = "water/ramp",
 			x = fx,
@@ -488,7 +490,7 @@ return function(K: any)
 
 	-- 320 Star Vault: 2 star pillars 24 and a crystal bed
 	do
-		for i, p in { { 311, 42 }, { 316, 46 } } do
+		for i, p in { { 311, 42 }, { 314, 48 } } do
 			local x, z = K.around(p[1], p[2])
 			K.box({
 				id = "vault/pillar" .. i,
@@ -570,10 +572,10 @@ return function(K: any)
 	-- The Thread Walk (behind the spawn): container 5.2 -> roof 6 -> ledge 8 -> deck 5 --
 	-- Each platform carries a walk across it; rope bridges join them.
 	local plats = {
-		{ b = 71, r = 42, h = 5.2, t0 = -3, t1 = 2.6 },
-		{ b = 111, r = 40, h = 6, t0 = -3.3, t1 = 3.3 },
+		{ b = 71, r = 48.5, h = 5.2, t0 = -3, t1 = 2.6 },
+		{ b = 111, r = 47.6, h = 6, t0 = -3.3, t1 = 3.3 },
 		{ b = 151, r = 47.5, h = 8, t0 = -3.3, t1 = 6.6 },
-		{ b = 191, r = 45.5, h = 5, t0 = -3.3, t1 = 3.5 },
+		{ b = 191, r = 47, h = 5, t0 = -3.3, t1 = 3.5 },
 	}
 	for i, p in plats do
 		local ax, az = at(p.b, p.r, p.t0)
