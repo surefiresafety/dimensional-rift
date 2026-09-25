@@ -39,7 +39,17 @@ return function(K: any)
 	-- a tilted block between them.
 	local ROCK = rgb(170, 122, 84)
 	local n = 0
-	for _, g in { { 27.5, 60 }, { 120, 152.5 }, { 162.5, 197.5 }, { 207.5, 242.5 }, { 252.5, 287.5 }, { 297.5, 332.5 }, { 342.5, 377.5 } } do
+	for _, g in
+		{
+			{ 27.5, 60 },
+			{ 120, 152.5 },
+			{ 162.5, 197.5 },
+			{ 207.5, 242.5 },
+			{ 252.5, 287.5 },
+			{ 297.5, 332.5 },
+			{ 342.5, 377.5 },
+		}
+	do
 		local lo, hi = g[1], g[2]
 		for i, b in { lo + 7.5, (lo + hi) / 2, hi - 7.5 } do
 			n += 1
@@ -66,7 +76,14 @@ return function(K: any)
 	end
 
 	-- Well Square: sundial inlay and the 4 gnomon pillars (R1 inward anchors) ---
-	K.inlay({ id = "sundial", r = 10, w = 0.5, color = rgb(255, 200, 90), fill = rgb(196, 160, 110), fillMat = "Sandstone" })
+	K.inlay({
+		id = "sundial",
+		r = 10,
+		w = 0.5,
+		color = rgb(255, 200, 90),
+		fill = rgb(196, 160, 110),
+		fillMat = "Sandstone",
+	})
 	for i, b in { 45, 135, 225, 315 } do
 		local x, z = K.around(b, 15)
 		local id = "gnomon" .. i
@@ -206,7 +223,10 @@ return function(K: any)
 			-- the roof clutter (local -2.25, +2.25) lands in the inner corner
 			local yaw = if -hs.sx < 0 then (if -hs.sz > 0 then 0 else 270) else (if -hs.sz > 0 then 90 else 180)
 			K.house({ id = id, x = hs.x, z = hs.z, h = hs.h, yaw = yaw, color = HOUSE_TINT[i], clutter = not isA })
-			-- windcatcher: at the roof centre on A, flush in the outer corner elsewhere
+			-- windcatcher: at the roof centre on A, in the outer corner elsewhere.
+			-- The corner ones stand 0.25 proud of both outer walls (centre offset
+			-- 2.5, not the design's 2.25): flush, a grazing hit on the NW D and SE B
+			-- windcatchers' inner corners (15.5) fails the fan at (-30, -10) and (30, 40).
 			local wx, wz = hs.x, hs.z
 			if not isA then
 				wx, wz = hs.x + hs.sx * 2.5, hs.z + hs.sz * 2.5
@@ -267,7 +287,14 @@ return function(K: any)
 			mat = "Sandstone",
 		})
 		local c = houses[3]
-		K.ladder({ id = q.name .. "-c/truss", x = c.x + c.sx * 4.92, z = q.truss, top = c.h, color = TIMBER, mat = "Wood" })
+		K.ladder({
+			id = q.name .. "-c/truss",
+			x = c.x + c.sx * 4.92,
+			z = q.truss,
+			top = c.h,
+			color = TIMBER,
+			mat = "Wood",
+		})
 	end
 
 	-- Souk link: rope bridges between the NE and SE quarters, and the trusses
@@ -375,7 +402,16 @@ return function(K: any)
 
 	-- Cistern Oasis --------------------------------------------------------------
 	K.water({ x = -28, z = 26, r = 8 })
-	for i, p in { { -38, 26, 13 }, { -35.1, 33.1, 12 }, { -35.1, 18.9, 14 }, { -28, 36, 12.5 }, { -28, 16, 13.5 }, { -20, 30, 11 } } do
+	for i, p in
+		{
+			{ -38, 26, 13 },
+			{ -35.1, 33.1, 12 },
+			{ -35.1, 18.9, 14 },
+			{ -28, 36, 12.5 },
+			{ -28, 16, 13.5 },
+			{ -20, 30, 11 },
+		}
+	do
 		K.tree({ id = "palm" .. i, x = p[1], z = p[2], h = p[3], kind = "palm" })
 	end
 	for i, s in { { -1, -1 }, { 1, -1 }, { 1, 1 }, { -1, 1 } } do
@@ -407,7 +443,16 @@ return function(K: any)
 		alpha = 0.25,
 	})
 	for i, p in { { -48, 30 }, { -18, 46 } } do
-		K.mast({ id = "oasis-mast" .. i, x = p[1], z = p[2], h = 22, color = TIMBER, mat = "Wood", armColor = STEEL, armMat = "Metal" })
+		K.mast({
+			id = "oasis-mast" .. i,
+			x = p[1],
+			z = p[2],
+			h = 22,
+			color = TIMBER,
+			mat = "Wood",
+			armColor = STEEL,
+			armMat = "Metal",
+		})
 	end
 
 	-- Caravan masts --------------------------------------------------------------
@@ -498,7 +543,9 @@ return function(K: any)
 			trim = { h = 26, t = 0.4, color = rgb(170, 126, 82), mat = "Sandstone", grow = 0.8 },
 		})
 		-- the band of pigeon holes, on the face toward C
-		local face = if math.abs(p[1]) > math.abs(p[2]) then (if p[1] > 0 then "Left" else "Right") else (if p[2] > 0 then "Front" else "Back")
+		local face = if math.abs(p[1]) > math.abs(p[2])
+			then (if p[1] > 0 then "Left" else "Right")
+			else (if p[2] > 0 then "Front" else "Back")
 		K.box({
 			id = id .. "/holes",
 			kind = "band",
@@ -571,7 +618,17 @@ return function(K: any)
 					mat = "Fabric",
 				})
 			else
-				K.cyl({ id = id, kind = "pot", x = x, z = z, w = 2, h0 = 0, h1 = 2.4, color = rgb(176, 96, 60), mat = "Slate" })
+				K.cyl({
+					id = id,
+					kind = "pot",
+					x = x,
+					z = z,
+					w = 2,
+					h0 = 0,
+					h1 = 2.4,
+					color = rgb(176, 96, 60),
+					mat = "Slate",
+				})
 			end
 		end,
 	})
