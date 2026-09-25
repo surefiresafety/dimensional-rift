@@ -120,6 +120,7 @@ return {
 		sasuke = "chidori",
 		yuji = "dismantle",
 		megumi = "garden",
+		itachi = "amaterasu",
 		goblin = "fly",
 		strange = "fly",
 		pain = "fly",
