@@ -20,6 +20,65 @@ local Projectiles = require(script.Parent.Projectiles)
 
 local STUDS = Config.STUDS_PER_UNIT
 
+-- Roblox's own default R15 animations (the ones the Animate script uses).
+local ANIMS: { [string]: string } = {
+	idle = "rbxassetid://507766666",
+	walk = "rbxassetid://507777826",
+	run = "rbxassetid://507767714",
+	slash = "rbxassetid://522635514",
+	lunge = "rbxassetid://522638767",
+}
+
+local function loadAnims(hum: Humanoid): { [string]: AnimationTrack }
+	local animator: Animator = hum:FindFirstChildOfClass("Animator") or Instance.new("Animator")
+	animator.Parent = hum
+	local tracks: { [string]: AnimationTrack } = {}
+	for name, id in ANIMS do
+		local a = Instance.new("Animation")
+		a.AnimationId = id
+		local ok, track = pcall(function()
+			return animator:LoadAnimation(a)
+		end)
+		if ok and track then
+			track.Priority = if name == "slash" or name == "lunge"
+				then Enum.AnimationPriority.Action
+				else Enum.AnimationPriority.Movement
+			track.Looped = name ~= "slash" and name ~= "lunge"
+			tracks[name] = track
+		end
+	end
+	return tracks
+end
+
+--- Idle, walk or run, from how fast it is actually going.
+local function animate(e: Combat.Enemy)
+	local v = e.root.AssemblyLinearVelocity * Vector3.new(1, 0, 1)
+	local speed = v.Magnitude
+	local want = if speed < 1.5 then "idle" elseif speed < 8 * STUDS * 0.5 then "walk" else "run"
+	if e.moving ~= want then
+		local old = e.moving and e.anims[e.moving]
+		if old then
+			old:Stop(0.2)
+		end
+		local new = e.anims[want]
+		if new then
+			new:Play(0.2)
+		end
+		e.moving = want
+	end
+	local track = e.anims[want]
+	if track and want ~= "idle" then
+		track:AdjustSpeed(math.clamp(speed / (if want == "walk" then 6 else 16), 0.5, 2.2))
+	end
+end
+
+local function attackAnim(e: Combat.Enemy, name: string)
+	local t = e.anims[name]
+	if t then
+		t:Play(0.05)
+	end
+end
+
 local Enemies = {}
 
 local folder = Instance.new("Folder")
@@ -137,6 +196,7 @@ function Enemies.spawn(id: string, at: Vector3): Combat.Enemy?
 		nextSummon = now + (if t.summon then t.summon.every else 0),
 		state = "idle",
 		stateUntil = 0,
+		anims = {},
 		alerted = false,
 		home = at,
 		wanderTo = nil,
@@ -152,6 +212,7 @@ function Enemies.spawn(id: string, at: Vector3): Combat.Enemy?
 	model:SetAttribute("Hunting", false)
 	model.Parent = folder
 	root:SetNetworkOwner(nil) -- the server drives them
+	e.anims = loadAnims(hum)
 	table.insert(Combat.enemies, e)
 	Combat.fx("burst", { at = at, color = look.top or 0xb06cff, count = 12 })
 	return e
@@ -305,6 +366,7 @@ function Enemies.think()
 				faceTowards(e, target.Position)
 			end
 		elseif action == "strike" then
+			attackAnim(e, "slash")
 			Combat.fx("slash", {
 				at = e.root.Position + e.root.CFrame.LookVector * STUDS * size,
 				dir = e.root.CFrame.LookVector,
@@ -320,6 +382,7 @@ function Enemies.think()
 				shoot(e, target)
 			end
 		elseif action == "lunge" then
+			attackAnim(e, "lunge")
 			e.lungeHit = false
 			local dir = e.lungeDir or e.root.CFrame.LookVector
 			e.hum.WalkSpeed = (e.t.charge.speed or 22) * STUDS
@@ -337,6 +400,8 @@ function Enemies.think()
 		elseif action == "hold" or action == "cancel" then
 			e.hum:MoveTo(e.root.Position)
 		end
+
+		animate(e)
 
 		-- Regeneration, and a damaging aura every 0.6 s (updateEnemies).
 		if e.t.regen and e.hum.Health < e.hum.MaxHealth then

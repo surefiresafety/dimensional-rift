@@ -4,6 +4,7 @@
 -- arithmetic lives in Shared.Rules; this file applies it to Roblox objects.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config)
@@ -120,6 +121,10 @@ export type Enemy = {
 	lungeHit: boolean,
 	nextCharge: number,
 	nextAura: number,
+	-- Roblox's standard R15 animations, played from the server so everyone
+	-- sees them: idle, walk, run and a slash for attacks.
+	anims: { [string]: AnimationTrack },
+	moving: string?,
 	-- Worn by Kenjaku's Body Swap: it fights for its wearer until this runs out.
 	allyOf: PState?,
 	allyUntil: number,
@@ -327,6 +332,19 @@ local function kill(e: Enemy, by: PState?)
 	end
 	for _, fn in goneHandlers do
 		task.spawn(fn, e)
+	end
+	-- It topples and fades rather than standing there until it vanishes.
+	for _, t in e.anims do
+		t:Stop(0.1)
+	end
+	e.hum:ChangeState(Enum.HumanoidStateType.Physics)
+	e.root:ApplyImpulse((Vector3.new(math.random() - 0.5, 0.6, math.random() - 0.5) * 30) * e.root.AssemblyMass)
+	for _, d in e.model:GetDescendants() do
+		if d:IsA("BasePart") and d.Transparency < 1 then
+			TweenService:Create(d, TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+				Transparency = 1,
+			}):Play()
+		end
 	end
 	task.delay(1.5, function()
 		e.model:Destroy()

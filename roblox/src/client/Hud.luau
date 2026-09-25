@@ -423,6 +423,66 @@ function Hud.build()
 
 	Radar.build(gui, TOP + 132, UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
 
+	-- A boss that is after you gets its name and health across the top.
+	local bossBar = Ui.make("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, TOP),
+		Size = UDim2.new(0.4, 0, 0, 44),
+		BackgroundTransparency = 1,
+		Visible = false,
+		Parent = gui,
+	}, { Ui.make("UISizeConstraint", { MaxSize = Vector2.new(560, 44), MinSize = Vector2.new(220, 44) }) })
+	local bossName = Ui.label({
+		Text = "",
+		Font = Ui.DISPLAY,
+		TextSize = 24,
+		TextColor3 = Color3.fromRGB(255, 120, 130),
+		TextStrokeTransparency = 0.3,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		Size = UDim2.new(1, 0, 0, 24),
+		Parent = bossBar,
+	})
+	local bossTrack = Ui.make("Frame", {
+		Position = UDim2.fromOffset(0, 28),
+		Size = UDim2.new(1, 0, 0, 12),
+		BackgroundColor3 = Color3.new(0, 0, 0),
+		BackgroundTransparency = 0.3,
+		Parent = bossBar,
+	}, { Ui.corner(6), Ui.stroke(Color3.fromRGB(255, 70, 90), 1, 0.3) })
+	local bossFill = Ui.make("Frame", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = Color3.fromRGB(230, 50, 70),
+		BorderSizePixel = 0,
+		Parent = bossTrack,
+	}, { Ui.corner(6) })
+	task.spawn(function()
+		while gui.Parent do
+			local best, bestD = nil, math.huge
+			local c = player.Character
+			local root = c and c:FindFirstChild("HumanoidRootPart") :: BasePart?
+			local folder = workspace:FindFirstChild("Enemies")
+			if root and folder then
+				for _, m in folder:GetChildren() do
+					local r = m:FindFirstChild("HumanoidRootPart") :: BasePart?
+					local hum = m:FindFirstChildOfClass("Humanoid")
+					if m:GetAttribute("Boss") and m:GetAttribute("Hunting") and r and hum and hum.Health > 0 then
+						local d = (r.Position - root.Position).Magnitude
+						if d < bestD then
+							best, bestD = m, d
+						end
+					end
+				end
+			end
+			local hum = best and best:FindFirstChildOfClass("Humanoid")
+			bossBar.Visible = hum ~= nil
+			if hum then
+				bossName.Text = string.upper(string.split(hum.DisplayName, "  ·  ")[1])
+				bossFill.Size = UDim2.fromScale(math.clamp(hum.Health / hum.MaxHealth, 0, 1), 1)
+			end
+			task.wait(0.1)
+		end
+	end)
+
 	-- The combo: hits in a row and the rank they have reached, at the right
 	-- edge of the screen, punching bigger with every hit.
 	local combo = Ui.make("Frame", {
