@@ -201,6 +201,7 @@ function Enemies.spawn(id: string, at: Vector3, affix: Rules.Affix?): Combat.Ene
 		stateUntil = 0,
 		anims = {},
 		affix = affix,
+		summoned = false,
 		alerted = false,
 		home = at,
 		wanderTo = nil,
@@ -299,14 +300,18 @@ local function alertPack(e: Combat.Enemy)
 end
 
 --- Somewhere near where it arrived to amble towards while it has seen nobody.
-local function wander(e: Combat.Enemy, now: number)
+local function wander(e: Combat.Enemy, now: number, mul: number)
+	if mul <= 0 then
+		e.hum:MoveTo(e.root.Position)
+		return
+	end
 	if not e.wanderTo or now >= e.nextWander or (e.root.Position - e.wanderTo).Magnitude < 2 * STUDS then
 		local a = math.random() * math.pi * 2
 		local r = math.random() * 12 * STUDS
 		e.wanderTo = e.home + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
 		e.nextWander = now + 3 + math.random() * 4
 	end
-	e.hum.WalkSpeed = e.t.speed * STUDS * 0.4
+	e.hum.WalkSpeed = e.t.speed * STUDS * 0.4 * mul
 	e.hum:MoveTo(e.wanderTo :: Vector3)
 end
 
@@ -343,7 +348,7 @@ function Enemies.think()
 		end
 
 		if action == "idle" then
-			wander(e, now)
+			wander(e, now, mul)
 		elseif action == "notice" then
 			e.model:SetAttribute("Hunting", true)
 			Combat.fx("alert", { model = e.model, color = 0xffd54a })
@@ -354,7 +359,7 @@ function Enemies.think()
 		elseif action == "giveup" then
 			e.model:SetAttribute("Hunting", false)
 			e.home = e.root.Position
-			wander(e, now)
+			wander(e, now, mul)
 		elseif action == "chase" then
 			if target and mul > 0 then
 				e.hum:MoveTo(target.Position)
@@ -449,6 +454,7 @@ function Enemies.think()
 					Enemies.spawn(sm.of, e.root.Position + Vector3.new(math.cos(a), 0, math.sin(a)) * (3 + n) * STUDS)
 				if child then
 					child.alerted = true
+					child.summoned = true
 				end
 			end
 		end

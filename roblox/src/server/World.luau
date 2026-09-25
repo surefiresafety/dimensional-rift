@@ -19,6 +19,7 @@ local STUDS = Config.STUDS_PER_UNIT
 
 local World = {}
 World.current = nil :: string?
+World.brightness = 2 -- the current world's own, which a lightning flash returns to
 
 local function light(map: any)
 	Lighting.Ambient = Palette.color(map.hemiGround or 0x2b1d44)
@@ -27,6 +28,7 @@ local function light(map: any)
 	Lighting.FogStart = (map.fogNear or 60) * STUDS
 	Lighting.FogEnd = (map.fogFar or 260) * STUDS
 	Lighting.Brightness = math.clamp((map.sunLevel or 2) * 0.9, 0.5, 3)
+	World.brightness = Lighting.Brightness
 	local atmosphere = Lighting:FindFirstChildOfClass("Atmosphere") or Instance.new("Atmosphere")
 	atmosphere.Color = Palette.color(map.sky or 0x1b1030)
 	atmosphere.Decay = Palette.color(map.fogColor or 0x2a1848)
@@ -44,12 +46,17 @@ function World.load(mapId: string): any
 	end
 	light(map)
 	local authored = ServerStorage:FindFirstChild("Maps") and ServerStorage.Maps:FindFirstChild(mapId)
+	if authored then
+		workspace.Terrain:Clear() -- nothing left over from a built world
+	end
 	local arena = if authored then (authored :: Model):Clone() else Arenas.build(mapId, map)
 	Lighting.ClockTime = Arenas.clockFor(map)
 	-- A built arena lays its own ground; the baseplate stays as a floor under it.
 	local base = workspace:FindFirstChild("Baseplate")
 	if base and base:IsA("BasePart") then
 		base.Transparency = if authored then 0 else 1
+		-- Open water has to be swimmable, not a floor you walk on.
+		base.CanCollide = not arena:GetAttribute("OpenWater")
 	end
 	arena.Name = "Arena"
 	arena.Parent = workspace
@@ -86,7 +93,7 @@ task.spawn(function()
 		task.wait(3 + math.random() * 6)
 		local arena = workspace:FindFirstChild("Arena")
 		if arena and arena:FindFirstChild("Lightning") then
-			local was = Lighting.Brightness
+			local was = World.brightness
 			Lighting.Brightness = was + 4
 			task.wait(0.08)
 			Lighting.Brightness = was

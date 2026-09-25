@@ -81,8 +81,10 @@ function Tips.start()
 	})
 	local card = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 120),
-		Size = UDim2.new(0.5, 0, 0, 64),
+		-- Under the top bar, between the vitals and the wave chip; a boss bar
+		-- takes the top row, so the tip sits just below it.
+		Position = UDim2.new(0.5, 0, 0, 118),
+		Size = UDim2.new(1, -640, 0, 64),
 		BackgroundColor3 = Ui.PANEL,
 		BackgroundTransparency = 0.1,
 		Parent = gui,

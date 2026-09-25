@@ -21,7 +21,8 @@ function Radar.build(parent: ScreenGui, top: number, compact: boolean?)
 	local disc = Ui.make("Frame", {
 		Name = "Radar",
 		AnchorPoint = if compact then Vector2.new(0, 0) else Vector2.new(1, 0),
-		Position = if compact then UDim2.fromOffset(324, top - 132) else UDim2.new(1, -20, 0, top),
+		-- On a phone: under the vitals and the status line, clear of the pad.
+		Position = if compact then UDim2.fromOffset(20, top - 132 + 110) else UDim2.new(1, -20, 0, top),
 		Size = UDim2.fromOffset(SIZE, SIZE),
 		BackgroundColor3 = Ui.PANEL,
 		BackgroundTransparency = 0.35,

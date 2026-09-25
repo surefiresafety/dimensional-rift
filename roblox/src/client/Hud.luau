@@ -487,7 +487,7 @@ function Hud.build()
 	-- edge of the screen, punching bigger with every hit.
 	local combo = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(1, 0.5),
-		Position = UDim2.new(1, -24, 0.52, 0),
+		Position = UDim2.new(1, -24, 0.62, 0),
 		Size = UDim2.fromOffset(200, 96),
 		BackgroundTransparency = 1,
 		Visible = false,
@@ -587,7 +587,7 @@ function Hud.build()
 	if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then
 		rail.Visible = false
 		logBox.Position = UDim2.new(0, 20, 1, -16)
-		logBox.Size = UDim2.fromOffset(300, 110)
+		logBox.Size = UDim2.fromOffset(300, 96)
 	end
 
 	player:GetAttributeChangedSignal("Slots"):Connect(renderRail)

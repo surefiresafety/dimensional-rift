@@ -99,7 +99,12 @@ function Sfx.forFx(kind: string, d: any)
 		Sfx.play("hurt", nil, 0.9)
 		Sfx.shake(0.35)
 	elseif kind == "alert" then
-		Sfx.play("alert", nil, 1.6)
+		-- Only for enemies near enough to matter to this player.
+		local m = d.model :: Model?
+		local r = m and m:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if r and near(r.Position, 60) then
+			Sfx.play("alert", r.Position, 1.6)
+		end
 	elseif kind == "telegraph" then
 		local m = d.model :: Model?
 		local r = m and m:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -116,19 +121,25 @@ function Sfx.forFx(kind: string, d: any)
 	end
 end
 
--- After the camera scripts have placed the camera, nudge it.
-RunService:BindToRenderStep("RiftShake", Enum.RenderPriority.Camera.Value + 1, function(dt: number)
-	if shake <= 0.001 then
-		shake = 0
+-- Shake through the humanoid's camera offset rather than the camera itself:
+-- the camera scripts read their own CFrame back next frame, so rotating it
+-- would leave the aim drifting after every shake.
+RunService.RenderStepped:Connect(function(dt: number)
+	local c = Players.LocalPlayer.Character
+	local hum = c and c:FindFirstChildOfClass("Humanoid")
+	if not hum then
 		return
 	end
-	local cam = workspace.CurrentCamera
-	local s = shake * shake * 0.6
-	cam.CFrame *= CFrame.Angles(
-		math.rad((math.random() - 0.5) * 4 * s),
-		math.rad((math.random() - 0.5) * 4 * s),
-		math.rad((math.random() - 0.5) * 2 * s)
-	)
+	if shake <= 0.001 then
+		if shake > 0 or hum.CameraOffset.Magnitude > 0 then
+			shake = 0
+			hum.CameraOffset = Vector3.zero
+		end
+		return
+	end
+	local s = shake * shake * 1.2
+	hum.CameraOffset =
+		Vector3.new((math.random() - 0.5) * s, (math.random() - 0.5) * s, (math.random() - 0.5) * s * 0.5)
 	shake = math.max(0, shake - dt * 2.2)
 end)
 

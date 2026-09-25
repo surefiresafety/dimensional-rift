@@ -58,10 +58,12 @@ local function light(p: BasePart, colour: Color3, range: number, brightness: num
 end
 
 local function weather(k: Kit, props: { [string]: any })
+	-- Each client keeps this part 30 studs over its own camera (Fx.start), so
+	-- the weather falls round the player rather than high up in the fog.
 	local sky = part(k, {
 		Name = "Weather",
-		Size = Vector3.new(160, 1, 160) * STUDS,
-		CFrame = CFrame.new(k.centre + Vector3.new(0, 60 * STUDS, 0)),
+		Size = Vector3.new(120, 1, 120),
+		CFrame = CFrame.new(k.centre + Vector3.new(0, 30, 0)),
 		Transparency = 1,
 		CanCollide = false,
 		CanQuery = false,
@@ -79,13 +81,23 @@ end
 -- Props --------------------------------------------------------------------
 
 --- A block of a building with rows of lit windows as neon bands.
-local function building(k: Kit, at: Vector3, w: number, d: number, h: number, colour: Color3, windows: Color3?)
+local function building(
+	k: Kit,
+	at: Vector3,
+	w: number,
+	d: number,
+	h: number,
+	colour: Color3,
+	windows: Color3?,
+	tilt: CFrame?
+)
 	local body = part(k, {
 		Size = Vector3.new(w, h, d),
+		-- A tilt goes on before the windows and roof, so they lean with it.
 		CFrame = CFrame.lookAt(
 			at + Vector3.new(0, h / 2, 0),
 			k.centre * Vector3.new(1, 0, 1) + Vector3.new(0, h / 2, 0)
-		),
+		) * (tilt or CFrame.identity),
 		Color = colour,
 		Material = Enum.Material.Concrete,
 	})
@@ -326,13 +338,15 @@ end
 
 --- A hall with a sweeping two-tier roof: temples, dojos, houses.
 local function hall(k: Kit, at: Vector3, w: number, d: number, h: number, wall: Color3, roof: Color3)
-	local cf = CFrame.lookAt(at + Vector3.new(0, h / 2, 0), k.centre * Vector3.new(1, 0, 1) + Vector3.new(0, h / 2, 0))
+	-- Facing the centre at its own height, so a house up on stilts stays level.
+	local cf =
+		CFrame.lookAt(at + Vector3.new(0, h / 2, 0), k.centre * Vector3.new(1, 0, 1) + Vector3.new(0, at.Y + h / 2, 0))
 	local body =
 		part(k, { Size = Vector3.new(w, h, d), CFrame = cf, Color = wall, Material = Enum.Material.WoodPlanks })
 	for i, scale in { 1.3, 0.9 } do
 		part(k, {
 			Size = Vector3.new(w * scale, 0.8 * STUDS, d * scale),
-			CFrame = body.CFrame * CFrame.new(0, h / 2 + (i - 0.5) * 2 * STUDS, 0),
+			CFrame = body.CFrame * CFrame.new(0, h / 2 + 0.4 * STUDS + (i - 1) * 0.8 * STUDS, 0),
 			Color = roof,
 			Material = Enum.Material.Slate,
 		})
@@ -427,6 +441,15 @@ local function ground(k: Kit, material: Enum.Material, colour: Color3?)
 	if colour then
 		workspace.Terrain:SetMaterialColor(material, colour)
 	end
+end
+
+--- A hill of terrain out beyond the fight: sunk so only its cap shows, and
+--- far enough out that its foot never reaches where enemies arrive.
+local function hill(k: Kit, rMin: number, rMax: number, material: Enum.Material)
+	local r = k.rng:NextNumber(rMin, rMax)
+	local d = k.rng:NextNumber(56, 130) + r * 0.8
+	local at = around(k, k.rng:NextNumber(0, 6.28), d, -0.6 * r)
+	workspace.Terrain:FillBall(at, r * STUDS, material)
 end
 
 local function slab(k: Kit, at: Vector3, size: Vector3, colour: Color3, material: Enum.Material, yaw: number?)
@@ -543,16 +566,17 @@ themes.ruin = {
 		end
 		for i = 1, 26 do
 			local a = i / 26 * math.pi * 2
-			local b = building(
+			building(
 				k,
 				around(k, a, k.rng:NextNumber(62, 96)),
 				k.rng:NextNumber(14, 22) * STUDS,
 				k.rng:NextNumber(14, 20) * STUDS,
 				k.rng:NextNumber(24, 70) * STUDS,
 				Color3.fromRGB(78, 72, 70),
-				if k.rng:NextNumber() < 0.3 then Color3.fromRGB(255, 120, 60) else nil
+				if k.rng:NextNumber() < 0.3 then Color3.fromRGB(255, 120, 60) else nil,
+				-- Leaning, the way a building leans after the colony.
+				CFrame.Angles(k.rng:NextNumber(-0.08, 0.08), 0, k.rng:NextNumber(-0.08, 0.08))
 			)
-			b.CFrame *= CFrame.Angles(k.rng:NextNumber(-0.08, 0.08), 0, k.rng:NextNumber(-0.08, 0.08))
 		end
 		for i = 1, 12 do
 			spire(
@@ -720,8 +744,7 @@ themes.desert = {
 	build = function(k)
 		ground(k, Enum.Material.Sand, Color3.fromRGB(214, 180, 120))
 		for _ = 1, 30 do
-			local at = around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(60, 140))
-			workspace.Terrain:FillBall(at, k.rng:NextNumber(12, 30) * STUDS, Enum.Material.Sand)
+			hill(k, 12, 30, Enum.Material.Sand)
 		end
 		for i = 1, 12 do
 			local at = around(k, i / 12 * math.pi * 2 + 0.2, k.rng:NextNumber(58, 72))
@@ -790,8 +813,7 @@ themes.earth = {
 			)
 		end
 		for _ = 1, 40 do
-			local at = around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(80, 140))
-			workspace.Terrain:FillBall(at, k.rng:NextNumber(16, 36) * STUDS, Enum.Material.Rock)
+			hill(k, 16, 36, Enum.Material.Rock)
 		end
 		weather(k, {
 			Color = ColorSequence.new(Color3.fromRGB(180, 160, 130)),
@@ -808,46 +830,65 @@ themes.earth = {
 themes.water = {
 	clock = 9.5,
 	build = function(k)
+		-- Open water 12 studs deep over a sand bed, with the island's top level
+		-- with the ground everything else stands on (y = 0). The baseplate
+		-- stops colliding here (OpenWater), so the sea can be swum.
+		k.model:SetAttribute("OpenWater", true)
 		local size = SPAN * 2 * STUDS
 		workspace.Terrain:FillBlock(
-			CFrame.new(k.centre + Vector3.new(0, -1, 0)),
-			Vector3.new(size, 3, size),
+			CFrame.new(k.centre + Vector3.new(0, -14, 0)),
+			Vector3.new(size, 4, size),
+			Enum.Material.Sand
+		)
+		workspace.Terrain:FillBlock(
+			CFrame.new(k.centre + Vector3.new(0, -6.6, 0)),
+			Vector3.new(size, 12, size),
 			Enum.Material.Water
 		)
 		workspace.Terrain:FillCylinder(
-			CFrame.new(k.centre + Vector3.new(0, -1, 0)),
-			4 * STUDS,
+			CFrame.new(k.centre + Vector3.new(0, -8, 0)),
+			16,
 			58 * STUDS,
 			Enum.Material.Grass
 		)
+		workspace.Terrain:SetMaterialColor(Enum.Material.Grass, Color3.fromRGB(88, 128, 72))
 		for i = 1, 10 do
 			local a = i / 10 * math.pi * 2
 			local at = around(k, a, 74)
+			-- Stilts from the sea bed up to a deck level with the island.
 			for _, dx in { -1, 1 } do
 				for _, dz in { -1, 1 } do
 					slab(
 						k,
-						at + Vector3.new(dx * 4, -4, dz * 3) * STUDS,
-						Vector3.new(0.8, 9, 0.8) * STUDS,
+						at + Vector3.new(dx * 5 * STUDS, -12, dz * 4 * STUDS),
+						Vector3.new(0.8 * STUDS, 12, 0.8 * STUDS),
 						Color3.fromRGB(90, 66, 46),
 						Enum.Material.Wood
 					)
 				end
 			end
+			slab(
+				k,
+				at,
+				Vector3.new(14 * STUDS, 1.2, 12 * STUDS),
+				Color3.fromRGB(120, 92, 64),
+				Enum.Material.WoodPlanks,
+				-a
+			)
 			hall(
 				k,
-				at + Vector3.new(0, 5 * STUDS, 0),
+				at + Vector3.new(0, 1.2, 0),
 				11 * STUDS,
 				9 * STUDS,
 				6 * STUDS,
 				Color3.fromRGB(170, 140, 100),
 				Color3.fromRGB(60, 80, 100)
 			)
-			-- A walkway back to the island.
+			-- A walkway from the island's edge to the deck, at the same height.
 			slab(
 				k,
-				around(k, a, 63, 0.3),
-				Vector3.new(16, 0.5, 3) * STUDS,
+				around(k, a, 64),
+				Vector3.new(14 * STUDS, 1.2, 3 * STUDS),
 				Color3.fromRGB(120, 92, 64),
 				Enum.Material.WoodPlanks,
 				-a
@@ -907,8 +948,7 @@ themes.storm = {
 			)
 		end
 		for _ = 1, 36 do
-			local at = around(k, k.rng:NextNumber(0, 6.28), k.rng:NextNumber(80, 140))
-			workspace.Terrain:FillBall(at, k.rng:NextNumber(18, 40) * STUDS, Enum.Material.Slate)
+			hill(k, 18, 40, Enum.Material.Slate)
 		end
 		weather(k, {
 			Color = ColorSequence.new(Color3.fromRGB(180, 200, 230)),

@@ -292,10 +292,13 @@ handlers.telegraph = function(d)
 		return
 	end
 	local duration = math.max(0.15, d.duration or 0.7)
+	-- At its feet, however tall it is.
+	local hum = model and model:FindFirstChildOfClass("Humanoid")
+	local drop = if hum then hum.HipHeight + root.Size.Y / 2 - 0.2 else 2.6
 	local ring = part(
 		Enum.PartType.Cylinder,
 		Vector3.new(0.3, d.radius * 2, d.radius * 2),
-		CFrame.new(root.Position.X, root.Position.Y - 2.6, root.Position.Z) * CFrame.Angles(0, 0, math.pi / 2),
+		CFrame.new(root.Position.X, root.Position.Y - drop, root.Position.Z) * CFrame.Angles(0, 0, math.pi / 2),
 		d.color,
 		0.55
 	)
@@ -309,7 +312,7 @@ handlers.telegraph = function(d)
 			fade(ring, 0.15, Vector3.new(0.3, d.radius * 2.6, d.radius * 2.6))
 			return
 		end
-		ring.CFrame = CFrame.new(root.Position.X, root.Position.Y - 2.6, root.Position.Z)
+		ring.CFrame = CFrame.new(root.Position.X, root.Position.Y - drop, root.Position.Z)
 			* CFrame.Angles(0, 0, math.pi / 2)
 		-- Faster and brighter as the hit gets closer.
 		ring.Transparency = 0.15 + 0.5 * math.abs(math.sin(t * (10 + 25 * t / duration)))
@@ -413,6 +416,13 @@ function Fx.start()
 		Sfx.forFx(kind, payload)
 	end)
 	RunService.RenderStepped:Connect(function(dt)
+		-- The arena's weather falls round this player: keep its emitter over
+		-- the camera (a local move; the server's copy stays put).
+		local arena = workspace:FindFirstChild("Arena")
+		local sky = arena and arena:FindFirstChild("Weather") :: BasePart?
+		if sky then
+			sky.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position + Vector3.new(0, 30, 0))
+		end
 		for id, s in shots do
 			s.vel -= Vector3.new(0, s.gravity * dt, 0)
 			s.pos += s.vel * dt

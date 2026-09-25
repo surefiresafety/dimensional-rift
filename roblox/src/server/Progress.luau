@@ -746,7 +746,11 @@ function Progress.start()
 		end
 	end
 	Combat.onKilled(function(e)
-		Pickups.fromKill(e)
+		-- Nothing from a world being cleared away, or from summoned adds
+		-- (a summoner would otherwise be an endless orb fountain).
+		if not Waves.clearing and not e.summoned then
+			Pickups.fromKill(e)
+		end
 	end)
 
 	local acc = 0

@@ -131,6 +131,7 @@ export type Enemy = {
 	-- sees them: idle, walk, run and a slash for attacks.
 	anims: { [string]: AnimationTrack },
 	affix: Rules.Affix?, -- an elite's modifier
+	summoned: boolean, -- called up by another enemy: drops nothing
 	moving: string?,
 	-- Worn by Kenjaku's Body Swap: it fights for its wearer until this runs out.
 	allyOf: PState?,
@@ -349,7 +350,6 @@ local function kill(e: Enemy, by: PState?)
 	for _, t in e.anims do
 		t:Stop(0.1)
 	end
-	e.hum:ChangeState(Enum.HumanoidStateType.Physics)
 	e.root:ApplyImpulse((Vector3.new(math.random() - 0.5, 0.6, math.random() - 0.5) * 30) * e.root.AssemblyMass)
 	for _, d in e.model:GetDescendants() do
 		if d:IsA("BasePart") and d.Transparency < 1 then
@@ -371,6 +371,19 @@ function Combat.take(e: Enemy)
 		return
 	end
 	remove(e)
+	-- It is on your side now: off the radar, no boss bar, out of the enemies.
+	e.model:SetAttribute("Hunting", false)
+	e.model:SetAttribute("Boss", false)
+	for _, t in e.anims do
+		t:Stop(0.2)
+	end
+	local worn = workspace:FindFirstChild("Worn")
+	if not worn then
+		worn = Instance.new("Folder")
+		worn.Name = "Worn"
+		worn.Parent = workspace
+	end
+	e.model.Parent = worn
 	for _, fn in goneHandlers do
 		task.spawn(fn, e)
 	end

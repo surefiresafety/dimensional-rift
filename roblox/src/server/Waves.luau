@@ -30,6 +30,7 @@ Waves.index = 0
 Waves.running = false
 Waves.started = false -- the first player's pick starts the rift; nothing restarts it
 Waves.gen = 0 -- bumped by every start, so a timer from an old run does nothing
+Waves.clearing = false -- true while an old world's leftovers are removed
 
 local clearedHandlers: { (string, number) -> () } = {}
 --- A wave fell: the world it was in and its number (1-based).
@@ -109,10 +110,13 @@ function Waves.start(mapId: string)
 	Waves.started = true
 	Waves.gen += 1
 	World.load(mapId)
-	Pickups.clear()
+	-- Whatever was left of the old world goes without dropping anything.
+	Waves.clearing = true
 	for _, e in table.clone(Combat.enemies) do
 		Combat.kill(e, nil)
 	end
+	Waves.clearing = false
+	Pickups.clear()
 	Waves.index = 0
 	Waves.running = true
 	for _, fn in startedHandlers do
