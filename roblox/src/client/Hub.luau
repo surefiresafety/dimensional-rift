@@ -337,7 +337,7 @@ renders.worlds = function(d)
 	for i, id in Worlds.ORDER do
 		local m = Worlds.get(id)
 		local cleared = table.find(d.cleared, id) ~= nil
-		local open = i == 1 or table.find(d.cleared, Worlds.ORDER[i - 1]) ~= nil
+		local open = d.studio == true or i == 1 or table.find(d.cleared, Worlds.ORDER[i - 1]) ~= nil
 		local here = d.world == id
 		local card = Ui.make("Frame", {
 			LayoutOrder = 1 + i,

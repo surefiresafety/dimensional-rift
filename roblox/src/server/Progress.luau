@@ -89,6 +89,7 @@ function Progress.snapshot(player: Player, p: Progression.Profile): { [string]: 
 	return {
 		loaded = true,
 		persistent = Profiles.persistent,
+		studio = RunService:IsStudio(), -- every world open for testing
 		level = level,
 		into = into,
 		need = need,
@@ -493,7 +494,9 @@ asks.travel = function(player, p, mapId)
 	if type(mapId) ~= "string" or not Worlds.get(mapId) then
 		return answer(false, "No such world.")
 	end
-	if not Progression.worldUnlocked(p, Worlds.ORDER, mapId) then
+	-- In Studio every world is open, so a playtest can visit any of them.
+	local testing = RunService:IsStudio()
+	if not testing and not Progression.worldUnlocked(p, Worlds.ORDER, mapId) then
 		return answer(false, "Clear the world before it first.")
 	end
 	if mapId == World.current then
@@ -507,7 +510,7 @@ asks.travel = function(player, p, mapId)
 		return answer(false, "Clear this world first: everyone travels together.")
 	end
 	local clock = os.clock()
-	if clock - lastTravel < 15 then
+	if not testing and clock - lastTravel < 15 then
 		return answer(false, `The rift is still settling ({math.ceil(15 - (clock - lastTravel))}s).`)
 	end
 	lastTravel = clock
