@@ -29,6 +29,7 @@ local Waves = require(script.Parent.Waves)
 local Pickups = require(script.Parent.Pickups)
 
 local ProfileRemote = Remotes.get("Profile")
+local SummaryRemote = Remotes.get("Summary")
 local Ask = Remotes.fn("Ask")
 
 local BOARD_WAVE = "RiftBestWave_v1"
@@ -40,6 +41,18 @@ local dirty: { [Player]: boolean } = {}
 local urgent: { [Player]: boolean } = {}
 local lastSent: { [Player]: number } = {}
 local badgePending: { [string]: boolean } = {}
+-- What each player has earned since the current world began.
+type Run = { start: number, kills: number, xp: number, shards: number, bestCombo: number }
+local runs: { [Player]: Run } = {}
+local function runOf(player: Player): Run
+	local r = runs[player]
+	if not r then
+		r = { start = os.clock(), kills = 0, xp = 0, shards = 0, bestCombo = 0 }
+		runs[player] = r
+	end
+	return r
+end
+
 -- Hits in a row, and when the last one landed.
 local combos: { [Player]: { hits: number, last: number } } = {}
 local friends: { [Player]: number } = {}
@@ -183,8 +196,14 @@ end
 local function award(player: Player, p: Progression.Profile, xp: number, shards: number, claimed: boolean?)
 	local mul = if claimed then 1 else Progression.friendMul(friends[player] or 0)
 	-- Fortune: more shards from fighting.
-	p.shards += math.floor(shards * Progression.upgradeMul(p, "fortune") + 0.5)
+	local got = if claimed then shards else math.floor(shards * Progression.upgradeMul(p, "fortune") + 0.5)
+	p.shards += got
 	local reached = Progression.addXp(p, xp * mul)
+	if not claimed then
+		local r = runOf(player)
+		r.xp += math.floor(xp * mul + 0.5)
+		r.shards += got
+	end
 	for _, level in reached do
 		Combat.notice(player, `Level {level}! +{Progression.levelReward(level)} Rift Shards.`, "gold")
 		if level >= 10 then
@@ -519,6 +538,7 @@ function Progress.start()
 		end
 		award(player, p, xp, shards)
 		Progression.bump(p, "kills")
+		runOf(player).kills += 1
 		quest(player, p, "kill")
 		if e.t.boss then
 			quest(player, p, "elite")
@@ -572,6 +592,10 @@ function Progress.start()
 		end
 	end)
 
+	Waves.onStarted(function()
+		table.clear(runs)
+	end)
+
 	Waves.onWorldCleared(function(mapId)
 		for player, ps in Combat.states do
 			local p = Profiles.get(player)
@@ -587,6 +611,17 @@ function Progress.start()
 					`{Maps[mapId].name} cleared{if first then " for the first time" else ""}: +{shards} Rift Shards.`,
 					"gold"
 				)
+				local r = runOf(player)
+				SummaryRemote:FireClient(player, {
+					world = Maps[mapId].name,
+					first = first,
+					kills = r.kills,
+					bestCombo = r.bestCombo,
+					xp = r.xp,
+					shards = r.shards,
+					seconds = math.floor(os.clock() - r.start),
+					level = (Progression.levelOf(p.xp)),
+				})
 			end
 		end
 	end)
@@ -617,6 +652,7 @@ function Progress.start()
 		recount(player)
 		dirty[player], urgent[player], lastSent[player] = nil, nil, nil
 		combos[player] = nil
+		runs[player] = nil
 		friends[player] = nil
 		lastAsk[player] = nil
 		for key in friendPairs do
@@ -652,6 +688,7 @@ function Progress.start()
 		if p then
 			local got = math.floor(n * Progression.upgradeMul(p, "fortune") + 0.5)
 			p.shards += got
+			runOf(player).shards += got
 			Progression.bump(p, "shardsFound", got)
 			mark(player, true)
 		end
@@ -671,6 +708,7 @@ function Progress.start()
 			for player, c in combos do
 				if now - c.last > Progression.COMBO_WINDOW then
 					combos[player] = nil
+					runs[player] = nil
 					if player.Parent then
 						player:SetAttribute("Combo", nil)
 						local p = Profiles.get(player)
@@ -678,6 +716,8 @@ function Progress.start()
 							local xp, shards = Progression.comboReward(c.hits)
 							award(player, p, xp, shards)
 							quest(player, p, "combo", c.hits)
+							local r = runOf(player)
+							r.bestCombo = math.max(r.bestCombo, c.hits)
 							if c.hits > (p.stats.bestCombo or 0) then
 								p.stats.bestCombo = c.hits
 							end

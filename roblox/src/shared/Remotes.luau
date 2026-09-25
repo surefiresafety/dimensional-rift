@@ -15,6 +15,8 @@
 --     Notice(text, tone?)                   a line for the combat log
 --     Wave(mapId, waveNumber, enemiesLeft)
 --     Profile(snapshot)                     the player's progress (Progress.snapshot)
+--     Summary(run)                          a world cleared: what this run earned
+--     Wave(..., nextIn?)                    nextIn: seconds until the next wave
 --   Client -> server, with an answer (RemoteFunction)
 --     Ask(action, ...) -> { ok, message?, ... }
 --                                           claimDaily, claimQuest(i), rerollQuest(i),
@@ -24,7 +26,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
-local NAMES = { "SelectStyle", "Cast", "Action", "Cooldown", "Fx", "Notice", "Wave", "Profile" }
+local NAMES = { "SelectStyle", "Cast", "Action", "Cooldown", "Fx", "Notice", "Wave", "Profile", "Summary" }
 local FUNCTIONS = { "Ask" }
 
 local Remotes = {}

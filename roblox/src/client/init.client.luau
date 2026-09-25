@@ -8,11 +8,13 @@ local Hub = require(script.Hub)
 local Loadout = require(script.Loadout)
 local Input = require(script.Input)
 local Tips = require(script.Tips)
+local Screens = require(script.Screens)
 
 Hud.build()
 Select.build()
 Hub.build()
 Loadout.build()
+Screens.build()
 Hud.onMenu = Hub.toggle
 Fx.start()
 Input.start()

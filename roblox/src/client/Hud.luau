@@ -598,11 +598,27 @@ function Hud.build()
 		cooldowns[key] = { readyAt = readyAt, duration = duration }
 	end)
 	Remotes.get("Notice").OnClientEvent:Connect(Hud.log)
-	Remotes.get("Wave").OnClientEvent:Connect(function(mapId: string, n: number, left: number)
+	local countdown = 0
+	Remotes.get("Wave").OnClientEvent:Connect(function(mapId: string, n: number, left: number, nextIn: number?)
 		local m = Maps[mapId]
 		mapName.Text = string.upper(if m then m.name else mapId)
 		waveTitle.Text = `Wave {n}`
-		waveSub.Text = `{left} enemies`
+		countdown += 1
+		if nextIn then
+			-- Between waves: count down to the next one.
+			local mine = countdown
+			task.spawn(function()
+				for s = math.ceil(nextIn), 1, -1 do
+					if countdown ~= mine then
+						return
+					end
+					waveSub.Text = `next wave in {s}`
+					task.wait(1)
+				end
+			end)
+		else
+			waveSub.Text = `{left} enem{if left == 1 then "y" else "ies"} left`
+		end
 	end)
 
 	RunService.RenderStepped:Connect(function()

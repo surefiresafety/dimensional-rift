@@ -36,6 +36,11 @@ local clearedHandlers: { (string, number) -> () } = {}
 function Waves.onCleared(fn: (string, number) -> ())
 	table.insert(clearedHandlers, fn)
 end
+local startedHandlers: { (string) -> () } = {}
+--- A world's first wave is about to arrive.
+function Waves.onStarted(fn: (string) -> ())
+	table.insert(startedHandlers, fn)
+end
 local worldHandlers: { (string) -> () } = {}
 --- A world's last scripted wave fell. The rift moves on to the next world.
 function Waves.onWorldCleared(fn: (string) -> ())
@@ -110,6 +115,9 @@ function Waves.start(mapId: string)
 	end
 	Waves.index = 0
 	Waves.running = true
+	for _, fn in startedHandlers do
+		task.spawn(fn, mapId)
+	end
 	-- Everyone walks through the rift with the world.
 	for player in Combat.states do
 		local root = Combat.rootOf(player)
@@ -168,6 +176,7 @@ Combat.onGone(function()
 		return
 	end
 	Waves.index += 1
+	WaveRemote:FireAllClients(mapId, Waves.index + 1, 0, Config.WAVE_BREAK)
 	task.delay(Config.WAVE_BREAK, function()
 		if Waves.gen == gen and Waves.running and #Combat.enemies == 0 then
 			Waves.spawnCurrent()
