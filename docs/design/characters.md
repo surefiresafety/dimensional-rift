@@ -1,4 +1,10 @@
-# Character and Enemy Looks: Design v5 (Designer revision 5)
+# Character and Enemy Looks: Design v5 (Designer revision 5), APPROVED WITH CONDITIONS
+
+> **Lead approval.** Approved for building, with the round-5 reviewer's three blocking IP items fixed below by the lead (no further agent revision). See `docs/design/APPROVAL.md`.
+> 1. **No red glowing eyes on Karasu or Akuro.** Karasu's `sig` is periwinkle `7a8ad8` (clip, FaceGlow, ember `5a5a78`). Akuro's `sig` is amber `e0a030`, his cloth moves off the crimson-black read to indigo-charcoal `1c1a2a` / trim `3a3450`, and his hair wedges and crack are amber. **Boss FaceGlow for these two is never red.**
+> 2. **Hatsuyuki wears no mask.** LM is removed. The copy ring moves to a SurfaceGui on the right glove (`sigPiece = GL`). Hair wedges are steel teal `3a5a6a`; sleeves and coat `4a5a6a`, so nothing is pale. 8 parts.
+> 3. **Nuime has no bun and no face stitches.** A crop with a low HR·p tail; the cross-stitched sleeve stays as his signature. **Test 5a also rejects any stitch or seam mark on the face or neck of a player or a character boss.** Hyakunui keeps its midline seam (it is the Seam's boss, not a player style).
+
 
 This design builds everything from R15 HumanoidDescriptions, Parts, WedgeParts, CornerWedgeParts, SpecialMesh `Sphere`, Welds, Beams, SurfaceGuis, ParticleEmitters, Highlights and PointLights. It uses no asset ids. Sizes are nominal studs at scale 1. How a size and offset are scaled at build time depends on the piece's scaling mode (§2.1, **Scaling**).
 
@@ -558,8 +564,8 @@ Patchwork is the one exception: it overrides single limbs through `STYLE.limbs`.
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | naruto, Ren Tsumuji | lean | 1 | `f3c9a0` | `3a2a24` | `3a2a24` | `5a7a4a` | `2f8f86` | `2f8f86` | `c9b48a` | `2b3350` | `e8b040` |
 | sasuke, Kurobane | lean | 1.02 | `f7dcc0` | `151313` | `151313` | `3a3440` | `2a2a34` | `2a2a34` | `3a3f4a` | `3a3f4a` | `e0a83a` |
-| kakashi, Hatsuyuki | standard | 1.04 | `f3d6b8` | `1a1f2e` | `1a1f2e` | `6a5a4a` | `223a44` | `e8ecf0` | `223a44` | `7a6a5a` | `5ad4ff` |
-| itachi, Karasu | lean | 1.02 | `f0d8c0` | `14141c` | `14141c` | `3a3440` | `2a2233` | `2a2233` | `1e1a26` | `3a3440` | `9b1a2a` |
+| kakashi, Hatsuyuki | standard | 1.04 | `f3d6b8` | `1a1f2e` | `1a1f2e` | `6a5a4a` | `223a44` | `4a5a6a` | `223a44` | `7a6a5a` | `5ad4ff` |
+| itachi, Karasu | lean | 1.02 | `f0d8c0` | `14141c` | `14141c` | `3a3440` | `2a2233` | `2a2233` | `1e1a26` | `3a3440` | `7a8ad8` |
 | might_guy, Midori Tetsu | standard | 1.04 | `e8b88a` | `14100c` | `14100c` | `2a2018` | `4a4f58` | `4a4f58` | `4a4f58` | `4f6b3a` | `3ad86a` |
 | pain, Gravewell | standard | 1.02 | `e8d8c8` | `5a5a6a` | `5a5a6a` | `6a5a4a` | `2a2a36` | `2a2a36` | `1c1c26` | `5a5a70` | `8a6cff` |
 
@@ -568,7 +574,7 @@ Patchwork is the one exception: it overrides single limbs through `STYLE.limbs`.
 | Style | Preset | Height | skin | hair | brow | eye | top | sleeves | bottom | trim | sig |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | gojo, Aoi Hakumei | standard | 1.08 | `f3d6c0` | `2a3448` | `2a3448` | `6a5a8a` | `2a3550` | `2a3550` | `1f2740` | `e8ecf4` | `5ad4ff` |
-| sukuna, Akuro | standard | 1.04 | `f2d6c6` | `2a1a1c` | `2a1a1c` | `c8782a` | `2a0a10` | `2a0a10` | `1a0a0e` | `5a1a28` | `d8462a` |
+| sukuna, Akuro | standard | 1.04 | `f2d6c6` | `2a1a1c` | `2a1a1c` | `c8782a` | `1c1a2a` | `1c1a2a` | `14121c` | `3a3450` | `e0a030` |
 | yuji, Haru Takane | standard | 1 | `f3c9a0` | `c8a070` | `8a6a4a` | `8a4a2a` | `22283a` | `22283a` | `22283a` | `c8a03a` | `d8683a` |
 | megumi, Kage Inukai | lean | 1 | `f7dcc0` | `1e2230` | `1e2230` | `5a8a7a` | `2a3238` | `2a3238` | `2a3238` | `2a2e3a` | `4a9a88` |
 | toji, Zero | standard | 1.04 | `e8c8a0` | `141418` | `141418` | `4a5a4a` | `16161c` | `16161c` | `2a2a30` | `3a3a42` | `9fe870` |
@@ -681,8 +687,8 @@ Format: kit in priority order (codes from §2.3 and §3.1) · explicit tints (ev
 |---|---|---|---|---|
 | naruto, **Ren Tsumuji** | FP, HR, HR·s×2, HB + HB·t (cloth, no plate), SC (tail on the left), SB, EM buckle E1, GL×2 | HR·s `0x2f8f86`; HB `0x2b3350`; SC `0xe8b040`; **no face or cheek marks of any kind** (no lines, swirls or slashes) | *long amber scarf tail streaming left* (`SC`) | 1+1+2+3+2+1+1+2 = **13** |
 | sasuke, **Kurobane** | FP, HR, HR·s×3, MT raven collar, FTH×2, BW sword across the upper back (2), SB | MT `0x151313`; FTH `0x3a3440` | *raven mantle with two upswept feathers; amber `0xe0a83a` irises only while a technique is active* (`MT`) | 1+1+3+1+2+2+1 = **11** |
-| kakashi, **Hatsuyuki** | FP, HR, HR·w×2, LM, VS winter coat, SB, GL×2 | HR·w `0xe8ecf0`; LM `0x223a44`; VS `0xe8ecf0`; no eye cover | *cyan E7 ring lights on an LM SurfaceGui while a copied technique is loaded* (`LM`) | 1+1+2+1+1+1+2 = **9** |
-| itachi, **Karasu** | FP, HR (crop), HR·f (left), CP, MT crow mantle, FTH×2, CLP | CP `0x2a2233`; MT `0x14141c`; FTH `0x2a2233`; no collar, no ponytail, no clouds | *crimson clip in the forelock; black `ember` from the hands* (`CLP`) | 1+1+1+1+1+2+1 = **8** |
+| kakashi, **Hatsuyuki** | FP, HR, HR·w×2, VS winter coat, SB, GL×2 | HR·w `0x3a5a6a` (steel teal, not pale); VS `0x4a5a6a`; no mask of any kind; no eye cover | *cyan E7 ring lights on a SurfaceGui on the right GL while a copied technique is loaded* (`GL`) | 1+1+2+1+1+2 = **8** |
+| itachi, **Karasu** | FP, HR (crop), HR·f (left), CP, MT crow mantle, FTH×2, CLP | CP `0x2a2233`; MT `0x14141c`; FTH `0x2a2233`; no collar, no ponytail, no clouds | *periwinkle `0x7a8ad8` clip in the forelock; grey-violet `ember` from the hands* (`CLP`) | 1+1+1+1+1+2+1 = **8** |
 | might_guy, **Midori Tetsu** | FP, HR, HR·k topknot, SB + tail, GL×2, WR×2 | GL `0x8a3a2a`; WR `0xe8e0d0`; no bowl cut, no jumpsuit | *8 belt dots (SurfaceGui) light green one by one as gates open* (`SB`) | 1+1+1+2+2+2 = **9** |
 | pain, **Gravewell** | FP, HR, HR·w×2, CP, HC, SHD×4 | CP `0x1c1c26`; no piercings, no ringed eyes, no rods | *4 basalt shards orbiting a ring behind the shoulders, joined into a square by 4 Beams `0x8a6cff`* (`SHD`) | 1+1+2+1+1+4 = **10** |
 
@@ -691,13 +697,13 @@ Format: kit in priority order (codes from §2.3 and §3.1) · explicit tints (ev
 | Style | Kit (priority order) | Explicit tints and marks | Signature (`sigPiece`) | +N |
 |---|---|---|---|---|
 | gojo, **Aoi Hakumei** | FP, HR, HR·w×2 (side-swept, no spikes), OR×3, VS coat, LP, CT, GL left only | HR·w `0xbfe8ff` (pale shows only as two streaks); LP `0xe8ecf4`; resting iris `0x6a5a8a`; FaceGlow cyan `0x5ad4ff` only while `Infinity` is true; no VB, no eye cover, no high collar | *3 cyan shards orbiting the head* (`OR`) | 1+1+2+3+1+2+2+1 = **13** |
-| sukuna, **Akuro** | FP, HR, HR·w×2 (swept back, no spikes), XA (4), VS crossover robe, SB + tail | HR·w ember `0x9b1a2a`; SB `0x5a1a28`; one jagged ember crack `0x5a1a28` from the left temple to the jaw (3 Frames); nothing under the eyes; iris amber `0xc8782a` | *second arm pair held forward, palms open* (`XA`) | 1+1+2+4+1+2 = **11** |
+| sukuna, **Akuro** | FP, HR, HR·w×2 (swept back, no spikes), XA (4), VS crossover robe, SB + tail | HR·w amber `0xc8782a`; SB `0x3a3450`; one jagged amber crack `0xc8782a` from the left temple to the jaw (3 Frames); nothing under the eyes; iris amber `0xc8782a` | *second arm pair held forward, palms open* (`XA`) | 1+1+2+4+1+2 = **11** |
 | yuji, **Haru Takane** | FP, HR, HD·d, HC, GL×2 knuckle tape, Prop (≤2) | HD·d mustard `0xc8a03a` with a crimson stitched-patch SurfaceGui (E11 border `0xe8e0d0` on a `0x9b1a2a` 60×40 patch, left side); GL `0xe8e0d0` | *crimson stitched patch on the hood* (`HD·d`) | 1+1+1+1+2+2 = **8** |
 | megumi, **Kage Inukai** | FP, HR, HR·s×3, MT wolf pelt, EP ears on the mantle (2), HC | MT `0x2a2e3a`; EP `0x2a2e3a` at `NeckAttachment` (±0.55, 0.3, +0.2) | *`shadow` puddle at the feet; wolf-eared pelt* (`MT`) | 1+1+3+1+2+1 = **9** |
 | toji, **Zero** | FP, HR, Prop (≤3), SB + 2 pouches, GL×2 fingerless | scar mark `0xc89a80` on the left brow (1 Frame 3×14 at 15°) | *back prop swaps with the Arsenal* (`Prop`) | 1+1+3+3+2 = **10** |
 | kashimo, **Ikazuchi** | FP, HR, HR·p long (h 1.5), TIP, SB + tail, STF | TIP `0xf0d27a` | *`spark` at both staff tips; storm-gold hair tip* (`STF`) | 1+1+1+1+2+1 = **7** |
 | geto, **Hoshiro Genma** | FP, HR, HR·p low tail (h 0.8), VS long open coat, LP, ORB | LP `0x8a7ab0`; lapel beads as SurfaceGui dots `0x8a7ab0`; no monk's sash, no bun, no gauged earrings | *floating violet orb* (`ORB`) | 1+1+1+1+2+1 = **7** |
-| kenjaku, **Nuime** | FP, HR, HR·k bun, HC, CT robe skirt | HC `0x2a2430`; E11 seam `0x2a2430` down the right side of face and neck (FaceBase) | *cross-stitched right sleeve (SurfaceGui `0x2a2430` on RightUpperArm)* (`sigPiece = nil`, 0-part) | 1+1+1+1+2 = **6** |
+| kenjaku, **Nuime** | FP, HR (crop), HR·p low tail, HC, CT robe skirt | HC `0x2a2430`; no marks on the face or neck; no bun | *cross-stitched right sleeve (SurfaceGui `0x2a2430` on RightUpperArm)* (`sigPiece = nil`, 0-part) | 1+1+1+1+2 = **6** |
 | choso, **Akagane** | FP, HR, HR·w×1 (right, swept back), VS coat, GL×2 bracers, VL×2 | GL `0x5a4a4a`; crimson chevron `0x9b1a2a` on each cheek; no nose stripe, no tufts | *glowing blood vials at the wrists* (`VL`) | 1+1+1+1+2+2 = **8** |
 | mahito, **Patchwork** | FP, HR, HR·p strand (h 0.9), FS fist + thumb (2), PLT×2, SEAM | `STYLE.limbs`: LeftArm `0x8a6244`, RightArm `0xd8c0a8`, LeftLeg `0x4a5a3a`, RightLeg `0x6a3a4a`; HR·p `0x3a1e34` (plum, via `colors.hair`); FS `0xd8c0a8`; neck seam E11 `0x3a1e34`; no pale or blue-grey skin, no pale hair, no face stitches | *quilted body with one giant fist* (`FS`) | 1+1+1+2+2+1 = **8** |
 | jogo, **Kazan** | FP, CR rock crown (Basalt) + `smoke`, VS robe | CR `0x3a2a24`; lava-crack SurfaceGui `0xff9a3a` on the Head; ember FaceGlow; no volcano cone | *smoking rock crown* (`CR`) | 1+4+1 = **6** |
@@ -753,7 +759,7 @@ Every piece in §3 that is not a standard §2.3 code is placed here. "Part centr
 | HAT·c | Top Hat | crown Cyl Ø0.95×1.0 | Head | part centre | `CFrame.new(0, 1.14, 0) * CYL_UP` (y 0.64–1.64) | `0x101010` | 1 |
 | HAT·n | Top Hat | band Cyl Ø0.97×0.15 | Head | part centre | `CFrame.new(0, 0.72, 0) * CYL_UP` (y 0.645–0.795) | `0x9b1a2a` | 1 |
 | FTH | Kurobane, Karasu | 2 Wedges 0.1×0.6×0.25 | UpperTorso | `NeckAttachment` | `CFrame.new(±0.45, 0.25, +0.45) * rx(+20) * rz(∓15)`: tops lean back and out, bottoms 0.14 inside the mantle (mantle top at that x, z is y +0.09) | per row | 2 |
-| CLP | Karasu | Wedge 0.08×0.25×0.12 | Head | part centre | `CFrame.new(−0.44, 0.22, −0.67)` (in front of HR·f, x −0.48 to −0.40) | `0x9b1a2a` | 1 |
+| CLP | Karasu | Wedge 0.08×0.25×0.12 | Head | part centre | `CFrame.new(−0.44, 0.22, −0.67)` (in front of HR·f, x −0.48 to −0.40) | `0x7a8ad8` | 1 |
 | LF | Thornbloom | Wedge 0.1×0.4×0.3 | Head | part centre | `CFrame.new(0.56, 0.92, 0) * rz(−40)` (at the tip of the right HN branch, whose top end is (0.50, 0.88, 0)) | `0x4f6b3a` | 1 |
 | BLM | Thornbloom | Ball Ø0.45 | LeftUpperArm | `LeftShoulderAttachment` | `CFrame.new(−0.05, 0.38, 0)` (bottom 0.12 inside the bark SG) | `0xff8ae0` SmoothPlastic | 1 |
 | ORB | Genma | Ball Ø0.5 | UpperTorso | part centre | rest `CFrame.new(−1.3, 1.3, +0.4)`; Weld `Orbit_orb`, OrbitAxis (0,1,0), **OrbitCenter (−1.1, 1.3, +0.4)** (a 0.2 circle), OrbitRate 0.6 | `0xb06cff` Neon | 1 |
@@ -1375,7 +1381,7 @@ Caps: enemies Rate ≤ 6 and Lifetime ≤ 1.2; players ≤ 6; bosses ≤ 12.
 
 | Key | Rate | Lifetime | LightEmission | Size | Other |
 |---|---|---|---|---|---|
-| ember | 4 | 0.6–1.0 | 0.6 | 0.2→0 | Speed 1–2, upward, `0xff8a3d` (Karasu: `0x14141c`) |
+| ember | 4 | 0.6–1.0 | 0.6 | 0.2→0 | Speed 1–2, upward, `0xff8a3d` (Karasu: `0x5a5a78`) |
 | smoke | 5 | 1.2 | 0 | 0.6→1.2 | Transparency 0.4→1, `0x3a3a40` |
 | drip | 3 | 0.8 | 0.2 | 0.12 | Acceleration (0, −20, 0), colour from the owner (`colors.sig` or `affix.color`) |
 | spark | 6 | 0.3 | 1 | 0.1 | Speed 6, Spread 180, `0xffe45c` (Frenzied: `0xff4d5e`) |

@@ -1,50 +1,59 @@
-# Dimensional Rift world layout, buildings and walkways: design revision 4
+# Dimensional Rift world layout, buildings and walkways: design revision 5, APPROVED WITH CONDITIONS
 
-## R. Changes in revision 4
+> **Lead approval.** Approved for building, with the round-5 reviewer's two blocking items fixed below by the lead (no further agent revision). See `docs/design/APPROVAL.md`.
+> 1. **The Seam's anchor sizes are fixed at the scratch model's values** (smaller footprints fail the fan gate, check 4): the 4 collidable fragments are each **one 6 × h × 6 block** (plus 4 decor parts); the rock horn is **6 × 24 × 6 at r 44, bearing 266**; each star pillar is **6 × 24 × 6**; the pagoda tiers stand on an **8 × 8** base; the rock stack is **7 × 20 × 7**; the gantry is **two 5 × 20 × 5 legs** with a crossbeam; the rod tower is the Thunderspire rod tower **raised to 5 × 26 × 5**. `Layouts.luau` stores these sizes, and `tests/layouts.spec.luau` fails any anchor with a footprint under 5 × 5.
+> 2. **All nine world names are original,** set in the Roblox build only (a `NAMES` override in `src/shared/Worlds.luau`; the web build is not touched): Times Square → **The Crossroads**, Tokyo Sorcery Academy → **The Hidden Campus**, Tombs of the Star Vault → **The Ribbed Vault**, Kyoto Imperial Academy → **The Walled Compound**, Survival Colony → **The Sealed Block**, Land of Wind → **Dunewatch**, Land of Earth → **Quarry Hollow**, Land of Water → **Mistreach**, Land of Lightning → **Thunderspire**. `Story.luau` lines that name the old places are updated to match. This replaces §0.2's "edit `web3d/rift3d.html` and re-export".
 
-### Blocking items
+
+## R. Changes in revision 5
+
+Round 4 left one blocking item: the swing-coverage gate. The design made the real 45-ray fan the gate, with 3 of 4 facings at every grid point, but every "0 uncovered" figure had come from the old distance rule. Revision 5 runs the fan.
 
 | # | Reviewer item | Resolution | Where |
 |---|---|---|---|
-| 1a | Colony overpass joint gaps | Decks shortened to the **inner-edge chord 15.9 u** (2·40·tan 11.25°), so neighbours never overlap and never z-fight. **9 pier caps 6 × 8.94 × 0.5 at h 6.6–7.1** cover every V (at most 3.2 u wide at the outer edge, well inside the cap's ±3). Outer rails are 19.1 u and inner rails 16.0 u, so both rail lines close. The trusses move off the piers, where they ran into the deck underside, to the outer edge. | §2.1 `chordRing`, §3.5 |
-| 1b | Kyoto wall corner cracks | Flats stay 44.7 u. **8 corner bastions 5 × 5, h 0–6.6, at r 59.5 on bearings 22.5 + 45k, yaw −b** cover the 1.28 u crack and the flats' inner overlap. They are walkable, 0.1 u proud of the walk, and stand 1.9 u out from the outer face. Outer rails are 46.0 u. | §3.4 |
-| 1c | Vault gallery and Tideline lengths | Gallery: 12 decks of **26.3 u** (inner edge), centred on 30k, plus 12 joint caps 4.5 × 7.94 at 15 + 30k. Tideline: 16 decks of **21.9 u**, centred on 22.5k, plus 16 caps 3.5 × 6.17, with outer rails of **23.9 u**. Vault wall flats are 29.5 u (2·55·tan 15°), with 12 pilasters at the vertices. **New spec check 2b** samples the outer edge of every walk, including the vertex bisectors, and requires support under each sample. It passes all four rings with 0 failures, and it fails 292 Colony samples without the caps and 70 Kyoto samples without the bastions. I used inner-edge decks plus caps rather than the 29.5 / 23.9 overlap because overlapping decks leave coplanar tops that z-fight. The outer-edge lengths are still used for the rails. | §2.1, §3.3, §3.8, §4.5 |
-| 2 | `spawnSpot` code | Rewritten in full. It uses a local in-place Fisher-Yates `shuffle`, shuffles the fresh pools, and walks the `all` fallback in sorted LRU order with no shuffle. `used` is cleared whenever the `Nav` instance changes, so it is keyed per build. `centre` is ignored when Nav exists. `spawnCurrent` passes the `boss` it already computes (Waves.luau line 94). | §4.2 |
-| 3 | Kyoto gate stairs | Flights move to **x ±(7..18.4)**, z 49.5..52.5. Each has a **3 × 3 landing at x ±(4..7), h 6.5**, flush with the S wall-walk and the gatehouse deck, and a **rail on x = ±4**. The last torii was at z 50.3, where its beam overlapped the landing and rail, so the torii spacing becomes 4.6 (z 16 → 48.2). | §3.4 |
-| 4 | Hills versus structures | `hill()` takes `Layouts[theme].hills = { minGround, keepOut }`: storm 66, desert 66, earth 60. Keep-out sectors are rejected by bearing plus the hill's own angular half-width. The Quarry Stone Gate moves in to z 49.5..53.5 so earth passes at 60. **Spec check 9:** minGround ≥ the largest non-backdrop footprint radius + 4, and every `keep` backdrop piece sits inside a keep-out sector. | §4.1, §4.5, §3.6, §3.7, §3.9 |
-| 5 | Naming contradictions | `THEME_BUDGET` is removed everywhere. The budget is **`Layouts[theme].budget`**. The toss profile is only ever **`Nav.toss(e)`**, which returns a fresh table every call. | §3, §4.1, §4.3, §4.4 |
-| 6 | Missing yaws | There is now a yaw convention (§0.1). Transit shelters: **(24, 8) yaw 90, (8, 24) yaw 0**, which leaves a 1.0 u gap to pad (32, 11). Leaning Block: **6° roll about +Z, pivot on the east bottom edge**, with its roof slope and stair plate given. Seam FillBlocks: **yaw −b** on b = θ ± 13.33°, θ. Also given: Kyoto tower-ramp run bearings, the Thunderspire bridges, Colony tilted towers and the Mistreach hulls. | §0.1, §3.1, §3.4, §3.5, §3.8–3.10 |
+| 1 | The fan was never run; the "0 uncovered" figures came from the distance rule | The exact `findAnchor` fan was run on scratch models of all ten worlds, using the check 4 code and rules. **The revision 4 geometry fails in 9 of 10 worlds** (134 points): Academy 10, Vault 8, Kyoto 3, Colony 12, Dunewatch 36, Quarry 2, Mistreach 26, Thunderspire 23, Seam 14; only the Crossroads passes. Anchors were added or moved in each failing world. **All ten now pass with 0 failures.** The per-world points, fails, 4-of-4 counts, jitter margin and revision 4 fails are published in each world's section and in §3.11. The distance rule is deleted. | §1.5, §3.1–3.11 |
+| 1a | Academy: about 12 of 44 fail (north court, courtyard, (0, 40)) | 2 **north-court cedars** (±11, −31) and 2 **courtyard cedars** (±10, −16), h 40. The **training pillars** become 3 × 3 × 26 with 8 u crossarms, and the N stones move to (±5, −13). The **N inner cloister ramp** moves 4 u west, to x 4..15.75, which frees the (20, −20) pocket. A **gatehouse upper storey** (h 10–18, roof to 19) serves (0, 40). Result: 41 points, 0 fail, jitter-weak 0. | §3.2 |
+| 1b | Kyoto: (±40, −10), (±40, 30), (±50, 0) | 8 **ring cedars** h 44 outside the wall, at r 63 on 0, 56.25, 123.75, 180, 236.25 and 303.75, and at r 67 on 45 and 135. Result: 52 points, 0 fail. The skipped (±40, 30) and (±50, 0), on the tower ramps and wall-access ramps, pass even when counted. | §3.4 |
+| 1c | Colony: (30, 20) and (30, 40) get nothing; SE anchor; points under the overpass | **Block cistern** (water tower) at (0, 20), with the tank at h 17–23. **3 more skyline towers** at r 68 on 30, 90 and 150. **2 lamp-bank floodlights** at (±14, −52.2). The 13 points under the overpass are **skipped by the stated rule**. Result: 52 points, 0 fail. (30, 20) and (30, 40) pass 4 of 4. | §3.5 |
+| 1d | Do points under decks or caps count? | **No.** §1.5 gives one rule: a point is skipped when a CanCollide, non-floor footprint over it spans any height between floor + 3 and floor + 16. That covers buildings, ramps, and everything under decks, caps, landings, roofs, bridges and boards. `floor = true` footprints (terraces, podium, dais, benches) set the floor. The rule is written once and used by §1.5, the §4.4 audit and check 4. | §1.5, §4.4, §4.5 |
+| 1e | "Or change the criterion" | Kept at **3 of 4, every point**. The criterion is not weakened. Instead each world follows the pattern of the one world that passed: inward R1 anchors, an outer ring of wide masses, and crowns in closed courts. | §1.5 |
+| 1f | The other failing worlds (found by running the fan) | Vault wall raised to 26. Dunewatch: ksar towers, gnomons, windcatchers on all 12 houses, and dovecotes. Quarry: 2 headframes. Mistreach: 9 sea stacks and 5 fog-bell towers. Thunderspire: hall storey to 26, rod bases 5 × 5 × 22, 4 storm stones, 2 threshold rods and 2 lantern towers. Seam: 6 Core-set Hem shards and 4 more stitched pillars. | §3.3, §3.6–3.10 |
 
-### Improvements
+### Also changed
 
-| Improvement | Status |
-|---|---|
-| Perches at 20–40 u cannot be reached by swinging | **Adopted.** They are relabelled **flight-only perches** (§1.3). They are not part of any route, and the reach fallback still covers anyone standing on one. |
-| Keep tree crowns queryable | **Adopted** with a **`Foliage`** collision group: CanCollide false, CanQuery true, not collidable with `ShotRay`. Swing rays hit crowns, shots and dashes pass through them, and Nav casts use `RespectCanCollide`. |
-| Port the real fan into the Lune spec | **Adopted** (check 4). It uses ray–OBB and ray–sphere tests with the exact `findAnchor` constants. The distance rule stays only as a designer pre-check. |
-| Crossarms on thin masts | **Adopted.** Every anchor mast under 2 u wide gets a **crossarm pair**: 2 query-only bars 6 × 0.5 × 0.5 at yaw 45° and 135°, top 1 u below the mast top. Parts are recounted. |
-| Academy hero sightline and rails | **Adopted.** The check is visual: rails **count** as blockers, the eye is at h 3.0, and there is a 0.3 u margin. The Academy N cloister rails get a 6 u **Hall Window** gap at x −3..3. |
-| Seam hero set piece | **Adopted.** **The Spindle**: a 70 u needle through a thimble, standing on a thread spool at (0, −60). It replaces the stitched pillar on bearing 270. |
+- **Check 4 now has the full code:**
+  - `floorAt` and `skipped`, shared with the audit;
+  - wedge tests for ramps (a full-box ramp gives false failures at ramp feet);
+  - vertical cylinders;
+  - an `EXPECT` point-count drift warning.
+- **The schema gains** `floor`, `run` and `shape`, and drops `anchors`.
+- **The audit** runs a `look`-parameterised copy of `findAnchor` on the same point set.
+- **Pad-box clashes found by a clearance sweep** (all present in revision 4):
+  - Kyoto stone lanterns: r 24 → 22;
+  - Quarry backdrop needles on 60/120/240/300: r 50 → 52;
+  - Seam 330° pillar: r 56 → 57.5;
+  - Mistreach mast: (42, −30) → (42.5, −30).
+- **Scratch-model fix:** the Kyoto tower-ramp yaws had been modelled radially. They now follow the stated run bearings.
+- **Budgets** are raised where parts were added. The largest world is Mistreach at 511 / 27, and every world is under 60% of the 900-part cap.
 
-### Also fixed while checking
+### Carried from revisions 3–4 (unchanged)
 
-- **Colony trusses.** They stood against piers under the deck, so climbing them only reached the deck underside. They move to the deck's outer edge.
-- **Colony sign gantries.** They become cantilevers on one mast at r 50.2. A post at r 39 on bearing 225 would have stood inside pad (−22, −22)'s clear box.
-- **Mistreach Tideline.** At top 0.4 it intruded 0.1 u into the outer corners of the (33, −36) B and (−33, −36) clear boxes. Its top is lowered to **0.3**, which is below the pad threshold. The caps (top 0.4) clear those boxes by 0.76 u and 2.76 u.
-- **Thunderspire bridge.** "About 6 u" is replaced by exact endpoints.
-
-### Carried from revision 3 (unchanged)
-
-- Rails use the `Rail`/`ShotRay` collision groups.
-- Layouts live in hand-written `src/shared/Layouts.luau`, and the world names change in `web3d/rift3d.html`.
-- The Dunewatch citadel bridges are dropped.
-- Every anchor is fixed data.
-- `Nav.clearSpot` handles summons.
-- `shotReady` gains `or e.tossing == true`.
-- Boss pads sit at r ≥ 34.
-- There is 1 pad table per world.
-- Terrain colours are reset each build.
-- `Spin` is driven by CollectionService.
+- Chord decks at inner-edge length, with joint caps, bastions and pilasters, checked by 2b.
+- `Waves.spawnSpot`: a local Fisher-Yates shuffle and LRU fallback, with `used` keyed per build.
+- Kyoto gate stairs at x ±(7..18.4), with 3 × 3 landings.
+- `hill()` minGround and keep-out sectors, checked by check 9.
+- `Layouts[theme].budget` and `Nav.toss(e)`.
+- Explicit yaws everywhere (§0.1).
+- The `Rail`, `ShotRay` and `Foliage` collision groups.
+- Flight-only perches.
+- The Academy Hall Window and the visual hero sightline, with rails counted.
+- The Spindle.
+- Hand-written `Layouts.luau`.
+- The dropped Dunewatch bridges.
+- `Nav.clearSpot` and `shotReady or e.tossing`.
+- Boss pads at r ≥ 34.
+- Terrain colour reset.
+- `Spin` driven by CollectionService.
 
 ---
 
@@ -56,7 +65,7 @@
 | `spawnSpot` has no Y. Enemies spawn with +4 studs of lift, in packs of 3 with ±4 u jitter. Bosses spawn alone. | `Waves` | Pads need a clear box: 12 × 5 × 12 u for normal pads, 16 × 7 × 16 u for boss pads. |
 | Enemies use `MoveTo` only and never jump. Notice and reach are 3D. Shooting happens at 4.5 < dist < 42. About 91 of 217 enemies are `ranged`. Nothing flies. | `Enemies.think`, `Rules.aiStep` line 476 | The navigation in §4.3 is required. |
 | **CanQuery is ignored when CanCollide is true.** Collision groups do filter raycasts through `RaycastParams.CollisionGroup`, and `RaycastParams.RespectCanCollide` skips CanCollide-false parts. No collision groups are in use today. | engine, grep | Rails go in the `Rail` group, tree crowns in the `Foliage` group, and shot rays use the `ShotRay` group. |
-| Swing: elevations 25–80° in 9 steps, 5 yaws (±0.9, ±0.45, 0 rad), reach 60 u (`ROPE_REACH`), hit more than 4 u above the root, score = 2·Y + forward, rope = 0.92 × distance, default group. | `Movement.findAnchor` (lines 40–75) | A hit at distance D needs a top of at least 0.47·D + 4. The arc clears the start height only for rays at 66° or steeper, so **a swing never lands a player on a perch 20–40 u up**. Adjacent rays are 26° apart, so a 1.6 u mast is often missed; masts need crossarms. |
+| Swing: elevations 25–80° in 9 steps, 5 yaws (±0.9, ±0.45, 0 rad), reach 60 u (`ROPE_REACH`), hit more than 4 u above the root, score = 2·Y + forward, rope = 0.92 × distance, default group. | `Movement.findAnchor` (lines 40–75) | A hit at distance D needs a top of at least 0.47·D + 4. The arc clears the start height only for rays at 66° or steeper, so **a swing never lands a player on a perch 20–40 u up**. Each facing is blind 1–27° either side of dead ahead, and each ray family has only 9 samples (§1.5). Thin masts and crossarms are therefore often missed, and wide masses and crowns are what pass the gate. |
 | The Humanoid steps about 2 studs and walks 30° wedges. Truss sizes snap to 2 studs. | engine | Ramp run = 1.75 × rise. |
 | `SIGNS` contains "DAILY BUGLE" and "RAMEN ICHIBAN". The portal segments are CanQuery true. | `Arenas.luau` | Both are fixed in §4.1. |
 | `src/shared/Data/*` is generated, and `test/roblox-export.test.js:19` compares it against a fresh export. | README, test | New data goes outside `Data`. Names are changed in `rift3d.html`. |
@@ -96,7 +105,7 @@
 | Ring | r (u) | Job | Rules |
 |---|---|---|---|
 | R0 Rift Plaza | 0–12 | Spawn, portal | Nothing collidable below h 3 except the floor. No pads. |
-| R1 Threshold | 12–20 | Framing, anchor bases, access to hero pieces | No pads. |
+| R1 Threshold | 12–20 | Framing, **inward swing anchors** (§1.5 pattern a), access to hero pieces | No pads. Anchor corners stay at r ≥ 12. |
 | R2 Districts | 20–50 | The fight | Lanes between districts at least 6 u. All pads. Boss pads at r ≥ 34. |
 | R3 Edge | 50–60 | Boundary as a place | Walls, galleries, boardwalks, usually carrying the upper route. |
 | R4 Backdrop | 60–150 | Skyline and terrain | Terrain hills only beyond `hills.minGround` (desert 66, earth 60, storm 66), and never inside a keep-out sector (§4.1). |
@@ -149,18 +158,26 @@
 - 54–82° off the facing at 15–38° up (yaw ±0.9).
 
 An anchor 1–27° off a facing is therefore invisible to that facing, and a thin anchor between two samples is missed. A point next to a low roof or wall also has its "best score" taken by a 6–14 u hit, which is what the reviewer saw in the Academy north court. The one world that already passed, the Crossroads, shows the pattern that works. Revision 5 applies it everywhere:
-- **(a) Inward anchors in R1**, at r 12–17 and 24–30 u tall: the Crossroads pylons, Academy pillars, Dunewatch gnomons, Mistreach fog-bell towers, Thunderspire threshold rods and Seam Hem shards.
+- **(a) Inward anchors near the centre**, at r 12–24 and 24–30 u tall, so that every inward facing has a target: the Crossroads pylons, Academy pillars, Dunewatch gnomons, Mistreach fog-bell towers, Thunderspire threshold rods and Seam Hem shards.
 - **(b) An outer ring of wide masses 30 u tall or more** at r 55–68: towers, cedars, ksar towers, sea stacks and storm stones.
 - **(c) A wide or crowned anchor inside every court** that a roof or hall closes off, such as the Academy courtyard and north-court cedars.
 
 **Thin masts.**
 - Any mast under 2 u wide still gets a **crossarm pair**: 2 bars 6 × 0.5 × 0.5 in the Core flag set, at yaw 45 and 135, crossing on the mast axis with their top 1 u below the mast top. Colour: galvanised grey RGB(120, 124, 130) Metal. On the Thunderspire rod towers they are copper RGB(184, 115, 51).
-- The reviewer was right that crossarms alone do not fix the blind wedge. No point in revision 5 passes on a crossarm alone: every facing that the gate counts is carried by a mass, a crown or a lamp bank. The one exception is the Seam, where crossarms are backed by the Hem shards.
+- The reviewer was right that crossarms alone do not fix the blind wedge. They stay, because they are cheap and they do catch some rays, but none of the revision 5 fixes relies on them. Every world that failed was fixed with masses, crowns or lamp banks.
 - A **lamp bank** is the other thin-mast head: a Core-set panel 6 wide × 3 tall × 0.6 at the mast top, facing C (yaw −b). It is used on the Colony north floodlights.
 
 **Margin (informational, not a gate).** Each world's swing line also reports **jitter-weak** points. A point is jitter-weak when it passes but at least one of the 4 points 1.5 u away (N, E, S, W) does not. This shows how far a `Layouts` file can drift from the numbers in §3 before check 4 notices.
 
-**How the numbers in §3 were produced.** They come from the designer's scratch model. It uses the exact fan (the §4.5 code), with every piece in §3 as an oriented box at its stated size, yaw and heights. Ramps and stairs are boxes of half their rise, vertical cylinders are exact, and crowns are spheres. As a sensitivity check the ramps were also run as full-rise boxes, and the gate still passes in all ten worlds. **The distance rule of revisions 2–4 has been deleted**, including its use as a pre-check, because it disagreed with the fan in 9 of the 10 worlds.
+**How the numbers in §3 were produced.** They come from the designer's scratch model, which uses the exact fan and the same rules as check 4:
+- every piece in §3 is an oriented box at its stated size, yaw and heights;
+- ramps and stairs are **wedges** along their run bearings (switchbacks are boxes at half their rise);
+- vertical cylinders are exact, and crowns are spheres;
+- seeded scatter and terrain are left out.
+
+The revision 4 geometry was run first. It failed in 9 of the 10 worlds, with 134 failing points in all (§3.11). Every anchor added in revision 5 was then checked the same way, and in several worlds chosen by a greedy search over candidate positions that were clear of every pad box, walk and footprint.
+
+**The distance rule of revisions 2–4 has been deleted**, including its use as a pre-check. It passed all ten worlds, and the fan failed nine of them.
 
 ---
 
@@ -230,6 +247,9 @@ All CanQuery true unless marked decor.
 | Broadleaf / blossom / palm | h 10–16 | Trunk plus crown (decor). Palm: trunk to 14, 4 fronds (decor), not an anchor. The crowns stay decor, because a 10–16 u hit only gives a dragging swing. | 4 / 5 | 0 |
 | Backdrop cedar | h 30–40 | trunk plus 2 balls (decor) | 3 | 0 |
 | Anchor mast | 1.6 square, 20–40 tall | `spire()` plus a **crossarm pair** | 4 | 0–1 |
+| **Anchor mass** (revision 5) | w × w × h block, w 4–7, h 24–30, yaw 0 or −b | `mass(k, x, z, w, h, yaw, colour, material)` plus 1–2 decor trims. It is used for the ksar towers, gnomons, dovecotes, windcatcher cores, headframes, sea stacks, fog-bell towers, storm stones, lantern towers and stitched pillars. Colours and materials are in §3. | 2–3 | 0–1 |
+| **Lamp-bank floodlight** (revision 5) | mast 1.2 × 1.2 × 24; Core panel 0.6 × 3 × 6 at h 21–24, facing C | mast, lamp bank, neon face (decor), SpotLight | 3 | 1 |
+| **Cistern** (revision 5) | 4 legs 0.8 × 17; tank Cylinder 9 × 6 at h 17–23; cap 5.4 × 2 | legs, tank, cap, ladder (decor) | 7 | 0 |
 
 ---
 
@@ -330,14 +350,14 @@ All CanQuery true unless marked decor.
 | Training ring | Mud disc r 12 at (−28, 38); **6 posts 0.8 × 3 at r 12** on bearings 30 + 60k | Boss stage |
 | Pond garden | Water r 8 at (32, 36); arched bridge north–south at x 32, z 28..44; rocks at (41, 30), (23, 41), (40, 43) | Reflecting pool (§4.1) |
 | Training pillars | (±18, ±14): **3 × 3 × 26** (was 2 × 19), timber RGB(92, 64, 44) Wood, each with a **crossarm pair 8 × 0.5 × 0.5** (Core set, yaw 45 and 135, h 24.5–25) in the same wood | Pad (±20, 4)'s box ends at z ±10, 2.5 u from the pillar face. Widening the pillars was worth more than the crossarms: at 2 u they sat in the fan's blind wedge from most of the courtyard. |
-| Training stones (8) | **(±5, −13)**, (±24, −12), (±8, 15), (±24, 14); each 2 × 1.2 × 3 | The north pair moved in from (±8, −14) to clear the courtyard cedars by 2 u |
+| Training stones (8) | **(±5, −13)**, (±24, −12), (±8, 15), (±24, 14); each 2 × 1.2 × 3 | The north pair moved in from (±8, −14), where it would have stood 0.2 u from the courtyard cedar trunks. The gap is now 3.2 u. The stones stay outside R0 (r 13.9). |
 | **Path lanterns** (6, 3 lit) | x ±5.5 at z 53, 62, 66 | Moved clear of the (0, 36) boss box |
 | Old cedars (18) | NE (34,−38) h40, (40,−42) 44, (46,−37) 36; NW mirrored; SE (46,26) 38, (50,34) 42, (44,44) 36; SW (−46,26) 38, (−44,34) 42, (−52,20) 36; gate (±12, 56) 34; **courtyard (±10, −16) 40; north court (±11, −31) 40** (new) | Core hit at 0.95·h. **Courtyard pair:** the trunks stand 1.7 u from the N inner ramp's side (z −18.5). The lowest crown ball (radius 5.2, centre h 24.8) clears the N-run rails (6.1) by 13.5 u. **North-court pair:** the trunks stand 3.2 u from the hall stair (x ±7) and the podium (z −35), 3.7 u from the N run, and 4.2 u from pad (±22, −40)'s box. **Hero sightline:** the nearest of these trunks is 9.2 u from the eye line (x = 0), and the nearest crown ball is 22 u from it. |
 | Backdrop | 24 cedars at 90–140; terrain mountains | |
 
 **Anchors:** pillars 26 (with crossarms); Bell Tower 26; gatehouse storey 19; cedar cores 32.3–41.8, with crowns.
 
-**Swing gate (fan, §1.5):** 41 points (31 skipped: under the cloister roofs, on the podium under the hall, inside the dorms, or on the ramps), **0 fail**, 36 of them 4 of 4. Jitter-weak: 0. The revision 4 geometry failed 10 points: (0, −20), (±10, −20), (±20, −20), (0, −30), (±10, −30), (±20, −30) and (0, 40). The reviewer's list also included (±30, −30) and (10, −20). Under the §1.5 rule those points are skipped because they lie on the N corner ramps and the moved N inner ramp, but they pass 4 of 4 even when counted.
+**Swing gate (fan, §1.5):** 41 points (31 skipped: under the cloister roofs, on the podium under the hall, inside the dorms, or on the ramps), **0 fail**, 36 of them 4 of 4. Jitter-weak: 0. The revision 4 geometry failed 10 points: (0, −20), (−10, −20), (±20, −20), (0, −30), (±10, −30), (±20, −30) and (0, 40). The reviewer's list also included (±30, −30) and (10, −20). Under the §1.5 rule those points are skipped because they lie on the N corner ramps and the moved N inner ramp, but they pass 4 of 4 even when counted.
 - **North court (z −30).** The hall (top 14) fills the north, the N-run roof shadows the south, and the NE and NW cedars sit 9–17° off the E and W facings, inside the blind wedge. The north-court cedars fix this: the E and W facings of (0, −30) now take the far cedar's crown at 25.1.
 - **Courtyard (z −20).** The N-run roof closes the north. The courtyard cedars give the E and W facings a crown at 22–24.
 - **(20, −20)** was the landing pocket, fixed by moving the N inner ramp.
@@ -465,7 +485,7 @@ All CanQuery true unless marked decor.
 | Old cedars (h 34, core 32.3) | (±38, −28), (±20, 44), (±46, 4), (±14, 10) | |
 | **Ring cedars** (8, new) | h **44** (core hit 41.8; crown balls of diameter 11.4 / 9.2 / 6.6 centred at h 27.3 / 33.9 / 39.6). Outside the wall: **r 63** on bearings **0, 56.25, 123.75, 180, 236.25, 303.75**, which puts them at (63, 0), (35.0, 52.4), (−35.0, 52.4), (−63, 0), (−35.0, −52.4) and (35.0, −52.4); and **r 67** on bearings **45 and 135**, at (47.4, 47.4) and (−47.4, 47.4), behind the two south watchtowers. Same trunk and crown build and colours as §2.3. | Each trunk is at least 6.3 u outside the outer wall face (apothem 55.5) and at least 4.7 u from a bastion or tower. The crowns start at h 21.6, well above the walk (6.5) and the tower roofs (20). They replace 8 of the 12 decor backdrop cedars. **Why:** from r 40–50 the outward facings saw only the 6.5 u wall and bastions, and the 20 u towers sat in the blind wedge. The ring gives every outward facing a crown at 22–38. |
 | Blossom trees | 14 seeded at r 22–30 | |
-| Stone lanterns | 8 at r 24 on bearings 22.5 + 45k | |
+| Stone lanterns | 8 at **r 22** on bearings 22.5 + 45k | **Revision 5:** moved in from r 24. At r 24 the lanterns on 247.5° and 292.5° stood 0.18 u inside the (∓15, −28) boxes. At r 22 they clear those boxes by 1.17 u. |
 | Backdrop | 4 decor cedars (was 12); mountains | |
 
 **Anchors:** pagoda 36; towers 20; old cedars 32.3; ring cedars 41.8, with crowns.
@@ -540,7 +560,7 @@ All CanQuery true unless marked decor.
 | **Quarantine fence** | 10 pylons (1.6 × 14 with an amber neon head) at r 100. **Beams** between neighbouring pylons: amber, `LightEmission 1`, width 20 studs, Transparency 0.6, 0 parts. | Replaces the dome |
 | Floodlight masts (22) | (±48, 24), (±24, 46), each with a crossarm pair at h 20.5–21 | |
 | **North floodlights** (2, new) | At **r 54 on bearings 255 and 285**, i.e. (−14.0, −52.2) and (14.0, −52.2). Each is a mast 1.2 × 1.2 × 24, steel RGB(60, 64, 70) Metal, topped by a **lamp bank**: a Core-set panel 0.6 (radial) × 3 (tall) × 6 (tangential) at h 21–24, yaw −b, facing C, in the same steel. The lamp bank has a decor neon face 5.6 × 2.6 in RGB(255, 236, 190) and 1 SpotLight (Range 60, Angle 50, aimed at C). | They stand 2.3 u clear of the switchback footprint (bearing 247.5) and 7 u clear of the (0, −66) tower. They give the south yard's N facings, and (±10, −20), a wide target in the blind band between the Board and the gantries. |
-| **Block cistern** (water tower, new) | Centred at **(0, 20)**. 4 legs 0.8 × 0.8 × 17 at (±2.8, 17.2) and (±2.8, 22.8), steel RGB(120, 124, 130) Metal. **Tank:** Cylinder 9 across, **h 17–23**, stood upright with `CFrame.Angles(0, 0, math.pi/2)`, rusted steel RGB(112, 84, 64) CorrodedMetal, with a SurfaceGui stencil "01" in RGB(230, 226, 214). **Cap:** Cylinder 5.4 across, h 23–25, RGB(90, 70, 56) CorrodedMetal. Ladder (decor) on the north leg pair. | This is the SE yard anchor the reviewer asked for, placed centrally so that it also serves the south court. The open legs are cover-light and do not block the lanes. Pad clearances: (0, 40) B's box is 7.5 u away, (−14, 28)'s box 3.5 u, and (22, 6)'s box 13 u. The tank underside is at 17, one unit above the 16 u gate, so the points beneath it, (0, 20) and (0, 30), count and pass: their N facings hit the underside at 17. |
+| **Block cistern** (water tower, new) | Centred at **(0, 20)**. 4 legs 0.8 × 0.8 × 17 at (±2.8, 17.2) and (±2.8, 22.8), steel RGB(120, 124, 130) Metal. **Tank:** Cylinder `Size = Vector3.new(6, 9, 9) * STUDS` (the axis is X), stood upright with `CFrame.new(C + Vector3.new(0, 20, 20) * STUDS) * CFrame.Angles(0, 0, math.pi / 2)`, so it spans **h 17–23** and is 9 across. It is rusted steel RGB(112, 84, 64) CorrodedMetal, with a SurfaceGui stencil "01" in RGB(230, 226, 214). **Cap:** Cylinder `Size = Vector3.new(2, 5.4, 5.4) * STUDS`, stood upright the same way, h 23–25, RGB(90, 70, 56) CorrodedMetal. Ladder (decor) on the north leg pair. | This is the SE yard anchor the reviewer asked for, placed centrally so that it also serves the south court. The open legs are cover-light and do not block the lanes. Pad clearances: (0, 40) B's box is 7.5 u away, (−14, 28)'s box 3.5 u, and (22, 6)'s box 13 u. The tank underside is at 17, one unit above the 16 u gate. So (0, 20), directly under the tank, is not skipped. Its N facing and the N facing of (0, 30) both hit the underside at 17. |
 | Burning barrels | (±13, ±13) | 2 lit |
 | Cover | 14 wrecked cars, 10 jersey barriers, 12 rubble blocks (seeded, with rejection) | |
 | Skyline | **10 fixed towers 14 × 14 × 34** at (±64, −4), (±52, −40), (0, −66), (±34, 62), plus 3 new ones upright at **r 68 on bearings 30, 90 and 150**: (58.9, 34.0), (0, 68) and (−58.9, 34.0), yaw −b. The new three have the same build as the first seven: Concrete RGB(92, 90, 88), 2 dead window bands (decor) and a roof clutter block. There are also 15 seeded tilted towers at 70–110 (not counted as anchors). Each is placed at `CFrame.new(around(b, r)) * CFrame.Angles(0, -math.rad(b), 0) * CFrame.Angles(0, 0, -math.rad(tilt)) * CFrame.new(0, h/2, 0)`, with tilt = rng(4, 10), so it leans outward about its tangential axis. | |
@@ -740,11 +760,15 @@ Roof heights by quarter. "A" is the 5 u house nearest the citadel or centre.
 | Shrine Grove | 6 pines at radius 6 around (28, 28), h 30, 32, 34, 36, 38, 32 (cores 28.5–36.1); altar 4 × 4 × 4; lantern | |
 | Boatyard | Shed 8 × 8 × 7 at (20, −32), yaw 0. **Hulls: wedge pairs 4 × 6 × 2.5 at (12, −40) and (12, −26), yaw 0.** Each pair is 2 Wedges of Size (2, 2.5, 6) back to back, the left one at yaw 90 and the right at yaw −90, so the keel ridge runs along Z at x 12 and the overall box is x 10..14, z ±3 about the centre. Tarred hull RGB(46, 40, 36) Wood. | |
 | Net-lofts | 6 × 6 at h 5 (14-stud truss) at (−22, 34), **(−28, 40)**, **(−38, 28)**; 2 flat bridges | |
-| **Harbour masts** (22) | (46, −20), (48, 18), (20, 47), (−22, 48), (−48, 4), (−24, −44) (lit); **(−42, −8), (42, −30), (−4, 26), (−44, 18)** (unlit). Each has a crossarm pair (yardarms) at h 20.5–21. Mast RGB(96, 72, 52) Wood. | |
+| **Harbour masts** (22) | (46, −20), (48, 18), (20, 47), (−22, 48), (−48, 4), (−24, −44) (lit); (−42, −8), **(42.5, −30)**, (−4, 26), (−44, 18) (unlit). The (42.5, −30) mast moved 0.5 u east: at x 42 it stood 0.4 u from the (33, −36) B box, below the stated 0.6 min gap. Each has a crossarm pair (yardarms) at h 20.5–21. Mast RGB(96, 72, 52) Wood. | |
 | Ferry pier | South to (0, 80), with a lamp | |
+| **Sea stacks** (9, new) | Basalt columns **6 × 6 × 30** standing in the sea at **r 64 on bearings 45, 67.5, 112.5, 135, 225, 247.5, 270, 292.5, 315**, yaw −b. RGB(70, 74, 78) Basalt, with a decor foam band 6.4 × 0.4 × 6.4 at the waterline (RGB(220, 226, 230) SmoothPlastic, Transparency 0.3). | Radial span r 61–67, so 1 u outside the Tideline's outer edge and rail. None stands in a mooring sector (−33..33 or 147..213) or on the ferry pier (90). The nearest mooring deck is 13 u away, and the pier is 24 u. The stack on 270 stands behind the lighthouse, off the hero sightline. They are the outer ring of the §1.5 pattern and read as the harbour's breakwater rocks in the fog. |
+| **Fog-bell towers** (5, new) | Timber towers **5 × 5 × 30** at **(8.5, −14.7), (17, −17), (−17, −17), (−8, 13.5) and (12, 10)**, yaw 0. Tarred timber RGB(70, 56, 44) Wood, with a hanging bell (decor Ball 2.4, RGB(181, 140, 60) Metal) under a decor cap. The two north towers each carry a PointLight (Range 30, RGB(255, 214, 150)). | These are the R1 inward anchors. Every corner is at r ≥ 12.1, outside R0. The (8.5, −14.7) tower is 6 u east of the hero sightline (x = 0). Pad clearances: (32, −16) B's box 4.5 u, (−32, −16)'s 6.5 u, and (30, 14)'s 9.5 u. In the fog they are what you hear before you see it. |
 | Detail | 10 island trees, 12 rocks, 16 crates (seeded, with rejection); 6 boardwalk lamps (3 lit) | |
 
-**Anchors:** lighthouse 32; pines 28.5–36.1 (crowns are now Foliage and queryable); 10 masts 22 (yardarms). The check covers 68 grid points with 0 uncovered.
+**Anchors:** lighthouse 32; pines 28.5–36.1 (Foliage crowns); 10 masts 22 (yardarms); 5 fog-bell towers 30; 9 sea stacks 30.
+
+**Swing gate (fan, §1.5):** 67 points (5 skipped: under the two west net-lofts, inside the lighthouse, the boatyard shed and the grove altar), **0 fail**, 50 of them 4 of 4. Jitter-weak: 5, at (−50, 0), (−40, −10), (−20, −20), (30, −40) and (30, 20). **The revision 4 geometry failed 26 of 67.** Its thin masts sat in the blind wedges, and nothing stood in R1 or beyond the Tideline.
 
 **Pads** (10, 5 boss; all on land; min gap 0.6 u)
 
@@ -755,7 +779,7 @@ Roof heights by quarter. "A" is the 5 u house nearest the citadel or centre.
 
 **Height:** net-lofts 5, balconies 6, lighthouse gallery 26 (by its truss); mast tops by flight only.
 
-**Budget: 478 parts / 25 lights** (budget 510 / 28)
+**Budget: 511 parts / 27 lights** (budget 550 / 30)
 
 | Item | Parts | Lights |
 |---|---|---|
@@ -775,7 +799,9 @@ Roof heights by quarter. "A" is the 5 u house nearest the citadel or centre.
 | Rocks | 12 | 0 |
 | Cover | 16 | 0 |
 | Lamps | 12 | 3 |
-| **Total** | **478** | **25** |
+| Sea stacks (9 × (stack, foam band)) | 18 | 0 |
+| Fog-bell towers (5 × (tower, bell, cap)) | 15 | 2 |
+| **Total** | **511** | **27** |
 
 ### 3.9 Thunderspire: a cliff monastery (storm, dusk)
 
@@ -783,8 +809,11 @@ Roof heights by quarter. "A" is the 5 u house nearest the citadel or centre.
 |---|---|---|
 | Middle terrace | x −40..40, z −50..−20, h 3; glacis 8 wide at x −32, −16, 0, 16, 32 (z −20..−14.75) | |
 | Upper terrace | x −20..20, z −56..−36, h 6; glacis at x −12, 0, 12 (z −36..−30.75) | |
-| **Great Hall** (hero) | B4 26 × 14 at (0, −48), x −13..13, z −55..−41, top about 20. **Stupa spire** 4 × 4 at (0, −52) rising to **34**, with a bell and finial (decor). | |
-| Rod towers | Base 4 × 4 × 14 (granite RGB(92, 94, 100) Slate), copper mast to 26 (RGB(184, 115, 51) Metal), **copper crossarm pair at h 24.5–25**, and a neon tip with a light, at (±30, −8), (±44, −30), (±18, 30), **(±32, 46)** | Prayer flags are Beams. The (±32, 46) crossarm ends reach r 59.0. |
+| **Great Hall** (hero) | B4 26 × 14 at (0, −48), x −13..13, z −55..−41. **Upper storey (new):** a clerestory block 26 × 6 × 14 at h 20–26, whitewash RGB(226, 222, 212) SmoothPlastic with an ochre band (decor, RGB(196, 140, 60)), with the upper roof tier moved up onto it. **Top 26** (was about 20). **Stupa spire** 4 × 4 at (0, −52) rising to **34**, with a bell and finial (decor). | From the terrace, floor 3, the gate needs a hit at h 19 or more. At about 20 the hall's south face capped every N-facing hit on the middle terrace at 14–16 above the floor. The spire stays the highest point. |
+| Rod towers | **Base 5 × 5 × 22** (was 4 × 4 × 14; granite RGB(92, 94, 100) Slate), copper mast 1.2 to **30** (RGB(184, 115, 51) Metal), **copper crossarm pair at h 28.5–29**, and a neon tip with a light, at (±30, −8), (±44, −30), (±18, 30), (±32, 46) | Prayer flags are Beams. The (±32, 46) base corner reaches r 59.5. The taller, wider base is what the fan actually hits. The 1.2 u mast and its crossarms were in the blind wedge from most of the court. |
+| **Threshold rods** (2, new) | The revision 4 rod-tower build (base 4 × 4 × 14, copper mast to 26, crossarms at h 24.5–25, neon tip and light) at **(±14.5, −4)** | These are the R1 inward anchors. Every base corner is at r ≥ 12.6. Pad (±20, 6)'s box is 2 u away. They sit just off the lower court's centre line, clear of the glacis at x ±16 (z ≤ −14.75). |
+| **Storm stones** (4, new) | Granite spires **6 × 6 × 30**, yaw −b, at **(±12, 56) and (±53.1, 14.2)**. RGB(92, 94, 100) Slate, with a copper band (decor) at h 24. | These are the outer ring. Their corner radii are 61.5 and 59.2. The (±12, 56) pair clears the (0, 40) B box by 4 u and the pilgrim shelters by 4 u. The (±53.1, 14.2) pair clears (±36, 14) B by 6 u and the ledge stair (z ≤ −2) by 13 u. Another stone at (0, 54) was tried and dropped: it stood in front of (0, 50) and gave that point's south facing a 6.9 u face hit. |
+| **Lantern towers** (2, new) | Stone towers **5 × 5 × 24** at **(±14, 23)**, RGB(150, 146, 138) Slate, each with a lantern cage (decor) and 1 PointLight (Range 24, RGB(255, 196, 120)) | They cut the lower court's jitter-weak points from 9 to 2. They stand 5.5 u from pad (0, 26)'s box and 2 u from the (±18, 30) rod bases. |
 | **Horn Pinnacles** | 14 × 14 × 40 at x ±(40..54), z −20..−6. **Ledge** 4 wide at h 8 on the inner face: x ±(36..40), z −20..−6. | See the ledge stair below |
 | **Mid piers** | Deck 6 × 6 at h 7 at (±30, −26) (x 27..33, z −29..−23), on 4 posts standing on the terrace. **Ramp** from the terrace on the west face: x 20..27, z −27.5..−24.5, rise 4, run bearing 0 (east; mirrored 180). | **Bridge** (flat, 3 wide): from **(38, −19, h 8)** on the ledge to **(31, −26, h 7)** on the pier. Length 9.9 u, 5.8° slope, **run bearing 225** (mirrored: (−38, −19) → (−31, −26), bearing 315). The clear span, from ledge corner (36, −20) to pier corner (33, −23), is 4.2 u. It passes 4.6 u over the x 32 glacis top and stays 3.9 u from the (29, −39) B box. The pier rail has a 3 u gap at its NE corner. No bridge to the upper terrace. |
 | Lower Court | **Pilgrim shelters (open B4 8 × 6) at (±16, 46)**; 12 cairns and 20 boulders (seeded, with rejection); 6 stone lanterns on the terraces | |
@@ -803,9 +832,11 @@ Roof heights by quarter. "A" is the 5 u house nearest the citadel or centre.
 
 **Hills** (36 slate hills, §4.1):
 - `hills = { minGround = 66, keepOut = { { bearing = 200, halfWidth = 6 }, { bearing = 235, halfWidth = 6 }, { bearing = 305, halfWidth = 6 }, { bearing = 340, halfWidth = 6 } } }`.
-- Largest non-backdrop footprint radii: rod-tower crossarms at (±32, 46) 59.0; tower base 58.8; ledge-stair Ramp 1 foot at (58, −6) 58.3; pinnacle corner (54, −20) 57.6. 59.0 + 4 = 63.0 ≤ 66, so no hill can reach the ramp foot or bulge through the pinnacle stair.
+- Largest non-backdrop footprint radii: storm stones (±12, 56) 61.5; rod-tower base at (±32, 46) 59.5; storm stones (±53.1, 14.2) 59.2; ledge-stair Ramp 1 foot at (58, −6) 58.3; pinnacle corner (54, −20) 57.6. 61.5 + 4 = 65.5 ≤ 66, so no hill can reach the stones, the ramp foot or the pinnacle stair.
 
-**Anchors:** pinnacles 40; spire 34; 8 rod towers 26 (crossarms). The check covers 68 grid points with 0 uncovered.
+**Anchors:** pinnacles 40; spire 34; hall 26; 8 rod towers (bases 22, masts 30); 2 threshold rods 26; 4 storm stones 30; 2 lantern towers 24.
+
+**Swing gate (fan, §1.5):** 63 points (9 skipped: inside the pinnacles and ledges, under the rod-tower bases at (±30, −10) and (±20, 30), and inside the hall), **0 fail**, 48 of them 4 of 4. Jitter-weak: 2, at (±10, −40) against the hall's south face. **The revision 4 geometry failed 23 of 63**, mostly on the terraces (floor 3 or 6), where a 20 u hall and 14 u rod bases never reached floor + 16.
 
 **Pads** (11, 5 boss; min gap 0.75 u)
 
@@ -817,15 +848,18 @@ Roof heights by quarter. "A" is the 5 u house nearest the citadel or centre.
 
 **Height:** terraces 3 and 6, piers 7, ledges 8; spire and pinnacle tops by flight.
 
-**Budget: 214 parts / 18 lights** (budget 240 / 21)
+**Budget: 237 parts / 22 lights** (budget 270 / 26)
 
 | Item | Parts | Lights |
 |---|---|---|
 | Portal, weather, Nav | 31 | 1 |
 | Terraces and glacis | 10 | 0 |
-| Hall | 14 | 1 |
+| Hall (with the upper storey) | 15 | 1 |
 | Spire | 3 | 0 |
 | Rod towers (8 × (3 + 2 crossarms)) | 40 | 8 |
+| Threshold rods (2 × (3 + 2 crossarms)) | 10 | 2 |
+| Storm stones (4 × (spire, band)) | 8 | 0 |
+| Lantern towers (2 × (tower, cage)) | 4 | 2 |
 | Pinnacles (2 × (3 blocks + 4 stair pieces + ledge + rail)) | 18 | 0 |
 | Piers (2 × (deck, 4 posts, ramp, rail)) | 14 | 0 |
 | Bridges | 6 | 0 |
@@ -834,13 +868,16 @@ Roof heights by quarter. "A" is the 5 u house nearest the citadel or centre.
 | Boulders | 20 | 0 |
 | Lanterns | 12 | 6 |
 | Spires and outbuildings | 22 | 0 |
-| **Total** | **214** | **18** |
+| **Total** | **237** | **22** |
 
 ### 3.10 The Seam: "The Stitchyard" (midnight, finale)
 
 **The Hem**
 - Basalt terrain out to r 18, with a crimson inlay at r 18.
-- **Nothing collidable at r < 26.** The nearest part is at r 34.5.
+- **Nothing collidable at r < 26.** The nearest CanCollide part is at r 34.5.
+- **Hem shards (new):** 6 floating fragments of the torn Hem, **6 × 6 × 6, h 24–30**, at **r 15 on bearings 0, 60, 120, 180, 240 and 300**, yaw −b. They use the **Core flag set** (CanCollide false, CanQuery true, CanTouch false), so the rule above still holds: bodies, flight and the boss pass through them, and swing rays hit them. Basalt RGB(40, 36, 44), each with a crimson neon seam (decor, RGB(220, 30, 70)) and a Beam thread (0 parts) down to the r 18 inlay.
+  - They are the Seam's R1 inward anchors.
+  - There is no shard on bearing 270. The hero eye line passes the 240 and 300 shards at h 11.5, which is 4.5 u beside them in plan and 12.5 u below them.
 - `hero = { x = 0, z = -60, top = 70, ids = { "spindle" } }`: the Spindle (below).
 
 **Nine Patches (terrain, 0 parts)**
@@ -872,7 +909,12 @@ Roof heights by quarter. "A" is the 5 u house nearest the citadel or centre.
 **Beyond**
 - 18 sky threads (decor).
 - 12 fragments at r 60–90. **Only the 4 at r 64 on bearings 20, 110, 200 and 290, h 26–34, are collidable** (anchors and perches). The other 8 are decor.
-- **5 stitched pillars** 3 × 3 × 30 at r 56 on bearings 30, 90, 150, 210 and 330. The pillar on bearing 270 is replaced by the Spindle. The pillars on 30, 150 and 210 are lit.
+- **9 stitched pillars** 3 × 3 × 30, yaw −b:
+  - r 56 on bearings **0**, 30, **40**, 90, 150, **170** and 210;
+  - **r 57.5 on 330** (moved out 1.5 u: at r 56 one corner stood 0.03 u inside the (38.5, −21.3) B box; it now clears the box by 0.8 u);
+  - **r 60 on 240**, where it clears the Spindle plinth by 24 u.
+  - The new ones are in bold. The pillar on bearing 270 is replaced by the Spindle. The pillars on 30, 150 and 210 are lit.
+  - The four new pillars were placed by a search over the fan. They cover the W and SE blind bands that the vignettes, which all sit at r 38–46, leave open.
 
 **The Spindle (hero set piece, new).** A giant sewing needle standing through a thimble on a spool of crimson thread: the rift's stitch, drawn tight. It stands on the −Z axis behind the Lightning vignette, centred **(0, −60)**, entirely at r 53–67. It is built from generic sewing shapes, with no emblem and no lettering.
 
@@ -895,13 +937,15 @@ Roof heights by quarter. "A" is the 5 u house nearest the citadel or centre.
 - **Hero sightline:** from the eye (0, 0, 3) to (0, −60, 42) = 0.6·70. It crosses the Lightning vignette at z −42 at h 30.3, which is 4.3 u over the rod tower (26), and crosses the far square at z −46 at h 32.9. The rod tower is no longer the hero.
 - It clears the vignette's far square (z up to −49.5) by 3.5 u.
 
-**Anchors:** 9 vignette anchors, 2 extra (the horn and the second star pillar), 5 pillars at 30, and the Spindle thimble at 43. A rule re-run with the pillar swapped for the Spindle leaves every grid point with at least 2 anchors. The check covers 65 grid points with 0 uncovered.
+**Anchors:** 9 vignette anchors; 2 extra (the horn and the second star pillar); 9 stitched pillars at 30; 6 Hem shards at 30; the Spindle thimble at 43.
+
+**Swing gate (fan, §1.5):** 70 points (2 skipped: (0, −40) on the Lightning vignette's rod-tower base, and (−40, 20) in the Earth vignette's rock stack), **0 fail**, 51 of them 4 of 4. Jitter-weak: 2, at (−20, 40) and (30, −40). The revision 4 geometry failed 14 points. With nothing inside r 26 the inward facings had no target, and the anchor-count rule of revision 4 could not see that.
 
 **Pads** (12, 3 boss; min gap 0.28 u)
 - **Normal pads at r 28, bearing θ + 11:** (27.5, 5.3), (17.6, 21.8), (−0.5, 28.0), (−18.4, 21.1), (−27.7, 4.4), (−24.0, −14.4), (−9.1, −26.5), (10.0, −26.1), (24.5, −13.6).
 - **Boss pads at r 44, bearing θ + 11, for θ = 0, 280, 320:** (43.2, 8.4) B, (15.8, −41.1) B, (38.5, −21.3) B.
 
-**Budget: 254 parts / 15 lights** (budget 280 / 18)
+**Budget: 268 parts / 15 lights** (budget 280 / 18)
 
 | Item | Parts | Lights |
 |---|---|---|
@@ -911,26 +955,33 @@ Roof heights by quarter. "A" is the 5 u house nearest the citadel or centre.
 | Thread Walk | 15 | 0 |
 | Threads | 18 | 0 |
 | Fragments | 60 | 4 |
-| Pillars (5 × 2) | 10 | 3 |
+| Pillars (9 × 2) | 18 | 3 |
+| Hem shards | 6 | 0 |
 | **The Spindle** | 11 | 1 |
-| **Total** | **254** | **15** |
+| **Total** | **268** | **15** |
 
 ### 3.11 Summary
 
-| World | Parts | Lights | `Layouts[theme].budget` | Upper route (h) | Pads (boss) | Min pad gap | Grid points / uncovered | Hero |
-|---|---|---|---|---|---|---|---|---|
-| Times Square | 501 | 31 | 540 / 36 | 9 loop | 12 (4) | 0.5 | 70 / 0 | Beacon 36 |
-| Sorcery Academy | 340 | 17 | 370 / 20 | 5 loop | 10 (4) | 0.5 | 41 / 0 | Main Hall |
-| Star Vault | 312 | 13 | 340 / 16 | 8 loop, ribs 57 | 11 (4) | 0.5 | 64 / 0 | Keeper's Dais |
-| Kyoto | 446 | 18 | 470 / 21 | 6.5 loop | 11 (4) | 1.0 | 64 / 0 | Pagoda 36 |
-| Colony | 403 | 18 | 420 / 21 | 7 U, 12 catwalk | 10 (3) | 1.0 in plan (caps and deck pass overhead) | 60 / 0 | Headcount Board |
-| Dunewatch | 342 | 9 | 360 / 12 | 5–7.4 network | 10 (3) | 1.0 | 54 / 0 | Signal tower 38 |
-| Quarry Hollow | 256 | 14 | 280 / 16 | 10 loop | 10 (6) | 0.5 | 60 / 0 | Crane 40 |
-| Mistreach | 478 | 25 | 510 / 28 | 5–6 lofts, 0.3 ring | 10 (5) | 0.6 | 68 / 0 | Lighthouse 32 |
-| Thunderspire | 214 | 18 | 240 / 21 | 3 / 6 / 7 / 8 U | 11 (5) | 0.75 | 68 / 0 | Hall and spire 34 |
-| Seam | 254 | 15 | 280 / 18 | 5–8 U | 12 (3) | 0.28 | 65 / 0 | **The Spindle 70** |
+| World | Parts | Lights | `Layouts[theme].budget` | Upper route (h) | Pads (boss) | Min pad gap | Fan gate: points / fail / 4-of-4 / jitter-weak | Rev 4 fails | Hero |
+|---|---|---|---|---|---|---|---|---|---|
+| Times Square | 501 | 31 | 540 / 36 | 9 loop | 12 (4) | 0.5 | 53 / **0** / 48 / 4 | 0 | Beacon 36 |
+| Sorcery Academy | 366 | 17 | 400 / 20 | 5 loop | 10 (4) | 0.5 | 41 / **0** / 36 / 0 | 10 | Main Hall |
+| Star Vault | 324 | 13 | 340 / 16 | 8 loop, ribs 57 | 11 (4) | 0.5 | 60 / **0** / 60 / 0 | 8 | Keeper's Dais |
+| Kyoto | 462 | 18 | 500 / 21 | 6.5 loop | 11 (4) | 1.0 | 52 / **0** / 43 / 2 | 3 | Pagoda 36 |
+| Colony | 431 | 20 | 460 / 24 | 7 U, 12 catwalk | 10 (3) | 1.0 in plan (caps and deck pass overhead) | 52 / **0** / 35 / 1 | 12 | Headcount Board |
+| Dunewatch | 378 | 9 | 400 / 12 | 5–7.4 network | 10 (3) | 1.0 | 53 / **0** / 39 / 3 | 36 | Signal tower 38 |
+| Quarry Hollow | 260 | 14 | 280 / 16 | 10 loop | 10 (6) | 0.5 | 46 / **0** / 32 / 0 | 2 | Crane 40 |
+| Mistreach | 511 | 27 | 550 / 30 | 5–6 lofts, 0.3 ring | 10 (5) | 0.6 | 67 / **0** / 50 / 5 | 26 | Lighthouse 32 |
+| Thunderspire | 237 | 22 | 270 / 26 | 3 / 6 / 7 / 8 U | 11 (5) | 0.75 | 63 / **0** / 48 / 2 | 23 | Hall and spire 34 |
+| Seam | 268 | 15 | 280 / 18 | 5–8 U | 12 (3) | 0.28 | 70 / **0** / 51 / 2 | 14 | **The Spindle 70** |
 
-The largest world is 501 parts and 31 lights, against caps of 900 and 60. Grid-point counts are from the distance-rule pre-check. The fan check (§4.5 check 4) is the gate that must pass.
+The largest world is 511 parts (Mistreach), and the most lights is 31 (Times Square), against caps of 900 and 60.
+
+**Every figure in the fan column comes from the real 45-ray fan** (§1.5), run on the designer's scratch model of each world. "Points" means grid points after skips (72 minus skipped). "Rev 4 fails" is the same fan run on the revision 4 geometry, with the same model and the same rules.
+
+Two further runs support these figures:
+- **Wedge sensitivity:** with every ramp modelled as a full-rise box instead of a wedge, two points fail: Academy (40, 20) and Colony (10, −20). Both stand next to a ramp foot, where a full box puts a false 5–7 u wall. This is why check 4 tests ramps as wedges.
+- **Pad clearance:** a sweep of every modelled piece against every pad box found three revision 4 clashes, fixed in revision 5. They were the Kyoto stone lanterns, now at r 22, the Quarry backdrop needles, now at r 52, and the Seam 330° pillar, now at r 57.5.
 
 ---
 
@@ -965,7 +1016,7 @@ PhysicsService:CollisionGroupSetCollidable("Foliage", "ShotRay", false)
 - New: `at`, `frame`, `decor`, `railPart`, `foliage`, `core`, `crossarms`, `ring`, `chordRing`.
 - Access and walkways: `ramp` (with `landing`), `stairs`, `switchback` (exact geometry in §2.1), `ledgeStair`, `ladder`, `deck`, `rail`, `bridge`, `arch`.
 - Furniture: `stall`, `crate`, `container`, `jersey`.
-- Buildings and anchors: `walkup`, `arcade`, `pavilion`, `watchtower`, `house`, `stilthouse`, `dorm`, `teahouse`, `windcatcher`, `palm`, `floodlight`, `pylonFence`.
+- Buildings and anchors: `walkup`, `arcade`, `pavilion`, `watchtower`, `house`, `stilthouse`, `dorm`, `teahouse`, `windcatcher`, `palm`, `floodlight` (with `head = "arms" | "bank"`), `pylonFence`, and, new in revision 5, `mass` and `cistern`.
 
 **Changed functions**
 - `tree`: cedar and pine crowns use `foliage()`, with the sizes and colours in §2.3, and those trees get the core. Other crowns become decor.
@@ -975,7 +1026,7 @@ PhysicsService:CollisionGroupSetCollidable("Foliage", "ShotRay", false)
 - `SIGNS`: replacements as in §0.2.
 
 **Data-driven build**
-- Footprints, walks, access, anchors, pads and water are built from `Layouts[theme]` by `BUILD[f.kind](k, f)`.
+- Footprints, walks, access, pads and water are built from `Layouts[theme]` by `BUILD[f.kind](k, f)`.
 - Decor and scatter stay procedural, using `Random.new(map.seed * 16 + districtIndex)`, with the rejection rule from §1.4.
 
 **`Nav` part**
@@ -1248,7 +1299,13 @@ end
   2. `GetPartBoundsInBox` with the box from §4.2 (boss: 16 × 7 × 16), arena only. Keep CanCollide parts whose top is more than 0.3 u above the pad. There must be none.
   3. The pad is 20–50 u from C; boss pads are at least 34 u.
 - **Sightlines:** `RaycastParams` with `CollisionGroup = "ShotRay"` and characters excluded. Sample every walk every 6 u at +1.5 u and cast to every pad within 30 u. `warn` on each blocked pair.
-- **Swing coverage:** at each grid point, run the real `findAnchor` fan facing N, E, S and W. A facing succeeds when its best hit is at least 16 u above the floor. At least 3 of the 4 must succeed.
+- **Swing coverage (the §1.5 gate, on the built arena):**
+  - The grid points, the floor and the skipped points are taken from `Layouts[theme]` using the same `floorAt` and `skipped` functions as check 4. They are shared from `Layouts.luau`, so the audit and the spec test the same point set.
+  - At each point the root is at `C + Vector3.new(x, floor + 1.25, z) * STUDS`.
+  - `fanAt(root, look)` is a copy of `Movement.findAnchor` that takes `look` as an argument instead of reading the camera. Everything else is identical: the 9 elevations × 5 yaws, `CFrame.fromAxisAngle` for yaw and then elevation, `ROPE_REACH = 60 * STUDS`, the `+4 * STUDS` test, and score = 2·Y + (hit − root)·look. It uses a default-group `RaycastParams` that excludes `Enemies`, `Worn`, `Fx`, `Pickups` and characters.
+  - The fan is run facing N, E, S and W. A facing passes when its chosen hit is at least `floor + 16` u. A point passes with 3 or more passing facings.
+  - `warn` on every failing point with its 4 chosen heights. Print `points / fail / 4-of-4` for comparison with §3.11.
+  - Unlike the spec, the audit sees terrain and seeded scatter, which can add hits or block rays. A failure the spec does not show therefore points at scatter, such as a Kyoto bamboo cane, and the rejection rule in §1.4 is where to fix it.
 - **Hero sightline (visual):** a default-group ray from (C.x, 3 u, C.z) to (hero.x, 0.6·hero.top, hero.z), excluding the hero's own parts. **Rails count as blockers**, because they are opaque, whatever their ShotRay group. Decor does not count.
 - **R0:** no CanCollide part at r < 12 and h < 3 other than the floor.
 - **Budget:** report `k.parts` and `k.lights` against `k.L.budget`.
@@ -1264,9 +1321,10 @@ end
 {
   budget = { parts = 540, lights = 36 },
   footprints = { { id = "beacon", kind = "tower", x = 0, z = -26, w = 8, d = 8, yaw = 0, h0 = 0, h1 = 36 }, ... },
-                 -- every collidable piece near play: ramps (full wedge box), rotated parts (yaw), trusses, cars
+                 -- every collidable or queryable piece near play: rotated parts (yaw), trusses, cars,
+                 -- ramps as wedges ({ kind = "ramp", run = 180, yaw = -180, w = run length, d = width, ... }),
+                 -- terraces with floor = true, drums and tanks with shape = "cyl"
   pads    = { { x = 0, z = -40, h = 0, boss = true }, ... },
-  anchors = { { id = "beacon", x = 0, z = -26, top = 36 }, ... },         -- fixed data only
   walks   = { { id = "sky-n", a = { 10, -46, 9 }, b = { -10, -46, 9 }, w = 3 }, ... },
   decks   = { { id = "overpass-3", x = .., z = .., w = .., d = .., yaw = .., under = 6.2 }, ... },
   access  = { { id = "wu-ne-truss", kind = "truss", foot = { 16, -39.6, 0 }, top = { 16, -40, 9 }, w = 0.83 }, ... },
@@ -1278,7 +1336,16 @@ end
 }
 ```
 
-- Every footprint has `id, kind, x, z, w (Size.X), d (Size.Z), yaw, h0, h1`. It may also carry `rail = true`, `query = "core" | "foliage"` (CanCollide false, CanQuery true), `backdrop = true` (beyond the play space; skipped by pad and hill-radius checks) and `keep = true` (a backdrop piece hills must avoid).
+- Every footprint has `id, kind, x, z, w (Size.X), d (Size.Z), yaw, h0, h1`. It may also carry:
+  - `rail = true`;
+  - `query = "core" | "foliage"` (CanCollide false, CanQuery true: cores, crossarms, lamp banks, Hem shards and crowns);
+  - `decor = true` (left out of every check);
+  - `backdrop = true` (beyond the play space; skipped by pad and hill-radius checks, but **included in the fan**);
+  - `keep = true` (a backdrop piece that hills must avoid);
+  - **`floor = true`** (new: a walkable slab that sets the fan's floor, i.e. terraces, the Academy podium, the Vault dais steps and the Quarry benches);
+  - **`run = β`** (new: a ramp or stair whose foot-to-top run bearing is β, with `yaw = −β` and `w` = run length, tested as a wedge);
+  - **`shape = "cyl"`** (new: a vertical cylinder of diameter `w`).
+- The old `anchors` list is gone. No check read it once the distance rule was deleted, and every anchor is a footprint anyway.
 - Chord rings write their decks, caps and walks here through the same code path as `Arenas` (§4.1).
 
 **Checks**, added to `tests/run.luau` with one `require`. They mirror the model I used to check this design.
@@ -1295,16 +1362,129 @@ end
    - Each sample (x, z) must lie inside, by oriented-box containment, a footprint of kind deck, cap, bastion, landing, roof, wall, bridge or access whose h1 is in [h − 0.05, h + 0.15].
    - In my model this check passes with the revision 4 geometry: Colony 1088 samples, Vault 2328, Tideline 2548 and Kyoto 2268, all with 0 failures. Without the caps the Colony fails 292 samples, and without the bastions Kyoto fails 70, so the check catches exactly the reviewer's holes.
 3. **Access:** ramps and stairs are at least 3 u wide, and each world has one of at least 4 u.
-4. **Swing: the real fan (replaces the distance rule).**
-   - At every 10 u grid point with 20 ≤ r ≤ 50 that is outside footprints taller than 3 u, the root is at floor + 1.25 u.
-   - Facing each of N, E, S and W, the spec reproduces `Movement.findAnchor` exactly:
+4. **Swing: the §1.5 fan gate.** This is the check revision 5 was run against, and it replaces the distance rule, which has been deleted.
+   - **Points:** x, z ∈ {−50, −40, …, 50} with 20 ≤ r ≤ 50. For each point, `f = Layouts.floorAt(L, x, z)`; skip it if `Layouts.skipped(L, x, z, f)`; otherwise the root is at `{ x, f + 1.25, z }`. Both functions live in `Layouts.luau`, so the audit (§4.4) uses the same point set.
+   - **Fan:** facing N, E, S and W (`look` = (0, 0, −1), (1, 0, 0), (0, 0, 1), (−1, 0, 0)), the spec reproduces `Movement.findAnchor` exactly:
      - elevations 25 + 55·i/8 for i = 0..8, and yaws −0.9, −0.45, 0, 0.45 and 0.9 rad;
-     - `flat = rotY(yaw) · look`, `right = look × Y = (−look.z, 0, look.x)`, and `dir = rodrigues(flat, right, elevation)`, which is the full Rodrigues rotation, because `flat` is not perpendicular to `right` when yaw ≠ 0;
-     - reach 60 u; accept a hit only if hit.y > root.y + 4; score = 2·hit.y + (hit − root)·look.
-   - Geometry is every non-decor footprint as an oriented box (the slab test in the box's local frame, where local X = (cos yaw, 0, −sin yaw) and local Z = (sin yaw, 0, cos yaw)), plus every Foliage crown from `treeParts` as a sphere. Rails, cores and crossarms are included, as they are in-game.
-   - A facing passes when its best hit is at least 16 u above the floor. A grid point passes when at least 3 of its 4 facings pass. **Every grid point must pass.**
-   - The §1.5 distance rule stays in the spec only as an informational pre-check that prints its count.
+     - `flat = rotY(yaw) · look`, `right = look × Y = (−look.z, 0, look.x)`, and `dir = rodrigues(flat, right, elevation)`. This is the full Rodrigues rotation, needed because `flat` is not perpendicular to `right` when yaw ≠ 0;
+     - reach 60 u; a hit counts only if hit.y > root.y + 4; score = 2·hit.y + (hit − root)·look.
+   - **Geometry:** every footprint that is not decor, which includes rails, cores, crossarms, lamp banks, Hem shards and backdrop pieces, plus every Foliage crown from `treeParts` as a sphere.
+     - Boxes use the slab test in the footprint's frame, with local X = (cos yaw, 0, −sin yaw) and local Z = (sin yaw, 0, cos yaw).
+     - **Ramps and stairs** (`run` set) are **wedges**: the box, clipped below the plane that rises from h0 at the foot (local x = −w/2) to h1 at the top (x = +w/2). Testing them as full boxes gives false failures at ramp feet, such as Academy (40, 20) and Colony (10, −20).
+     - Footprints with `shape = "cyl"` are vertical cylinders of diameter w: the lighthouse, the cistern tank and cap, the Spindle drums, the thimble and the tree cores.
+     - A part the root starts inside is ignored, as the engine does.
+   - **Pass:** a facing passes when its chosen hit is at least f + 16. A point passes when 3 or more facings pass. **Every point must pass.** The spec prints `theme points fails 4of4`, and for each failure the 4 chosen heights.
+   - **Drift warning:** it also compares the point count with `EXPECT` (the §3.11 figures) and prints a warning, not a failure, when they differ by more than 3. A differing count means a footprint moved onto or off a grid point.
    ```lua
+   local EXPECT = { city = 53, academy = 41, tomb = 60, kyoto = 52, ruin = 52,
+   	desert = 53, earth = 46, water = 67, storm = 63, seam = 70 }
+
+   -- Layouts.luau (shared with Arenas.audit)
+   local function inPlan(fp, x: number, z: number): boolean
+   	if fp.shape == "cyl" then
+   		return (x - fp.x) ^ 2 + (z - fp.z) ^ 2 <= (fp.w / 2 + 0.01) ^ 2
+   	end
+   	local c, s = math.cos(math.rad(fp.yaw)), math.sin(math.rad(fp.yaw))
+   	local dx, dz = x - fp.x, z - fp.z
+   	return math.abs(dx * c - dz * s) <= fp.w / 2 + 0.01 and math.abs(dx * s + dz * c) <= fp.d / 2 + 0.01
+   end
+   function Layouts.floorAt(L, x: number, z: number): number
+   	local f = 0
+   	for _, fp in L.footprints do
+   		if fp.floor and inPlan(fp, x, z) then f = math.max(f, fp.h1) end
+   	end
+   	return f
+   end
+   function Layouts.skipped(L, x: number, z: number, f: number): boolean
+   	for _, fp in L.footprints do
+   		if not (fp.floor or fp.query or fp.decor) and fp.h1 > f + 3 and fp.h0 < f + 16 and inPlan(fp, x, z) then
+   			return true
+   		end
+   	end
+   	return false
+   end
+
+   -- tests/layouts.spec.luau
+   local function slab(o, d, h, t0, t1) -- clip [t0, t1] to |o + t·d| <= h
+   	if math.abs(d) < 1e-9 then
+   		if math.abs(o) > h then return nil, nil end
+   		return t0, t1
+   	end
+   	local a, b = (-h - o) / d, (h - o) / d
+   	if a > b then a, b = b, a end
+   	t0, t1 = math.max(t0, a), math.min(t1, b)
+   	if t0 > t1 then return nil, nil end
+   	return t0, t1
+   end
+   local function hitSolid(fp, o, d, tmax): number? -- box, wedge (fp.run) or vertical cylinder (fp.shape == "cyl")
+   	local hy, oy = (fp.h1 - fp.h0) / 2, o[2] - (fp.h0 + fp.h1) / 2
+   	if fp.shape == "cyl" then
+   		local ox, oz, r = o[1] - fp.x, o[3] - fp.z, fp.w / 2
+   		if ox * ox + oz * oz <= r * r and math.abs(oy) <= hy then return nil end
+   		local t0, t1 = 0, tmax
+   		local a = d[1] ^ 2 + d[3] ^ 2
+   		if a > 1e-12 then
+   			local b, c = ox * d[1] + oz * d[3], ox * ox + oz * oz - r * r
+   			local disc = b * b - a * c
+   			if disc < 0 then return nil end
+   			t0, t1 = math.max(t0, (-b - math.sqrt(disc)) / a), math.min(t1, (-b + math.sqrt(disc)) / a)
+   			if t0 > t1 then return nil end
+   		elseif ox * ox + oz * oz > r * r then
+   			return nil
+   		end
+   		t0, t1 = slab(oy, d[2], hy, t0, t1)
+   		return t0
+   	end
+   	local c, s = math.cos(math.rad(fp.yaw)), math.sin(math.rad(fp.yaw))
+   	local rx, rz = o[1] - fp.x, o[3] - fp.z
+   	local O = { rx * c - rz * s, oy, rx * s + rz * c }
+   	local D = { d[1] * c - d[3] * s, d[2], d[1] * s + d[3] * c }
+   	local H = { fp.w / 2, hy, fp.d / 2 }
+   	local k = if fp.run then (fp.h1 - fp.h0) / fp.w else nil -- wedge slope along local +X
+   	if math.abs(O[1]) <= H[1] and math.abs(O[2]) <= H[2] and math.abs(O[3]) <= H[3]
+   		and (k == nil or O[2] - k * O[1] <= 0) then
+   		return nil -- the root is inside this part
+   	end
+   	local t0, t1 = 0, tmax
+   	for i = 1, 3 do
+   		t0, t1 = slab(O[i], D[i], H[i], t0, t1)
+   		if t0 == nil then return nil end
+   	end
+   	if k then -- keep the stretch of ray on or under the slope plane y = k·x
+   		local n0, n1 = O[2] - k * O[1], D[2] - k * D[1]
+   		if math.abs(n1) < 1e-12 then
+   			if n0 > 0 then return nil end
+   		elseif n1 > 0 then
+   			t1 = math.min(t1, -n0 / n1)
+   		else
+   			t0 = math.max(t0, -n0 / n1)
+   		end
+   		if t0 > t1 then return nil end
+   	end
+   	return t0
+   end
+   local function hitBall(b, o, d, tmax): number? -- b = { x, y, z, r }
+   	local L = { o[1] - b[1], o[2] - b[2], o[3] - b[3] }
+   	local c = L[1] ^ 2 + L[2] ^ 2 + L[3] ^ 2 - b[4] ^ 2
+   	if c <= 0 then return nil end
+   	local p = L[1] * d[1] + L[2] * d[2] + L[3] * d[3]
+   	local disc = p * p - c
+   	if disc < 0 then return nil end
+   	local t = -p - math.sqrt(disc)
+   	return if t >= 0 and t <= tmax then t else nil
+   end
+   local function nearestHit(G, o, d, tmax): number? -- G = { solids = {...}, balls = {...} }
+   	local best = nil
+   	for _, fp in G.solids do
+   		local t = hitSolid(fp, o, d, tmax)
+   		if t and (best == nil or t < best) then best = t end
+   	end
+   	for _, b in G.balls do
+   		local t = hitBall(b, o, d, tmax)
+   		if t and (best == nil or t < best) then best = t end
+   	end
+   	return best
+   end
    local function rodrigues(v, k, a) -- rotate v about unit axis k by angle a
    	local c, s = math.cos(a), math.sin(a)
    	local kv = k[1] * v[1] + k[2] * v[2] + k[3] * v[3]
@@ -1312,7 +1492,7 @@ end
    	return { v[1] * c + x[1] * s + k[1] * kv * (1 - c), v[2] * c + x[2] * s + k[2] * kv * (1 - c),
    		v[3] * c + x[3] * s + k[3] * kv * (1 - c) }
    end
-   local function fan(G, root, look) -- G = { boxes = {...}, balls = {...} }; returns best hit {x, y, z} or nil
+   local function fan(G, root, look) -- the chosen hit {x, y, z}, or nil
    	local right = { -look[3], 0, look[1] }
    	local best, bestScore = nil, -math.huge
    	for i = 0, 8 do
@@ -1321,7 +1501,7 @@ end
    			local c, s = math.cos(yaw), math.sin(yaw)
    			local flat = { look[1] * c + look[3] * s, 0, -look[1] * s + look[3] * c } -- CFrame.fromAxisAngle(Y, yaw) * look
    			local d = rodrigues(flat, right, el)
-   			local t = nearestHit(G, root, d, 60) -- min over hitBox / hitBall, nil if none within 60
+   			local t = nearestHit(G, root, d, 60)
    			if t then
    				local h = { root[1] + d[1] * t, root[2] + d[2] * t, root[3] + d[3] * t }
    				if h[2] > root[2] + 4 then
@@ -1333,8 +1513,39 @@ end
    	end
    	return best
    end
+   local FACES = { { 0, 0, -1 }, { 1, 0, 0 }, { 0, 0, 1 }, { -1, 0, 0 } }
+   for theme, expected in EXPECT do
+   	local L = Layouts[theme]
+   	local G = Layouts.solids(L) -- non-decor footprints + treeParts trunks and cores; crowns go to G.balls
+   	local points, fails, full = 0, {}, 0
+   	for i = -5, 5 do
+   		for j = -5, 5 do
+   			local x, z = i * 10, j * 10
+   			local r = math.sqrt(x * x + z * z)
+   			local f = if r >= 20 and r <= 50 then Layouts.floorAt(L, x, z) else nil
+   			if f and not Layouts.skipped(L, x, z, f) then
+   				points += 1
+   				local ok, hs = 0, {}
+   				for n, look in FACES do
+   					local hit = fan(G, { x, f + 1.25, z }, look)
+   					hs[n] = if hit then hit[2] - f else -1
+   					if hit and hit[2] >= f + 16 then ok += 1 end
+   				end
+   				if ok == 4 then full += 1 end
+   				if ok < 3 then
+   					table.insert(fails, string.format("(%d, %d) N%.1f E%.1f S%.1f W%.1f", x, z, hs[1], hs[2], hs[3], hs[4]))
+   				end
+   			end
+   		end
+   	end
+   	print(theme, points, #fails, full)
+   	if math.abs(points - expected) > 3 then
+   		print("WARN", theme, "grid points", points, "expected", expected)
+   	end
+   	check(#fails == 0, theme .. " swing gate: " .. table.concat(fails, "; "))
+   end
    ```
-5. **R0:** no footprint at r < 12 with h0 < 3. Seam: no footprint at r < 26.
+5. **R0:** no CanCollide footprint at r < 12 with h0 < 3, tested on every corner. Seam: no CanCollide footprint at r < 26. The Hem shards are Core-set (`query = "core"`), so they are allowed.
 6. **Budgets:** parts ≤ 900 and lights ≤ 60, and each world's counted parts and lights are ≤ `budget`.
 7. **Hero sightline (visual, rails explicit):**
    - The segment runs from the eye (0, 0, **3.0**) to (hero.x, hero.z, 0.6·hero.top).
@@ -1342,7 +1553,7 @@ end
    - This is why the Academy N cloister has its Hall Window (§3.2), and why the Seam hero is the 70 u Spindle, not the 26 u rod tower in front of it.
 8. **Chord rings:** for every `chordRing`, capW ≥ 2·(rOut − rIn)·tan(step/2) + 1. Decks never overlap: length = 2·rIn·tan(step/2).
 9. **Hills (new):** for desert, earth and storm:
-   - `hills.minGround ≥ max over non-backdrop footprints of the farthest corner radius + 4`. Current values: desert 61.8 + 4 ≤ 66; earth 55.8 + 4 ≤ 60; storm 59.0 + 4 ≤ 66.
+   - `hills.minGround ≥ max over non-backdrop footprints of the farthest corner radius + 4`. Current values: desert 61.8 + 4 ≤ 66; earth 55.8 + 4 ≤ 60; storm 61.5 + 4 ≤ 66 (the new storm stones at (±12, 56)). The Dunewatch ksar towers are `keep` backdrop pieces inside their keep-out sectors, with an angular half-extent of 3.6° against a halfWidth of 5.
    - Every `keep` footprint's angular half-extent, seen from C, fits inside one keep-out sector's halfWidth.
    - Because `hill()` puts the ground circle's inner edge at d − 0.8·r ≥ minGround and rejects sectors by bearing ± (halfWidth + asin(0.8·r/d)), these two static checks cover every seed.
 
