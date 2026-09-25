@@ -88,7 +88,7 @@ rojo serve             # then, in Studio: Plugins > Rojo > Connect
 | --- | --- |
 | Enemies notice you | Every wave arrives spread over the arena in small packs, out of sight. An enemy wanders near where it arrived until a player comes within `Config.ENEMY_NOTICE` (18 units, about 43 studs; 26 for bosses), it is hit, or a packmate nearby spots someone. A "!" pops over it. Past `ENEMY_LEASH` (60 units) it gives up. All in `Rules.aiStep`, tested branch by branch. |
 | Every attack is announced | A pulsing ring under the enemy before it lands: red a swing (0.7 s, bosses 0.9 s), yellow a shot, orange a charge. A stun cancels it, and a swing is followed by a recovery to punish. |
-| Dodge | Q (X on a gamepad, DODGE on phones): a quick dash, untouchable for 0.4 s, 1.1 s cooldown. |
+| Dodge | Q (X on a gamepad, DODGE on phones): a quick dash, untouchable for 0.4 s, 1.1 s cooldown. Slip a blow in its first 0.3 s for a perfect dodge (+60 Spirit Energy, and a daily quest). An attack winding up off screen shows an arrow at the edge of the screen. |
 | Elites | From wave 3 some enemies are Frenzied, Armored, Giant, Vampiric or Volatile (explodes when it dies), outlined in colour: double experience and guaranteed shards. |
 | Drops | Health, Spirit Energy and Rift Shard orbs that drift to you. |
 | Combos | Hits within 3 s chain, ranked D to SSS on the HUD, and pay out experience and shards when they end. |
@@ -146,8 +146,6 @@ Rough priority order:
 9. **Multiplayer modes.** Co-op works by default: everyone on a server shares the
    waves. Versus does not exist yet.
 10. **The Visitors' craft** walks like a person.
-11. **Perfect dodges.** The web build rewards a dodge made during Spider-Sense;
-    the Roblox dodge does not yet.
 12. **Monetisation.** No game passes or developer products. Shards are earned only.
 
 ## Keeping the two builds in step

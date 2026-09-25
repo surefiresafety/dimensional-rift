@@ -80,6 +80,14 @@ Progression.QUESTS = {
 		shards = 60,
 		xp = 120,
 	},
+	{
+		id = "perfect",
+		kind = "perfect",
+		text = "Land %d perfect dodges (Q just as a hit lands)",
+		goals = { 3, 5, 8 },
+		shards = 70,
+		xp = 140,
+	},
 	-- `best`: progress is the best single value seen, not a running total.
 	{
 		id = "combo",

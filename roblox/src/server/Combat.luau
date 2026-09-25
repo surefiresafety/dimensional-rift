@@ -70,6 +70,8 @@ export type PState = {
 	strikeReadyAt: number,
 	nextDodge: number,
 	invulnUntil: number,
+	dodgedAt: number, -- when the last dodge began: a hit soon after it is a perfect dodge
+	perfectUsed: boolean, -- one perfect per dodge
 	chargeStart: number?,
 	output: { dmg: number, cost: number, name: string, tier: number }?,
 	-- Weapon and suit sets, and the rewind history (oldest first).
@@ -217,6 +219,8 @@ function Combat.newState(player: Player): PState
 		strikeReadyAt = 0,
 		nextDodge = 0,
 		invulnUntil = 0,
+		dodgedAt = -99,
+		perfectUsed = false,
 		chargeStart = nil,
 		output = nil,
 		weapon = nil,
@@ -473,6 +477,18 @@ function Combat.hurtPlayer(ps: PState, atk: number, nature: string, from: Enemy?
 		return say("INFINITY")
 	end
 	if now < ps.invulnUntil then
+		-- Slipping a blow in the first moments of a dodge is a perfect dodge:
+		-- energy back, and the moment called out.
+		if from and not ps.perfectUsed and now - ps.dodgedAt < 0.3 then
+			ps.perfectUsed = true
+			if ps.se ~= math.huge then
+				ps.se = math.min(ps.maxSe, ps.se + 60)
+			end
+			Combat.fx("number", { at = root.Position + Vector3.new(0, 4, 0), text = "PERFECT  +60 SE", tone = "se" })
+			Combat.fx("burst", { at = root.Position, color = 0xb06cff, count = 16 })
+			Combat.emit(ps, "perfect")
+			return
+		end
 		return say("DODGED")
 	end
 	if now < ps.evadeUntil then

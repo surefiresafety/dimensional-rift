@@ -946,6 +946,7 @@ function Abilities.dodge(ps: Combat.PState, dir: Vector3)
 	end
 	ps.nextDodge = now + Config.DODGE_COOLDOWN - 0.05 -- a little slack for latency
 	ps.invulnUntil = now + Config.DODGE_IFRAMES
+	ps.dodgedAt, ps.perfectUsed = now, false
 	local flat = dir * Vector3.new(1, 0, 1)
 	if flat.Magnitude > 0.01 then
 		local to = root.Position + flat.Unit * Config.DODGE_SPEED * Config.DODGE_TIME * STUDS

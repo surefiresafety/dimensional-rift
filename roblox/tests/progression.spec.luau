@@ -239,6 +239,7 @@ H.test("every quest kind is one the server sends", function()
 		strike = true,
 		output = true,
 		combo = true,
+		perfect = true,
 	}
 	for _, q in Progression.QUESTS do
 		assert(SENT[q.kind], q.id .. " waits for an event nothing sends: " .. q.kind)

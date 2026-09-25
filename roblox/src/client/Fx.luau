@@ -19,6 +19,69 @@ local Sfx = require(script.Parent.Sfx)
 
 local Fx = {}
 
+local dangerGui: ScreenGui? = nil
+
+--- An attack winding up somewhere you cannot see: an arrow at the edge of
+--- the screen pointing at it, for as long as the wind-up lasts. Only for
+--- things close enough to matter.
+function Fx.danger(at: Vector3, colour: number, duration: number)
+	local c = Players.LocalPlayer.Character
+	local me = c and c:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not me or (me.Position - at).Magnitude > 60 then
+		return
+	end
+	local cam = workspace.CurrentCamera
+	local _, onScreen = cam:WorldToViewportPoint(at)
+	if onScreen then
+		return
+	end
+	if not dangerGui then
+		local g = Instance.new("ScreenGui")
+		g.Name = "Danger"
+		g.ResetOnSpawn = false
+		g.IgnoreGuiInset = true
+		g.DisplayOrder = 7
+		g.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+		dangerGui = g
+	end
+	local arrow = Instance.new("TextLabel")
+	arrow.BackgroundTransparency = 1
+	arrow.Size = UDim2.fromOffset(48, 48)
+	arrow.AnchorPoint = Vector2.new(0.5, 0.5)
+	arrow.Text = "▲"
+	arrow.TextScaled = true
+	arrow.Font = Enum.Font.GothamBold
+	arrow.TextColor3 = Palette.color(colour)
+	arrow.TextStrokeTransparency = 0.2
+	arrow.Parent = dangerGui
+	local started = os.clock()
+	local conn: RBXScriptConnection
+	conn = RunService.RenderStepped:Connect(function()
+		if os.clock() - started > duration or not arrow.Parent then
+			conn:Disconnect()
+			arrow:Destroy()
+			return
+		end
+		-- Direction on the screen from the centre towards the threat.
+		local rel = cam.CFrame:PointToObjectSpace(at)
+		local dir = Vector2.new(rel.X, -rel.Y)
+		if rel.Z > 0 then
+			dir = Vector2.new(rel.X, math.abs(rel.Y) + 1) -- behind: point down
+		end
+		if dir.Magnitude < 1e-3 then
+			dir = Vector2.new(0, 1)
+		end
+		dir = dir.Unit
+		local size = cam.ViewportSize
+		local half = size / 2 - Vector2.new(50, 50)
+		local k = math.min(half.X / math.max(math.abs(dir.X), 1e-3), half.Y / math.max(math.abs(dir.Y), 1e-3))
+		local p = size / 2 + dir * k
+		arrow.Position = UDim2.fromOffset(p.X, p.Y)
+		arrow.Rotation = math.deg(math.atan2(dir.X, -dir.Y))
+		arrow.TextTransparency = 0.5 * math.abs(math.sin((os.clock() - started) * 14))
+	end)
+end
+
 local layer = Instance.new("Folder")
 layer.Name = "Fx"
 layer.Parent = workspace
@@ -236,6 +299,7 @@ handlers.telegraph = function(d)
 		d.color,
 		0.55
 	)
+	Fx.danger(root.Position, d.color, duration)
 	local started = os.clock()
 	local conn: RBXScriptConnection
 	conn = RunService.RenderStepped:Connect(function()
