@@ -837,6 +837,25 @@ function Abilities.strike(ps: Combat.PState, aim: Vector3)
 	end
 end
 
+--- Q: the dodge. The client moves its own character (it owns its physics);
+--- the server decides whether it is off cooldown and grants the moment of
+--- invulnerability, and everyone else sees the streak.
+function Abilities.dodge(ps: Combat.PState, dir: Vector3)
+	local hum = Combat.humanoidOf(ps.player)
+	local root = Combat.rootOf(ps.player)
+	local now = Combat.now()
+	if not hum or not root or hum.Health <= 0 or now < ps.nextDodge then
+		return
+	end
+	ps.nextDodge = now + Config.DODGE_COOLDOWN - 0.05 -- a little slack for latency
+	ps.invulnUntil = now + Config.DODGE_IFRAMES
+	local flat = dir * Vector3.new(1, 0, 1)
+	if flat.Magnitude > 0.01 then
+		local to = root.Position + flat.Unit * Config.DODGE_SPEED * Config.DODGE_TIME * STUDS
+		Combat.fx("dash", { from = root.Position, to = to, color = 0xdfe8ff })
+	end
+end
+
 --- Hold B: powering up. Nothing else can be cast until it is let go.
 function Abilities.startCharge(ps: Combat.PState)
 	local hum = Combat.humanoidOf(ps.player)

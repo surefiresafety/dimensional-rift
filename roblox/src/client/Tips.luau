@@ -46,8 +46,9 @@ local STEPS: { Step } = {
 		wait = 18,
 	},
 	{
-		text = "A ring flashing under an enemy means it is about to attack: red a swing, yellow a shot, orange a charge. Get out of the way.",
-		wait = 10,
+		text = "A ring flashing under an enemy means it is about to attack: red a swing, yellow a shot, orange a charge. Press Q to dodge through it.",
+		touch = "A ring flashing under an enemy means it is about to attack: red a swing, yellow a shot, orange a charge. Tap DODGE to slip through it.",
+		wait = 12,
 	},
 	{
 		text = "Hold B to power up your next technique. G is your ultimate.",

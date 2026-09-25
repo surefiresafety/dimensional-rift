@@ -16,6 +16,12 @@ Config.SE_REGEN_PER_SECOND = 40
 Config.SE_REGEN_DELAY = 2.5 -- seconds after spending before it starts to come back
 Config.WALK_SPEED = 22
 
+-- The dodge (Q): a burst of speed, untouchable for a moment, then a cooldown.
+Config.DODGE_COOLDOWN = 1.1
+Config.DODGE_IFRAMES = 0.4 -- seconds nothing can hurt you
+Config.DODGE_SPEED = 32 -- units a second, for DODGE_TIME
+Config.DODGE_TIME = 0.22
+
 -- Which world the server opens on, and how it runs waves.
 Config.START_MAP = "times_square"
 Config.WAVE_BREAK = 4 -- seconds between waves

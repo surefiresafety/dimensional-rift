@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = require(Shared.Remotes)
 local Signature = require(Shared.Signature)
+local Config = require(Shared.Config)
 local Arsenals = require(Shared.Data.Arsenals)
 
 local Movement = require(script.Parent.Movement)
@@ -89,6 +90,41 @@ local function signature(down: boolean)
 	end
 end
 
+-- Q: dodge the way you are moving (or facing), with a moment of
+-- invulnerability. The client moves itself; the server grants the i-frames.
+local lastDodge = 0
+local function dodge()
+	if menuOpen() or not player:GetAttribute("Style") then
+		return
+	end
+	local now = os.clock()
+	if now - lastDodge < Config.DODGE_COOLDOWN then
+		return
+	end
+	local c = player.Character
+	local hum = c and c:FindFirstChildOfClass("Humanoid")
+	local root = c and c:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not hum or not root or hum.Health <= 0 then
+		return
+	end
+	lastDodge = now
+	local dir = hum.MoveDirection * Vector3.new(1, 0, 1)
+	if dir.Magnitude < 0.1 then
+		dir = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+	end
+	dir = dir.Unit
+	ActionRemote:FireServer("dodge", dir)
+	local speed = Config.DODGE_SPEED * Config.STUDS_PER_UNIT
+	local started = os.clock()
+	task.spawn(function()
+		while os.clock() - started < Config.DODGE_TIME and root.Parent do
+			local v = root.AssemblyLinearVelocity
+			root.AssemblyLinearVelocity = Vector3.new(dir.X * speed, math.min(v.Y, 8), dir.Z * speed)
+			task.wait()
+		end
+	end)
+end
+
 --- B: hold to power up, let go to store it for the next technique.
 local function charge(down: boolean)
 	if down then
@@ -111,6 +147,7 @@ function Input.start()
 			end,
 			signature = signature,
 			charge = charge,
+			dodge = dodge,
 		})
 	end
 	for i, key in KEYS do
@@ -150,6 +187,13 @@ function Input.start()
 		end
 		return Enum.ContextActionResult.Sink
 	end, false, Enum.KeyCode.ButtonR2)
+
+	ContextActionService:BindAction("Dodge", function(_, state)
+		if state == Enum.UserInputState.Begin then
+			dodge()
+		end
+		return Enum.ContextActionResult.Sink
+	end, false, Enum.KeyCode.Q, Enum.KeyCode.ButtonX)
 
 	ContextActionService:BindAction("Charge", function(_, state)
 		if state == Enum.UserInputState.Begin then

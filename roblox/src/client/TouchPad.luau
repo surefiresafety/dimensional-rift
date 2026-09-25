@@ -19,6 +19,7 @@ export type Handlers = {
 	strike: () -> (),
 	signature: (down: boolean) -> (),
 	charge: (down: boolean) -> (),
+	dodge: () -> (),
 }
 
 -- Column, row from the bottom-right corner of the pad; the label; what it does.
@@ -32,6 +33,7 @@ local LAYOUT: { { col: number, row: number, label: string, key: string } } = {
 	{ col = 0, row = 2, label = "4", key = "4" },
 	{ col = 1, row = 2, label = "5", key = "5" },
 	{ col = 2, row = 2, label = "G", key = "ult" },
+	{ col = 3, row = 0, label = "DODGE", key = "dodge" },
 }
 
 local SIZE = 58
@@ -48,7 +50,7 @@ function TouchPad.build(h: Handlers)
 	local pad = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(1, 1),
 		Position = UDim2.new(1, -130, 1, -16),
-		Size = UDim2.fromOffset(3 * SIZE + 2 * GAP, 3 * SIZE + 2 * GAP),
+		Size = UDim2.fromOffset(4 * SIZE + 3 * GAP, 3 * SIZE + 2 * GAP),
 		BackgroundTransparency = 1,
 		Parent = gui,
 	})
@@ -58,7 +60,7 @@ function TouchPad.build(h: Handlers)
 		local btn = Ui.make("TextButton", {
 			Text = b.label,
 			Font = Ui.DISPLAY,
-			TextSize = 24,
+			TextSize = if #b.label > 3 then 13 else 24,
 			TextColor3 = Color3.new(1, 1, 1),
 			BackgroundColor3 = if b.key == "ult" then Color3.fromRGB(200, 150, 30) else Ui.PANEL,
 			BackgroundTransparency = 0.25,
@@ -87,6 +89,8 @@ function TouchPad.build(h: Handlers)
 			end
 			if b.key == "strike" then
 				h.strike()
+			elseif b.key == "dodge" then
+				h.dodge()
 			elseif b.key == "sig" then
 				h.signature(true)
 			elseif b.key == "charge" then

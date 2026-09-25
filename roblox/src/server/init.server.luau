@@ -260,6 +260,10 @@ Action.OnServerEvent:Connect(function(player, name, aim)
 		end
 	elseif name == "rebond" then
 		Symbiote.rebond(ps)
+	elseif name == "dodge" then
+		if okAim(aim) then
+			Abilities.dodge(ps, aim)
+		end
 	end
 end)
 
