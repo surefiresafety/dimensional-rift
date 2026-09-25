@@ -40,6 +40,7 @@ local function resetCombat(ps: Combat.PState)
 	ps.shield, ps.shieldUntil, ps.shieldReflect = 0, 0, 0
 	ps.evadeUntil, ps.invulnUntil, ps.decoy = 0, 0, false
 	ps.output, ps.chargeStart = nil, nil
+	ps.takeoverUsed = false
 	ps.player:SetAttribute("ChargeStart", nil)
 end
 
@@ -106,6 +107,39 @@ local function transform(ps: Combat.PState, into: string?)
 	end
 end
 Abilities.setTransform(transform)
+
+-- The Vessel's one save per life: the blow that would kill him lets Akuro
+-- out instead, at full health and energy, with room cleared around him
+-- (sukunaTakeover in the web build). He is himself again when he respawns.
+Combat.onLethal = function(ps)
+	local st = ps.style and Styles[ps.style]
+	local into = st and st.takeover
+	if not into or ps.takeoverUsed or not Styles[into] then
+		return false
+	end
+	ps.takeoverUsed = true
+	ps.invulnUntil = Combat.now() + 2.5
+	table.clear(ps.cooldowns)
+	Combat.fx("banner", { text = "AKURO TAKES OVER", color = 0xff2d55 })
+	Combat.notice(
+		ps.player,
+		'"Know your place." Akuro has taken the body: full health, full energy, his techniques.',
+		"gold"
+	)
+	Symbiote.shove(ps, 16, 6, 1.8)
+	task.spawn(function()
+		transform(ps, into)
+		ps.transformUntil = nil
+		ps.se = ps.maxSe
+		local hum = Combat.humanoidOf(ps.player)
+		if hum then
+			hum.Health = hum.MaxHealth
+		end
+		ps.invulnUntil = Combat.now() + 2.5
+		Combat.publish(ps)
+	end)
+	return true
+end
 -- Changing body reloads the character, which yields. Anything that happens
 -- inside the server's frame loop (a transform running out, the symbiote)
 -- does it on its own thread so the loop never stalls halfway.

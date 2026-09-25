@@ -4,8 +4,8 @@
 -- when it starves, and coming off you. Ported from updateSuit, bondHit,
 -- detachSymbiote and updateLooseSuit in web3d/rift3d.html.
 --
--- Not yet: the panic (the suit covering you on its own under 100 health) and
--- the tendrils and webbing on R.
+-- The panic is here too (the suit covering you on its own under 100 health);
+-- the tendrils and webbing on R are Abilities.stepAuto.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -111,9 +111,54 @@ function Symbiote.rebond(ps: Combat.PState)
 end
 
 --- What a hit does to the bond: fire and noise strip it.
-Combat.afterHurt = function(ps: Combat.PState, dmg: number, nature: string)
-	if not symOf(ps) or ps.looseSuit then
+--- Pushes back and stuns everything within `radius` units: a takeover
+--- clears itself some room.
+function Symbiote.shove(ps: Combat.PState, radius: number, push: number, stun: number)
+	local root = Combat.rootOf(ps.player)
+	if not root then
 		return
+	end
+	for _, e in Combat.enemiesNear(root.Position, radius * STUDS) do
+		local away = (e.root.Position - root.Position) * Vector3.new(1, 0, 1)
+		if away.Magnitude > 0.01 then
+			e.root.CFrame += away.Unit * push * STUDS
+		end
+		e.status.stun = math.max(e.status.stun or 0, stun)
+	end
+end
+
+Combat.afterHurt = function(ps: Combat.PState, dmg: number, nature: string)
+	local sym = symOf(ps)
+	if not sym or ps.looseSuit then
+		return
+	end
+	-- Under the line it stops waiting to be asked: the suit covers him, and
+	-- stays until G (symbioteTakeover in the web build).
+	local hum = Combat.humanoidOf(ps.player)
+	local now = Combat.now()
+	local st = Styles[ps.style :: string]
+	local u = st and st.ultimate
+	if
+		sym.panicUnder
+		and hum
+		and hum.Health > 0
+		and hum.Health < sym.panicUnder
+		and now >= ps.symbioteCd
+		and not ps.baseStyle
+		and u
+		and u.toggle
+		and u.into
+	then
+		ps.symbioteCd = now + (sym.panicCd or 45)
+		table.clear(ps.cooldowns)
+		Combat.fx("banner", { text = "THE SUIT TAKES OVER", color = 0xf0f0f0 })
+		Combat.notice(
+			ps.player,
+			"It did not wait to be asked. The symbiote covers him and starts hitting back (G to take it off).",
+			"gold"
+		)
+		Symbiote.shove(ps, 12, 4, 1.2)
+		Abilities.transform(ps, u.into)
 	end
 	local loss = Rules.bondLoss(nature, dmg)
 	if loss <= 0 then

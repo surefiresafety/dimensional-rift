@@ -122,9 +122,7 @@ by the server; clients only ever ask.
 
 Rough priority order:
 
-1. **The rest of the symbiote:** the panic (under 100 HP the suit covers him on its
-   own until G), auto-tendrils and auto-webbing (R), and Doc Ock's arms. Its lines
-   go to the combat log rather than a speech bubble.
+1. **The symbiote's voice** goes to the combat log rather than a speech bubble.
 2. **The Shadow Clone army.** Multi Shadow Clone makes its usual three to five
    helpers; the charged 1,000 / 5,000 / 10,000 army needs a cheaper kind of minion
    than a humanoid first.
@@ -148,7 +146,8 @@ Rough priority order:
 9. **Multiplayer modes.** Co-op works by default: everyone on a server shares the
    waves. Versus does not exist yet.
 10. **The Visitors' craft** walks like a person.
-11. **Yuji's one save per life.** Its state exists (`takeoverUsed`); nothing sets it yet.
+11. **Perfect dodges.** The web build rewards a dodge made during Spider-Sense;
+    the Roblox dodge does not yet.
 12. **Monetisation.** No game passes or developer products. Shards are earned only.
 
 ## Keeping the two builds in step
