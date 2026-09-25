@@ -95,7 +95,7 @@ end
 
 function Projectiles.step(dt: number)
 	-- Walls: anything that is not a character or an enemy.
-	local ignore = { workspace:FindFirstChild("Enemies") }
+	local ignore = { workspace:FindFirstChild("Enemies"), workspace:FindFirstChild("Worn") }
 	for _, ps in Combat.states do
 		if ps.player.Character then
 			table.insert(ignore, ps.player.Character)

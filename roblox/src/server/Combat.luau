@@ -96,6 +96,8 @@ export type PState = {
 	looseSuit: { untilT: number, host: string, at: Vector3, part: BasePart }?,
 	-- A character with a takeover (the Vessel) gets one save per life.
 	takeoverUsed: boolean,
+	-- Reloading the body (a transform): nothing else may start one meanwhile.
+	reloading: boolean,
 	-- Permanent upgrades (Progress.applyUpgrades): 1 until the save loads.
 	powerMul: number,
 	spiritMul: number,
@@ -242,6 +244,7 @@ function Combat.newState(player: Player): PState
 		symbioteCd = 0,
 		looseSuit = nil,
 		takeoverUsed = false,
+		reloading = false,
 		powerMul = 1,
 		spiritMul = 1,
 		moveMul = 1,
@@ -476,7 +479,8 @@ end
 Combat.lastHitBy = {} :: { [Player]: string }
 
 --- hurtPlayer: Infinity, evasion, shields and decoys first, then the hit.
-function Combat.hurtPlayer(ps: PState, atk: number, nature: string, from: Enemy?)
+--- `passive`: damage over time (an aura) that a perfect dodge cannot answer.
+function Combat.hurtPlayer(ps: PState, atk: number, nature: string, from: Enemy?, passive: boolean?)
 	local hum = Combat.humanoidOf(ps.player)
 	local root = Combat.rootOf(ps.player)
 	if not hum or not root or hum.Health <= 0 then
@@ -492,7 +496,7 @@ function Combat.hurtPlayer(ps: PState, atk: number, nature: string, from: Enemy?
 	if now < ps.invulnUntil then
 		-- Slipping a blow in the first moments of a dodge is a perfect dodge:
 		-- energy back, and the moment called out.
-		if from and not ps.perfectUsed and now - ps.dodgedAt < 0.3 then
+		if from and not passive and not ps.perfectUsed and now - ps.dodgedAt < 0.3 then
 			ps.perfectUsed = true
 			if ps.se ~= math.huge then
 				ps.se = math.min(ps.maxSe, ps.se + 60)

@@ -474,6 +474,8 @@ end
 
 -- Travel: move the rift to another world the player has opened. Only
 -- between waves, or when they are alone, so nobody is pulled out mid-fight.
+local lastTravel = -99
+
 asks.travel = function(player, p, mapId)
 	if type(mapId) ~= "string" or not Maps[mapId] then
 		return answer(false, "No such world.")
@@ -484,10 +486,18 @@ asks.travel = function(player, p, mapId)
 	if mapId == World.current then
 		return answer(false, "You are already there.")
 	end
+	-- With others here, only once this world is cleared (the break before
+	-- the next one opens), so nobody's wave is thrown away; and never more
+	-- than once every 15 seconds, since a world takes a moment to build.
 	local alone = #Players:GetPlayers() <= 1
-	if not alone and #Combat.enemies > 0 then
-		return answer(false, "Finish this wave first: everyone travels together.")
+	if not alone and Waves.running then
+		return answer(false, "Clear this world first: everyone travels together.")
 	end
+	local clock = os.clock()
+	if clock - lastTravel < 15 then
+		return answer(false, `The rift is still settling ({math.ceil(15 - (clock - lastTravel))}s).`)
+	end
+	lastTravel = clock
 	Combat.notice(nil, `{player.DisplayName} opens the rift onto {Maps[mapId].name}.`, "gold")
 	task.spawn(Waves.start, mapId)
 	return answer(true, "Travelling.")
@@ -641,7 +651,11 @@ function Progress.start()
 	end)
 
 	Waves.onStarted(function()
+		-- A fresh run for everyone in the rift, from the world's first wave.
 		table.clear(runs)
+		for _, player in Players:GetPlayers() do
+			runOf(player)
+		end
 		-- Everyone's menu shows which world the rift is on.
 		for _, player in Players:GetPlayers() do
 			mark(player)
@@ -664,6 +678,11 @@ function Progress.start()
 					"gold"
 				)
 				local r = runOf(player)
+				-- A combo still going when the last boss falls counts too.
+				local live = combos[player]
+				if live then
+					r.bestCombo = math.max(r.bestCombo, live.hits)
+				end
 				SummaryRemote:FireClient(player, {
 					world = Maps[mapId].name,
 					first = first,
@@ -764,7 +783,6 @@ function Progress.start()
 			for player, c in combos do
 				if now - c.last > Progression.COMBO_WINDOW then
 					combos[player] = nil
-					runs[player] = nil
 					if player.Parent then
 						player:SetAttribute("Combo", nil)
 						local p = Profiles.get(player)

@@ -57,6 +57,7 @@ function World.load(mapId: string): any
 		base.Transparency = if authored then 0 else 1
 		-- Open water has to be swimmable, not a floor you walk on.
 		base.CanCollide = not arena:GetAttribute("OpenWater")
+		base.CanQuery = base.CanCollide
 	end
 	arena.Name = "Arena"
 	arena.Parent = workspace

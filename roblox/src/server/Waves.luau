@@ -113,6 +113,7 @@ function Waves.start(mapId: string)
 	-- Whatever was left of the old world goes without dropping anything.
 	Waves.clearing = true
 	for _, e in table.clone(Combat.enemies) do
+		e.affix = nil -- a volatile elite cleared away does not go off in the next world
 		Combat.kill(e, nil)
 	end
 	Waves.clearing = false

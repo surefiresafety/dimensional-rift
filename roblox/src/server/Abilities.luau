@@ -192,7 +192,13 @@ local function clearPath(c: Ctx, from: Vector3, to: Vector3): Vector3
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	local ignore: { Instance } = {}
-	for _, inst in { c.ps.player.Character :: Instance?, workspace:FindFirstChild("Enemies") } do
+	for _, inst in
+		{
+			c.ps.player.Character :: Instance?,
+			workspace:FindFirstChild("Enemies"),
+			workspace:FindFirstChild("Worn"),
+		}
+	do
 		if inst then
 			table.insert(ignore, inst)
 		end
@@ -734,7 +740,12 @@ function Abilities.cast(ps: Combat.PState, which: number | string, aim: Vector3,
 	local dir = if aim.Magnitude > 0.01 then aim.Unit else root.CFrame.LookVector
 	local flat = dir * Vector3.new(1, 0, 1)
 	flat = if flat.Magnitude > 0.01 then flat.Unit else root.CFrame.LookVector * Vector3.new(1, 0, 1)
-	local B, stored = consumeOutput(ps)
+	-- A free cast (auto-webbing, the symbiote feeding itself) never spends
+	-- the charge the player stored with B.
+	local B, stored = 1, nil
+	if not free then
+		B, stored = consumeOutput(ps)
+	end
 	local ctx: Ctx = {
 		ps = ps,
 		s = s,
@@ -941,11 +952,24 @@ function Abilities.dodge(ps: Combat.PState, dir: Vector3)
 	local hum = Combat.humanoidOf(ps.player)
 	local root = Combat.rootOf(ps.player)
 	local now = Combat.now()
-	if not hum or not root or hum.Health <= 0 or now < ps.nextDodge then
+	local flatDir = dir * Vector3.new(1, 0, 1)
+	-- A dodge goes somewhere, and costs a little energy: not free i-frames.
+	if
+		not hum
+		or not root
+		or hum.Health <= 0
+		or now < ps.nextDodge
+		or flatDir.Magnitude < 0.5
+		or ps.se < Config.DODGE_COST
+	then
 		return
 	end
+	if ps.se ~= math.huge then
+		ps.se -= Config.DODGE_COST
+	end
 	ps.nextDodge = now + Config.DODGE_COOLDOWN - 0.05 -- a little slack for latency
-	ps.invulnUntil = now + Config.DODGE_IFRAMES
+	-- Never shortens a longer invulnerability (the Vessel's takeover).
+	ps.invulnUntil = math.max(ps.invulnUntil, now + Config.DODGE_IFRAMES)
 	ps.dodgedAt, ps.perfectUsed = now, false
 	local flat = dir * Vector3.new(1, 0, 1)
 	if flat.Magnitude > 0.01 then

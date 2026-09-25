@@ -21,6 +21,7 @@ Config.DODGE_COOLDOWN = 1.1
 Config.DODGE_IFRAMES = 0.4 -- seconds nothing can hurt you
 Config.DODGE_SPEED = 32 -- units a second, for DODGE_TIME
 Config.DODGE_TIME = 0.22
+Config.DODGE_COST = 8 -- Spirit Energy
 
 -- Which world the server opens on, and how it runs waves.
 Config.START_MAP = "times_square"

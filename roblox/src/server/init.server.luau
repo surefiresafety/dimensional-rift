@@ -40,7 +40,6 @@ local function resetCombat(ps: Combat.PState)
 	ps.shield, ps.shieldUntil, ps.shieldReflect = 0, 0, 0
 	ps.evadeUntil, ps.invulnUntil, ps.decoy = 0, 0, false
 	ps.output, ps.chargeStart = nil, nil
-	ps.takeoverUsed = false
 	ps.player:SetAttribute("ChargeStart", nil)
 end
 
@@ -62,6 +61,10 @@ local function applyStyle(ps: Combat.PState, styleId: string, keepHealth: boolea
 	end
 	-- A weapon set starts drawn: the current one if it belongs to this set,
 	-- else the first (applyStyle in the web build).
+	-- Auto-attack is for a kit with limbs or webbing of its own.
+	if not (st.autoLimbs or st.autoWeb) then
+		ps.autoAttack = false
+	end
 	local set = (Arsenals :: any)[styleId]
 	if not (set and ps.weapon and set.items[ps.weapon]) then
 		ps.weapon = if set then set.order[1] else nil
@@ -72,7 +75,9 @@ local function applyStyle(ps: Combat.PState, styleId: string, keepHealth: boolea
 	end
 	local hum = Combat.humanoidOf(ps.player)
 	local hp = if hum and keepHealth then hum.Health else nil
+	ps.reloading = true
 	Looks.dressPlayer(ps.player, styleId)
+	ps.reloading = false
 	local newHum = Combat.humanoidOf(ps.player)
 	local root = Combat.rootOf(ps.player)
 	if newHum then
@@ -128,6 +133,10 @@ Combat.onLethal = function(ps)
 	)
 	Symbiote.shove(ps, 16, 6, 1.8)
 	task.spawn(function()
+		-- One body change at a time: let one already under way finish.
+		while ps.reloading do
+			task.wait()
+		end
 		transform(ps, into)
 		ps.transformUntil = nil
 		ps.se = ps.maxSe
@@ -179,6 +188,7 @@ local function onPlayerAdded(player: Player)
 					ps.style = chosen
 					ps.baseStyle = nil
 					resetCombat(ps)
+					ps.takeoverUsed = false -- a new life, a new save (not on a re-pick)
 					Symbiote.reset(ps)
 					applyStyle(ps, chosen)
 				end

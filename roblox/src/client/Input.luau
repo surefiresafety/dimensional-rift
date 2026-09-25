@@ -115,14 +115,27 @@ local function dodge()
 	end
 	dir = dir.Unit
 	ActionRemote:FireServer("dodge", dir)
+	-- Flying already has its own thrust; the dodge there is the i-frames.
+	if Movement.isFlying() then
+		return
+	end
+	-- A short LinearVelocity carries the body: setting velocity each frame is
+	-- mostly damped away by the humanoid's own controller on the ground.
+	local a0 = Instance.new("Attachment")
+	a0.Parent = root
+	local lv = Instance.new("LinearVelocity")
+	lv.Attachment0 = a0
+	lv.RelativeTo = Enum.ActuatorRelativeTo.World
+	lv.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane
+	lv.PrimaryTangentAxis = Vector3.xAxis
+	lv.SecondaryTangentAxis = Vector3.zAxis
 	local speed = Config.DODGE_SPEED * Config.STUDS_PER_UNIT
-	local started = os.clock()
-	task.spawn(function()
-		while os.clock() - started < Config.DODGE_TIME and root.Parent do
-			local v = root.AssemblyLinearVelocity
-			root.AssemblyLinearVelocity = Vector3.new(dir.X * speed, math.min(v.Y, 8), dir.Z * speed)
-			task.wait()
-		end
+	lv.PlaneVelocity = Vector2.new(dir.X * speed, dir.Z * speed)
+	lv.MaxForce = math.huge
+	lv.Parent = root
+	task.delay(Config.DODGE_TIME, function()
+		lv:Destroy()
+		a0:Destroy()
 	end)
 end
 

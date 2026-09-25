@@ -145,11 +145,13 @@ Combat.afterHurt = function(ps: Combat.PState, dmg: number, nature: string)
 		and hum.Health < sym.panicUnder
 		and now >= ps.symbioteCd
 		and not ps.baseStyle
+		and not ps.reloading
 		and u
 		and u.toggle
 		and u.into
 	then
 		ps.symbioteCd = now + (sym.panicCd or 45)
+		ps.invulnUntil = math.max(ps.invulnUntil, now + 1.5) -- covered while it takes him
 		table.clear(ps.cooldowns)
 		Combat.fx("banner", { text = "THE SUIT TAKES OVER", color = 0xf0f0f0 })
 		Combat.notice(

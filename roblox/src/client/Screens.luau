@@ -132,6 +132,7 @@ function Screens.build()
 	ok.Activated:Connect(function()
 		card.Visible = false
 	end)
+	local shown = 0
 	Remotes.get("Summary").OnClientEvent:Connect(function(run: any)
 		title.Text = string.upper(run.world) .. " CLEARED"
 		sub.Text = if run.first
@@ -174,9 +175,14 @@ function Screens.build()
 		card.Visible = true
 		TweenService:Create(scale, TweenInfo.new(0.35, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 		Sfx.play("level")
-		-- Out of the way before the next world's first wave.
+		-- Out of the way before the next world's first wave (unless another
+		-- report has replaced this one since).
+		shown += 1
+		local mine = shown
 		task.delay(13, function()
-			card.Visible = false
+			if shown == mine then
+				card.Visible = false
+			end
 		end)
 	end)
 end

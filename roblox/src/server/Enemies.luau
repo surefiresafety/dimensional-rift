@@ -434,7 +434,7 @@ function Enemies.think()
 			for _, other in Combat.states do
 				local root = Combat.rootOf(other.player)
 				if root and (root.Position - e.root.Position).Magnitude < (aura.radius or 6) * STUDS then
-					Combat.hurtPlayer(other, aura.power or 6, e.t.nature, e)
+					Combat.hurtPlayer(other, aura.power or 6, e.t.nature, e, true)
 				end
 			end
 		end
