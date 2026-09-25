@@ -14,6 +14,7 @@ local Palette = require(Shared.Palette)
 local Remotes = require(Shared.Remotes)
 
 local Hud = require(script.Parent.Hud)
+local Sfx = require(script.Parent.Sfx)
 
 local Fx = {}
 
@@ -322,6 +323,7 @@ function Fx.start()
 		if h then
 			h(payload)
 		end
+		Sfx.forFx(kind, payload)
 	end)
 	RunService.RenderStepped:Connect(function(dt)
 		for id, s in shots do

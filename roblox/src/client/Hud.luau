@@ -21,6 +21,7 @@ local Rules = require(Shared.Rules)
 
 local Ui = require(script.Parent.Ui)
 local Profile = require(script.Parent.Profile)
+local Sfx = require(script.Parent.Sfx)
 
 local player = Players.LocalPlayer
 local Hud = {}
@@ -414,6 +415,7 @@ function Hud.build()
 		renderProfile(new)
 		if old and new.level > old.level then
 			Hud.banner(`LEVEL {new.level}`, 0xffd54a)
+			Sfx.play("level")
 		end
 	end)
 

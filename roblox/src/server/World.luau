@@ -1,9 +1,7 @@
 --!strict
--- Lighting and a placeholder arena for each world. The web build generates
--- nine cities procedurally; this gives each map its sky, fog and light, plus a
--- ring of blocky towers so there is something to swing from, until real
--- environments are built in Studio. Drop a Model named after the map id into
--- ServerStorage.Maps and it is used instead.
+-- Lighting and an arena for each world: its sky, fog, light and time of day,
+-- and the themed arena Arenas builds. Drop a Model named after the map id into
+-- ServerStorage.Maps and it is used instead of the built one.
 
 local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,6 +11,8 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared.Config)
 local Palette = require(Shared.Palette)
 local Maps = require(Shared.Data.Maps)
+
+local Arenas = require(script.Parent.Arenas)
 
 local STUDS = Config.STUDS_PER_UNIT
 
@@ -33,62 +33,6 @@ local function light(map: any)
 	atmosphere.Parent = Lighting
 end
 
-local function placeholderArena(map: any, seed: number): Model
-	local rng = Random.new(seed)
-	local arena = Instance.new("Model")
-	local centre = map.portalCenter or { x = 0, y = 0, z = 0 }
-	local c = Vector3.new(centre.x, 0, centre.z) * STUDS
-	local tint = Palette.color(map.hemiSky or 0x8a6cff)
-	for i = 1, 28 do
-		local a = (i / 28) * math.pi * 2 + rng:NextNumber(-0.08, 0.08)
-		local r = rng:NextNumber(70, 120) * STUDS
-		local h = rng:NextNumber(30, 90) * STUDS
-		local w = rng:NextNumber(14, 26) * STUDS
-		local tower = Instance.new("Part")
-		tower.Anchored = true
-		tower.Size = Vector3.new(w, h, w * rng:NextNumber(0.8, 1.3))
-		tower.CFrame = CFrame.new(c + Vector3.new(math.cos(a) * r, h / 2, math.sin(a) * r)) * CFrame.Angles(0, -a, 0)
-		tower.Color = Color3.fromRGB(34, 30, 48):Lerp(tint, 0.12)
-		tower.Material = Enum.Material.Concrete
-		tower.Parent = arena
-		-- A lit band near the top so the skyline reads at night.
-		local band = Instance.new("Part")
-		band.Anchored = true
-		band.CanCollide = false
-		band.Size = Vector3.new(w + 0.4, 2, tower.Size.Z + 0.4)
-		band.CFrame = tower.CFrame * CFrame.new(0, h / 2 - 6, 0)
-		band.Color = tint
-		band.Material = Enum.Material.Neon
-		band.Parent = arena
-	end
-	-- Tall masts inside the skyline, where the fighting is: the towers stand
-	-- 70-120 units out and a web reaches 60, so without these nobody could
-	-- swing near the portal.
-	for i = 1, 12 do
-		local a = (i / 12) * math.pi * 2 + rng:NextNumber(-0.12, 0.12)
-		local r = rng:NextNumber(30, 46) * STUDS
-		local h = rng:NextNumber(28, 40) * STUDS
-		local mast = Instance.new("Part")
-		mast.Name = "Mast"
-		mast.Anchored = true
-		mast.Size = Vector3.new(1.2 * STUDS, h, 1.2 * STUDS)
-		mast.CFrame = CFrame.new(c + Vector3.new(math.cos(a) * r, h / 2, math.sin(a) * r))
-		mast.Color = Color3.fromRGB(44, 40, 60)
-		mast.Material = Enum.Material.Metal
-		mast.Parent = arena
-		local lamp = Instance.new("Part")
-		lamp.Anchored = true
-		lamp.CanCollide = false
-		lamp.Shape = Enum.PartType.Ball
-		lamp.Size = Vector3.one * 2.4 * STUDS
-		lamp.CFrame = CFrame.new(mast.Position + Vector3.new(0, h / 2 + 0.6 * STUDS, 0))
-		lamp.Color = tint
-		lamp.Material = Enum.Material.Neon
-		lamp.Parent = arena
-	end
-	return arena
-end
-
 --- Loads a world: its lighting, and its arena.
 function World.load(mapId: string): any
 	local map = Maps[mapId]
@@ -99,12 +43,36 @@ function World.load(mapId: string): any
 	end
 	light(map)
 	local authored = ServerStorage:FindFirstChild("Maps") and ServerStorage.Maps:FindFirstChild(mapId)
-	local arena = if authored then (authored :: Model):Clone() else placeholderArena(map, map.seed or 1)
+	local arena = if authored then (authored :: Model):Clone() else Arenas.build(mapId, map)
+	Lighting.ClockTime = Arenas.clockFor(map)
+	-- A built arena lays its own ground; the baseplate stays as a floor under it.
+	local base = workspace:FindFirstChild("Baseplate")
+	if base and base:IsA("BasePart") then
+		base.Transparency = if authored then 0 else 1
+	end
 	arena.Name = "Arena"
 	arena.Parent = workspace
 	World.current = mapId
 	return map
 end
+
+-- The storm world's sky flashes now and then.
+task.spawn(function()
+	while true do
+		task.wait(3 + math.random() * 6)
+		local arena = workspace:FindFirstChild("Arena")
+		if arena and arena:FindFirstChild("Lightning") then
+			local was = Lighting.Brightness
+			Lighting.Brightness = was + 4
+			task.wait(0.08)
+			Lighting.Brightness = was
+			task.wait(0.1)
+			Lighting.Brightness = was + 2.5
+			task.wait(0.06)
+			Lighting.Brightness = was
+		end
+	end
+end)
 
 function World.spawnPoint(): Vector3
 	local map = Maps[World.current or Config.START_MAP]

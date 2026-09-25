@@ -38,6 +38,25 @@ Config.ENEMY_LEASH = 60
 Config.ENEMY_SWING_START = 3.2
 Config.ENEMY_SWING_HIT = 4.2
 
+-- Sounds. These are files every Roblox client ships with, so they work with
+-- no uploads; swap any of them for a library sound ("rbxassetid://123...").
+Config.SOUNDS = {
+	hit = { id = "rbxasset://sounds/swordslash.wav", volume = 0.35 },
+	heavy = { id = "rbxasset://sounds/Rocket shot.wav", volume = 0.5 },
+	slash = { id = "rbxasset://sounds/swordslash.wav", volume = 0.45 },
+	dash = { id = "rbxasset://sounds/swordlunge.wav", volume = 0.5 },
+	beam = { id = "rbxasset://sounds/electronicpingshort.wav", volume = 0.4 },
+	shot = { id = "rbxasset://sounds/Rocket whoosh 01.wav", volume = 0.2 },
+	hurt = { id = "rbxasset://sounds/collide.wav", volume = 0.6 },
+	alert = { id = "rbxasset://sounds/electronicpingshort.wav", volume = 0.35 },
+	warn = { id = "rbxasset://sounds/clickfast.wav", volume = 0.5 },
+	domain = { id = "rbxasset://sounds/HalloweenGhost.wav", volume = 0.6 },
+	banner = { id = "rbxasset://sounds/unsheath.wav", volume = 0.4 },
+	level = { id = "rbxasset://sounds/victory.wav", volume = 0.5 },
+	pickup = { id = "rbxasset://sounds/electronicpingshort.wav", volume = 0.3 },
+	click = { id = "rbxasset://sounds/button.wav", volume = 0.4 },
+}
+
 -- Badges. Create them on the Creator Dashboard and paste each id here; 0 means
 -- the badge is not set up and is skipped. Progress is tracked either way.
 Config.BADGES = {
