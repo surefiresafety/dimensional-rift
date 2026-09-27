@@ -73,7 +73,7 @@ return {
 
 	kakashi = {
 		-- +8. Lead condition 2: no mask (LM removed), no eye cover; the copy ring is a SurfaceGui on the
-		-- right glove; hair wedges steel teal, sleeves and coat 4a5a6a, so nothing is pale.
+		-- right glove; hair wedges steel teal, sleeves and coat 566a7e, so nothing is pale.
 		name = "Hatsuyuki",
 		preset = "standard",
 		height = 1.04,
@@ -83,7 +83,7 @@ return {
 			brow = 0x1a1f2e,
 			eye = 0x6a5a4a,
 			top = 0x223a44,
-			sleeves = 0x4a5a6a,
+			sleeves = 0x566a7e,
 			bottom = 0x223a44,
 			trim = 0x7a6a5a,
 			sig = 0x5ad4ff,
@@ -92,7 +92,7 @@ return {
 			{ "FP" },
 			{ "HR" },
 			{ "HR·w", n = 2, tint = 0x3a5a6a },
-			{ "VS", tint = 0x4a5a6a, variant = "winter coat" },
+			{ "VS", tint = 0x566a7e, variant = "winter coat" },
 			{ "SB" },
 			-- cyan E7 ring lights on the right glove while a copied technique is loaded
 			{ "GL", n = 2, gui = { kind = "ring", emblem = "E7", side = "R", glow = 0x5ad4ff } },

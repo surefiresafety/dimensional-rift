@@ -10,6 +10,7 @@ require("./progression.spec")
 require("./profiles.spec")
 require("./story.spec")
 require("./layouts.spec")
+require("./costumes.spec")
 
 local passes, failures = H.results()
 print(`\n{passes} passed, {failures} failed`)
