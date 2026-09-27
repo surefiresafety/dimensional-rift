@@ -8,7 +8,6 @@
 -- that lives in memory for the session, and says so in the output.
 
 local DataStoreService = game:GetService("DataStoreService")
-local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -60,7 +59,10 @@ local function openStore(): ProfileStore.Store
 end
 
 local store = ProfileStore.new(openStore(), {
-	jobId = if RunService:IsStudio() then "studio-" .. HttpService:GenerateGUID(false) else game.JobId,
+	-- Every Studio play session shares one id. Stopping a test can end the
+	-- session before its lock is released, and with a fresh id each time the
+	-- next Play would wait on that stale lock and then kick the tester.
+	jobId = if RunService:IsStudio() then "studio" else game.JobId,
 	reconcile = Progression.reconcile,
 	now = os.time,
 	wait = function(s: number)
