@@ -1,97 +1,18 @@
 --!strict
--- Costumes.STYLE entries for the Shinobi Lands (WORLD_OF = "naruto"), 6 styles.
--- Source: docs/design/characters.md §3.0 (palette), §3 "Kit rows: Shinobi Lands", §3.1 (FTH, CLP, SHD),
--- with the lead-approval conditions at the top of that document applied (Hatsuyuki: no mask, ring on
--- the right GL; Karasu: periwinkle sig, never red). Pure data: loaded by Costumes/init.luau.
+-- Shinobi Lands (6 styles, WORLD_OF = "naruto"): STYLE entries for Costumes.STYLE.
+-- Source: docs/design/characters.md §3.0 (palette), §3 "Shinobi Lands (6)" kit rows, §3.1 (FTH, CLP, SHD),
+-- with the lead-approval conditions (Karasu: periwinkle sig, never red; Hatsuyuki: no mask, ring on the
+-- right glove) and the revision-5 recolours applied. Pure data: no Roblox APIs. Colours are 0xRRGGBB.
 --
--- Kit entry conventions (shared by every Styles/<universe>.luau):
---   [1]         the kit code exactly as the design writes it (§2.3 / §3.1, with the "·" character)
---   n           repeat count for a "1 each" code (HR·s×2, GL×2, SG×2...). Codes whose own part count
---               already covers the group (FTH 2, SHD 4, SPL 2, SM 4, CRY 3, HP 2, GG 2, HD 3, HB·t 2,
---               SC 2, LP 2, CT 2, XA 4, CR 4, HAT 3) are written once, without n.
---   tint        explicit main colour (otherwise §2.9 DEFAULT_TINT)
---   accent      explicit second colour: FM/GG lenses or slit, MA seam, BA claw, SHD beams, HAT band
---   material, reflectance   explicit material overrides
---   variant     shape variant: "crop", "topknot", "slit" | "blocks" | "round" (FM lenses), "up" (GG pushed
---               up), "long" (FB long curved), "bulky", "diamond" (CO), "sword" (BW), "pendant" (EM)
---   h           HR·p panel height;  segs  BA segments per arm (2 or 3)
---   tail, pouches  SB extras (+1 part each);  side  "left"/"right" for one-sided pieces
---   emblem, at  EM emblem id (E1..E11) and anchor ("BodyFront" | "BodyBack" | "WaistFront")
---   max         Prop slot, counted at its largest prop
---   gui         a SurfaceGui on the piece: { kind, color, count?, side?, face?, glow? }
--- Style-level extensions beyond §6.1 (colour-bearing, so effectiveLook can see them):
---   guis        SurfaceGuis on R15 parts: { kind, color, parts, face? }
---   emitters    { key, at, color? } (§6.5 EMITTERS keys)
---   face.hideEyes  masked figure: lenses/slits act as the eyes;  face.maw  chest maw (§2.4)
+-- Kit entry fields: the one schema documented in Styles/academy.luau (n = parts in the entry when the row
+-- gives a count, tint/tints, material, side "L"|"R", h/x/w, variant, tail/pouch, max, mount/pos, scale,
+-- emblem/at/emblemColor, gui, flash, fx/fxAt), plus:
+--   tints     sub-piece colours keyed by role, e.g. {beam = ...} (SHD's 4 Beams)
+--   gui.glow  colour the SurfaceGui lights in (LightInfluence 0) on its trigger
 
-type Gui = {
-	kind: string,
-	color: number,
-	count: number?,
-	side: string?,
-	face: string?,
-	glow: boolean?,
-	parts: { string }?,
-}
-
-type Entry = {
-	[number]: string,
-	n: number?,
-	tint: number?,
-	accent: number?,
-	material: string?,
-	reflectance: number?,
-	variant: string?,
-	h: number?,
-	segs: number?,
-	tail: boolean?,
-	pouches: number?,
-	side: string?,
-	emblem: string?,
-	at: string?,
-	max: number?,
-	gui: Gui?,
-}
-
-type Colors = {
-	skin: number,
-	hair: number,
-	brow: number,
-	eye: number,
-	top: number,
-	sleeves: number,
-	bottom: number,
-	trim: number,
-	sig: number,
-}
-
-type Face = {
-	marks: { { [string]: any } },
-	glow: number?,
-	hideEyes: boolean?,
-	maw: { teeth: number, jagged: boolean? }?,
-}
-
-type Style = {
-	name: string,
-	preset: string,
-	height: number,
-	browAngle: number?,
-	colors: Colors,
-	limbs: { [string]: number }?,
-	paint: { [string]: { color: number, material: string?, reflectance: number? } }?,
-	kit: { Entry },
-	sigPiece: string?,
-	face: Face,
-	props: boolean?,
-	suitTN: boolean?,
-	guis: { Gui }?,
-	emitters: { { key: string, at: string, color: number? } }?,
-}
-
-local styles: { [string]: Style } = {
-	-- Ren Tsumuji: +13. No face or cheek marks of any kind (rev 5, item 1a).
+return {
 	naruto = {
+		-- +13. Revision 5, 1a: no face or cheek marks of any kind (no lines, swirls or slashes).
 		name = "Ren Tsumuji",
 		preset = "lean",
 		height = 1,
@@ -110,19 +31,19 @@ local styles: { [string]: Style } = {
 			{ "FP" },
 			{ "HR" },
 			{ "HR·s", n = 2, tint = 0x2f8f86 },
-			{ "HB", tint = 0x2b3350 }, -- cloth, no plate
+			{ "HB", tint = 0x2b3350, variant = "cloth, no plate" },
 			{ "HB·t" },
-			{ "SC", tint = 0xe8b040, side = "left" }, -- long amber tail streaming left
+			{ "SC", tint = 0xe8b040, side = "L", variant = "long tail streaming left" },
 			{ "SB" },
-			{ "EM", emblem = "E1", at = "WaistFront" }, -- buckle
+			{ "EM", emblem = "E1", at = "waist", variant = "buckle" },
 			{ "GL", n = 2 },
 		},
 		sigPiece = "SC",
 		face = { marks = {} },
 	},
 
-	-- Kurobane: +11. Amber irises only while a technique is active.
 	sasuke = {
+		-- +11. Amber irises only while a technique is active.
 		name = "Kurobane",
 		preset = "lean",
 		height = 1.02,
@@ -141,18 +62,18 @@ local styles: { [string]: Style } = {
 			{ "FP" },
 			{ "HR" },
 			{ "HR·s", n = 3 },
-			{ "MT", tint = 0x151313 }, -- raven collar
-			{ "FTH", tint = 0x3a3440 }, -- the pair of upswept feathers (2 parts)
-			{ "BW", variant = "sword" }, -- across the upper back, hilt + blade (2)
+			{ "MT", tint = 0x151313, variant = "raven collar" },
+			{ "FTH", n = 2, tint = 0x3a3440 },
+			{ "BW", n = 2, variant = "sword across the upper back" },
 			{ "SB" },
 		},
 		sigPiece = "MT",
 		face = { marks = {}, glow = 0xe0a83a },
 	},
 
-	-- Hatsuyuki: +8. Lead condition 2: no mask (LM removed), no eye cover; the copy ring is a
-	-- SurfaceGui on the right glove; hair wedges steel teal; sleeves and coat 4a5a6a.
 	kakashi = {
+		-- +8. Lead condition 2: no mask (LM removed), no eye cover; the copy ring is a SurfaceGui on the
+		-- right glove; hair wedges steel teal, sleeves and coat 4a5a6a, so nothing is pale.
 		name = "Hatsuyuki",
 		preset = "standard",
 		height = 1.04,
@@ -171,18 +92,18 @@ local styles: { [string]: Style } = {
 			{ "FP" },
 			{ "HR" },
 			{ "HR·w", n = 2, tint = 0x3a5a6a },
-			{ "VS", tint = 0x4a5a6a }, -- winter coat
+			{ "VS", tint = 0x4a5a6a, variant = "winter coat" },
 			{ "SB" },
 			-- cyan E7 ring lights on the right glove while a copied technique is loaded
-			{ "GL", n = 2, gui = { kind = "E7", color = 0x5ad4ff, side = "right", glow = true } },
+			{ "GL", n = 2, gui = { kind = "ring", emblem = "E7", side = "R", glow = 0x5ad4ff } },
 		},
 		sigPiece = "GL",
 		face = { marks = {} },
 	},
 
-	-- Karasu: +8. Lead condition 1: sig periwinkle, clip, FaceGlow and ember never red.
-	-- No collar, no ponytail, no clouds.
 	itachi = {
+		-- +8. Lead condition 1: periwinkle sig (clip, FaceGlow); boss FaceGlow is never red.
+		-- No collar, no ponytail, no clouds.
 		name = "Karasu",
 		preset = "lean",
 		height = 1.02,
@@ -200,19 +121,19 @@ local styles: { [string]: Style } = {
 		kit = {
 			{ "FP" },
 			{ "HR", variant = "crop" },
-			{ "HR·f", side = "left" },
+			{ "HR·f", side = "L" },
 			{ "CP", tint = 0x2a2233 },
-			{ "MT", tint = 0x14141c }, -- crow mantle
-			{ "FTH", tint = 0x2a2233 },
-			{ "CLP", tint = 0x7a8ad8 }, -- clip in the forelock
+			{ "MT", tint = 0x14141c, variant = "crow mantle" },
+			{ "FTH", n = 2, tint = 0x2a2233 },
+			-- clip in the forelock; grey-violet ember from the hands (EMITTERS ember, Karasu colour 0x5a5a78)
+			{ "CLP", tint = 0x7a8ad8, fx = "ember", fxAt = "hands" },
 		},
 		sigPiece = "CLP",
 		face = { marks = {}, glow = 0x7a8ad8 },
-		emitters = { { key = "ember", at = "hands", color = 0x5a5a78 } }, -- grey-violet
 	},
 
-	-- Midori Tetsu: +9. No bowl cut, no jumpsuit.
 	might_guy = {
+		-- +9. No bowl cut, no jumpsuit.
 		name = "Midori Tetsu",
 		preset = "standard",
 		height = 1.04,
@@ -232,7 +153,7 @@ local styles: { [string]: Style } = {
 			{ "HR" },
 			{ "HR·k", variant = "topknot" },
 			-- 8 belt dots light green one by one as the gates open
-			{ "SB", tail = true, gui = { kind = "dots", color = 0x3ad86a, count = 8, glow = true } },
+			{ "SB", tail = true, gui = { kind = "dots", count = 8, glow = 0x3ad86a } },
 			{ "GL", n = 2, tint = 0x8a3a2a },
 			{ "WR", n = 2, tint = 0xe8e0d0 },
 		},
@@ -240,8 +161,8 @@ local styles: { [string]: Style } = {
 		face = { marks = {} },
 	},
 
-	-- Gravewell: +10. No piercings, no ringed eyes, no rods.
 	pain = {
+		-- +10. No piercings, no ringed eyes, no rods.
 		name = "Gravewell",
 		preset = "standard",
 		height = 1.02,
@@ -262,18 +183,17 @@ local styles: { [string]: Style } = {
 			{ "HR·w", n = 2 },
 			{ "CP", tint = 0x1c1c26 },
 			{ "HC" },
-			-- 4 basalt shards orbiting behind the shoulders, joined into a square by 4 Beams
+			-- 4 basalt shards orbiting a ring behind the shoulders, joined into a square by 4 Beams
 			{
 				"SHD",
+				n = 4,
 				tint = 0x2a2a30,
 				material = "Basalt",
-				accent = 0x8a6cff,
-				gui = { kind = "edge", color = 0x8a6cff, glow = true },
+				tints = { beam = 0x8a6cff },
+				gui = { kind = "edge", glow = 0x8a6cff },
 			},
 		},
 		sigPiece = "SHD",
 		face = { marks = {} },
 	},
 }
-
-return styles
