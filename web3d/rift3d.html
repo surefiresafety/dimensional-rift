@@ -204,6 +204,36 @@
   #abduct .fill { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #1c8a4a, #6dff8a); }
   #abduct .hint { font-size: 11px; color: var(--dim); margin-top: 6px; text-shadow: 0 1px 3px #000; }
   @media (max-width: 980px), (pointer: coarse) { #abduct { width: 60vw; top: 22%; } }
+  /* Karasu's gaze: red at the edges, the Mangekyō turning in the middle, and a
+     mark over everything the eye has settled on. */
+  #gaze { position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 45%, rgba(120, 0, 20, .42) 100%);
+    box-shadow: inset 0 0 160px rgba(200, 10, 40, .55); animation: gaze-in .25s ease-out; }
+  @keyframes gaze-in { from { opacity: 0; } }
+  #gaze .mangekyo { position: absolute; left: 50%; top: 50%; width: 132px; height: 132px; margin: -66px 0 0 -66px;
+    opacity: .5; animation: mangekyo 2.4s linear infinite; }
+  #gaze .mangekyo circle { fill: rgba(200, 16, 40, .35); stroke: #1a0006; stroke-width: 3; }
+  #gaze .mangekyo path { fill: #0b0003; }
+  #gaze .mangekyo .pupil { fill: #0b0003; stroke: none; }
+  @keyframes mangekyo { to { transform: rotate(-360deg); } }
+  #gaze-marks { position: absolute; inset: 0; }
+  .gaze-lock { position: absolute; left: 0; top: 0; width: 58px; height: 58px; }
+  .gaze-lock i { position: absolute; inset: 0; border: 3px solid #ff2448; border-radius: 50%;
+    box-shadow: 0 0 14px rgba(255, 36, 72, .8), inset 0 0 10px rgba(255, 36, 72, .5); animation: lock-on .22s ease-out; }
+  .gaze-lock i::before, .gaze-lock i::after { content: ''; position: absolute; background: #ff2448; }
+  .gaze-lock i::before { left: 50%; top: -9px; bottom: -9px; width: 2px; margin-left: -1px; }
+  .gaze-lock i::after { top: 50%; left: -9px; right: -9px; height: 2px; margin-top: -1px; }
+  .gaze-lock b { position: absolute; right: -14px; top: -14px; font: 800 15px/1 Rubik, sans-serif; color: #fff; text-shadow: 0 0 6px #ff2448, 1px 1px 0 #000; }
+  @keyframes lock-on { from { transform: scale(2.4) rotate(90deg); opacity: 0; } }
+  #gaze-count { position: absolute; left: 50%; top: calc(50% + 84px); transform: translateX(-50%);
+    font: 700 14px/1 Rubik, sans-serif; letter-spacing: .08em; color: #ffd5dc; text-shadow: 0 0 8px #a00018, 1px 1px 0 #000; }
+  #gaze-count.short { color: #ff6b6b; }
+  /* The cost of looking: a red streak down the left of the screen. */
+  #eye-bleed { position: absolute; left: 38%; top: 0; width: 6px; height: 0; border-radius: 0 0 6px 6px; pointer-events: none;
+    background: linear-gradient(#5a0010, #c0102a); opacity: 0; }
+  #eye-bleed.on { animation: bleed 1.8s ease-out; }
+  @keyframes bleed { 0% { height: 0; opacity: .85; } 40% { height: 34%; opacity: .85; } 100% { height: 40%; opacity: 0; } }
+  .float.black { color: #1a0010; font-size: 17px; text-shadow: 0 0 6px #d0204a, 1px 1px 0 #d0204a; }
   #freeze { position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(120, 200, 255, .05), rgba(90, 169, 255, .35)); box-shadow: inset 0 0 200px rgba(140, 220, 255, .6); }
   #output { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); font-size: 16px;
     padding: 5px 18px; border: 1px solid rgba(255, 213, 74, .6); border-radius: var(--r-pill);
@@ -492,6 +522,8 @@
     <div id="abduct" hidden><div class="tier display">TRACTOR BEAM</div><div class="track"><i class="fill"></i></div><div class="hint">Get out of the light: run, dodge (C), or shoot it down.</div></div>
     <div id="charge" hidden><div class="tier display"></div><div class="track"><i class="fill"></i><span class="mark" style="left:50%"></span><span class="mark" style="left:100%"></span></div><div class="hint">Hold B. Release to store it for your next ability.</div></div>
     <div id="freeze" hidden></div>
+    <div id="gaze" hidden><svg class="mangekyo" viewBox="-50 -50 100 100" aria-hidden="true"><circle r="46" /><path d="M0-40C22-40 30-12 14-4C4 1-8-8 0-40ZM34.6 20C23.6 39 -5.5 32 -3.5 14.5C-2.3 3.7 12.2 1.5 34.6 20ZM-34.6 20C-45.6 1-26.3-21 -10.5-13.7C-.4-9.2-2.5 5.4-34.6 20Z" /><circle r="7" class="pupil" /></svg><div id="gaze-marks"></div><div id="gaze-count"></div></div>
+    <div id="eye-bleed"></div>
     <div id="speedlines"></div>
     <div id="output" class="display" hidden></div>
     <div id="portal-prompt" hidden></div>
@@ -3564,8 +3596,7 @@ function findAnchor() {
 }
 // E is a signature action, not a universal one. Only Spider-Man carries
 // web-shooters; the fliers take off; Naruto winds up a Rasengan; Sukuna's
-// technique leaks out of Yuji; Karasu looks at something and it catches
-// black fire.
+// technique leaks out of Yuji; Karasu looks at things and they catch black fire.
 const E_ACTION = { spiderman: 'swing', venom: 'swing', carnage: 'swing', antivenom: 'swing', insomniac: 'swing', miles: 'swing', ironspider: 'swing', ironman: 'fly', jean: 'fly', eleven: 'fly', gojo: 'fly', naruto: 'rasengan', sasuke: 'chidori', yuji: 'dismantle', megumi: 'garden', itachi: 'amaterasu',
   // The glider, the Cloak of Levitation and the Deva Path all hold themselves up.
   goblin: 'fly', strange: 'fly', pain: 'fly' };
@@ -3578,7 +3609,7 @@ function startEAction() {
   else if (a === 'chidori') startChidori();
   else if (a === 'dismantle') castSkill('dismantle_s', {});
   else if (a === 'garden') castSkill('chimera_garden', {});
-  else if (a === 'amaterasu') castSkill('amaterasu_i', {});
+  else if (a === 'amaterasu') startGaze();
   else if (a === 'consume') castSkill('symbiote_feed', {});   // the sixth move: eat
   else log('No web-shooters. Only Threadrunner swings.');
 }
@@ -3588,6 +3619,7 @@ function endEAction() {
   else if (a === 'fly') endFlight();
   else if (a === 'rasengan') releaseRasengan();
   else if (a === 'chidori') releaseChidori();
+  else if (a === 'amaterasu') releaseGaze();
 }
 
 // ---- Sound ------------------------------------------------------------------
@@ -3685,6 +3717,33 @@ const sfx = {
       const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(f0, t + .86);
       env(ctx, o, .12, .04, d); o.start(t + .86); o.stop(t + .9 + d);
     }
+  },
+  /** The eye opening: a low drone with a slow beat in it. */
+  gaze() {
+    if (!audio.on) return; const ctx = actx(); if (!ctx) return;
+    const t = ctx.currentTime;
+    for (const [f, d] of [[55, 0], [82.4, 4]]) {
+      const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = d;
+      const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(200, t); lp.frequency.linearRampToValueAtTime(700, t + 1.2);
+      o.connect(lp); env(ctx, lp, .09, .25, 1.4); o.start(t); o.stop(t + 1.8);
+    }
+  },
+  /** A mark settling: a short high tick that climbs with each one. */
+  lock(n = 1) {
+    if (!audio.on) return; const ctx = actx(); if (!ctx) return;
+    const o = ctx.createOscillator(); o.type = 'square'; o.frequency.value = 520 + n * 90;
+    env(ctx, o, .05, .002, .09); o.start(); o.stop(ctx.currentTime + .12);
+  },
+  /** Catching: a dull thump and a breath of fire. */
+  ignite() {
+    if (!audio.on) return; const ctx = actx(); if (!ctx) return;
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(120, t); o.frequency.exponentialRampToValueAtTime(35, t + .35);
+    env(ctx, o, .35, .005, .35); o.start(t); o.stop(t + .4);
+    const n = noise(ctx); const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = .8;
+    f.frequency.setValueAtTime(300, t); f.frequency.exponentialRampToValueAtTime(1400, t + .5);
+    n.connect(f); env(ctx, f, .16, .05, .55); n.start(t); n.stop(t + .65);
   },
   boom() {
     if (!audio.on) return; const ctx = actx(); if (!ctx) return;
@@ -4020,6 +4079,285 @@ function releaseChidori() {
   }
   damageBuildings(to, 4 + k * 3, 70 + k * 200);
   if (!hit) log(`Chidori spent on the air (${Math.round(k * 100)}% charged).`);
+}
+
+// ---- Amaterasu: Karasu's E. Hold it and the left eye picks what burns; let go
+// and everything it picked catches black fire. The flame does not go out, eats
+// through armour, and jumps to whatever stands too close. Tap E while anything
+// is burning and he shapes it instead (Kagutsuchi): spikes of black fire burst
+// out of every flame at once and spend it.
+const AMA = { cost: 12, perTarget: 6, cd: 7, maxLocks: 6, lockEvery: .26, tap: .22, range: 48,
+  life: 12, tick: .4, spreadEvery: 1, spreadChance: .35, kaguCost: 10, kaguCd: 4 };
+let gaze = null;
+const blackFlames = [];     // one per burning enemy: { e, until, stack, m, tickAt, spreadAt, emberAt }
+const flameFloors = [];     // what a burning body leaves behind: { pos, r, until, m }
+const blackMat = new THREE.MeshBasicMaterial({ color: 0x050008, transparent: true, opacity: .92, depthWrite: false });
+const rimMat = new THREE.MeshBasicMaterial({ color: 0xc0103c, transparent: true, opacity: .75, depthWrite: false, blending: THREE.AdditiveBlending });
+const flameCone = new THREE.ConeGeometry(.34, 1.5, 7, 1, true);
+flameCone.translate(0, .75, 0);
+const amaCd = () => Math.max(0, (player.cooldowns.amaterasu_i ?? 0) - now);
+const eyePos = () => player.pos.clone().add(new THREE.Vector3(Math.sin(player.yaw) * .25, 1.72, Math.cos(player.yaw) * .25));
+const burning = (e) => blackFlames.find((f) => f.e === e);
+
+/** Everything the eye can see, best first: nearest the middle of the screen. */
+function gazeCandidates() {
+  const camF = new THREE.Vector3(); camera.getWorldDirection(camF);
+  const out = [];
+  for (const e of enemies) {
+    if (e.dead || e.pvp || e.t.shape === 'ufo' && e.pos.y > 30) continue;
+    const to = e.pos.clone().add(new THREE.Vector3(0, (e.height ?? 2) * .5, 0)).sub(camera.position);
+    const d = to.length(); if (d > AMA.range + 12) continue;
+    const dot = to.normalize().dot(camF);
+    if (dot < .78) continue;
+    out.push({ e, score: dot - d * .002 });
+  }
+  return out.sort((a, b) => b.score - a.score).map((c) => c.e);
+}
+
+function startGaze() {
+  if (gaze || player.dead) return;
+  gaze = { t: 0, locks: [], nextLock: AMA.tap, marks: new Map(), slowed: false, hum: 0 };
+  if (!startGaze.told) { startGaze.told = true; log('Mangekyō. Hold E and look: each target the eye settles on is marked. Let go to burn them. Tap E while they burn to shape the flame.', true); }
+}
+function updateGaze(dt) {
+  if (!gaze) return;
+  gaze.t += dt;
+  const ready = amaCd() <= 0;
+  if (gaze.t > AMA.tap && ready) {
+    // The eye opens: the world slows, the screen goes red at the edges.
+    if (!gaze.slowed) {
+      gaze.slowed = true; $('#gaze').hidden = false;
+      if (!player.sense.active) timeScale = .45;
+      sfx.gaze(); shake = Math.max(shake, .15);
+    }
+    gaze.nextLock -= dt;
+    if (gaze.nextLock <= 0 && gaze.locks.length < AMA.maxLocks) {
+      gaze.nextLock = AMA.lockEvery;
+      const pick = gazeCandidates().find((e) => !gaze.locks.includes(e));
+      if (pick) {
+        gaze.locks.push(pick);
+        const el = document.createElement('div'); el.className = 'gaze-lock';
+        el.innerHTML = `<i></i><b>${gaze.locks.length}</b>`;
+        $('#gaze-marks').appendChild(el); gaze.marks.set(pick, el);
+        sfx.lock(gaze.locks.length);
+      }
+    }
+  } else if (gaze.t > AMA.tap && !ready && !gaze.told) {
+    gaze.told = true; log(`The left eye is bleeding. ${amaCd().toFixed(1)}s before it can look again.`);
+  }
+  // The marks ride their targets; a target that dies is dropped.
+  for (const [e, el] of gaze.marks) {
+    if (e.dead) { el.remove(); gaze.marks.delete(e); gaze.locks = gaze.locks.filter((x) => x !== e); continue; }
+    const p = project(e.pos.clone().add(new THREE.Vector3(0, (e.height ?? 2) * .55, 0)));
+    el.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -50%)`;
+    el.style.display = p.z < 1 ? '' : 'none';
+  }
+  const need = AMA.cost + AMA.perTarget * Math.max(1, gaze.locks.length);
+  $('#gaze-count').textContent = gaze.slowed ? `${gaze.locks.length} / ${AMA.maxLocks}  ·  ${need} SE` : '';
+  $('#gaze-count').classList.toggle('short', player.se < need);
+}
+function closeGaze() {
+  if (!gaze) return;
+  for (const el of gaze.marks.values()) el.remove();
+  if (gaze.slowed && !player.sense.active) timeScale = 1;
+  $('#gaze').hidden = true; $('#gaze-count').textContent = '';
+  gaze = null;
+}
+function releaseGaze() {
+  if (!gaze) return;
+  const g = gaze; closeGaze();
+  // A tap: shape what is already burning, or glance at one thing.
+  if (g.t <= AMA.tap) {
+    if (blackFlames.length) return kagutsuchi();
+    if (amaCd() > 0) return log(`The left eye is bleeding. ${amaCd().toFixed(1)}s before it can look again.`);
+    const one = gazeCandidates()[0];
+    if (!one) return log('Nothing in sight to burn.');
+    return amaterasu([one]);
+  }
+  if (amaCd() > 0) return;
+  let locks = g.locks.filter((e) => !e.dead);
+  if (!locks.length) { const one = gazeCandidates()[0]; if (one) locks = [one]; }
+  if (!locks.length) return log('Nothing in sight to burn.');
+  amaterasu(locks);
+}
+
+/** Pay for the look, then set each target alight in turn, a beat apart. */
+function amaterasu(targets) {
+  const afford = Math.floor((player.se - AMA.cost) / AMA.perTarget);
+  if (afford < 1) return log('Not enough Spirit Energy for Amaterasu.');
+  targets = targets.slice(0, afford);
+  const cost = AMA.cost + AMA.perTarget * targets.length;
+  player.se -= cost; player.lastCost = cost; player.regenBlockedUntil = now + 2.5;
+  player.cooldowns.amaterasu_i = now + AMA.cd;
+  renderSlots();
+  playAnim('cast', .5);
+  const eye = eyePos();
+  flashLight(eye, 0xff1030, 60, .5, 18);
+  eyeBleed();
+  shout('Amaterasu');
+  center(targets.length > 2 ? `AMATERASU ×${targets.length}` : 'AMATERASU', 1100);
+  targets.forEach((e, i) => setTimeout(() => igniteBlackFlame(e, 120 + 30 * targets.length, true), 110 * i));
+  // Six at once is a real strain on the eye.
+  if (targets.length >= AMA.maxLocks) { player.hp = Math.max(1, player.hp - 20); floatText(player.pos, '-20', 'hurt'); }
+}
+
+function igniteBlackFlame(e, power, fromEye = false) {
+  if (!e || e.dead) return;
+  const at = e.pos.clone().add(new THREE.Vector3(0, (e.height ?? 2) * .5, 0));
+  if (fromEye) {
+    // The look itself: a thin red thread from the eye to the target, gone at once.
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([eyePos(), at]), new THREE.LineBasicMaterial({ color: 0xff2040, transparent: true, blending: THREE.AdditiveBlending }));
+    scene.add(line); bursts.push({ m: line, t: 0, line: true });
+  }
+  enemyTakeHit(e, power, 'fire', null, { ignoreDef: true });
+  if (e.dead) { leaveFloor(e.pos.clone(), e.t.size); return; }
+  let f = burning(e);
+  if (f) { f.stack = Math.min(3, f.stack + 1); f.until = now + AMA.life; }
+  else {
+    const m = new THREE.Group();
+    // A ring of tongues around the body and a few taller ones through it: black
+    // outside, a red core showing through.
+    const size = Math.max(.9, e.t.size), n = e.t.boss ? 12 : 8;
+    for (let i = 0; i < n + 3; i++) {
+      const inner = i >= n, a = i / n * Math.PI * 2, r = inner ? .12 * size : .42 * size;
+      const outer = new THREE.Mesh(flameCone, blackMat); outer.position.set(Math.cos(a) * r, inner ? .3 * size : 0, Math.sin(a) * r);
+      outer.rotation.z = inner ? 0 : Math.sin(a) * .18; outer.rotation.x = inner ? 0 : -Math.cos(a) * .18;
+      const core = new THREE.Mesh(flameCone, rimMat); core.scale.set(.55, .8, .55); core.position.y = .02; outer.add(core);
+      outer.userData.seed = Math.random() * 9; outer.userData.base = (inner ? 1.25 + Math.random() * .4 : .85 + Math.random() * .55) * size;
+      m.add(outer);
+    }
+    scene.add(m);
+    f = { e, until: now + AMA.life, stack: 1, m, tickAt: now + AMA.tick, spreadAt: now + AMA.spreadEvery, emberAt: 0 };
+    blackFlames.push(f);
+  }
+  inkBurst(at, e.t.boss ? 26 : 14);
+  shockwave(e.pos.clone(), 0x6a1238, .5, 3 + e.t.size * 2, .4, 1);
+  flashLight(at, 0x7a0a2a, 50, .35, 26);
+  sfx.ignite();
+  shake = Math.max(shake, .35);
+}
+
+/** Black particles. They sit on the scene instead of lighting it. */
+function inkBurst(pos, n) {
+  for (let i = 0; i < qfx(n); i++) {
+    const m = new THREE.Mesh(partGeo, blackMat); m.position.copy(pos);
+    m.scale.setScalar(1 + Math.random() * 1.8); scene.add(m);
+    bursts.push({ m, v: new THREE.Vector3((Math.random() - .5) * 9, 2 + Math.random() * 7, (Math.random() - .5) * 9), t: 0, float: true });
+  }
+}
+function eyeBleed() {
+  const el = $('#eye-bleed'); el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+}
+
+function flameTick(e, dmg) {
+  const mine = !e.pvp && !netInterceptHit(e, dmg, 'fire');
+  if (mine) e.hp -= dmg;
+  e.hitFlash = .06;
+  floatText(e.pos, dmg, 'black');
+  if (mine && e.hp <= 0) killEnemy(e);
+}
+function leaveFloor(pos, size = 1) {
+  const m = new THREE.Group();
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(1.6 * size, 20), blackMat);
+  disc.rotation.x = -Math.PI / 2; disc.position.y = groundAt(pos.x, pos.z) + .06; m.add(disc);
+  for (let i = 0; i < 5; i++) {
+    const c = new THREE.Mesh(flameCone, blackMat); const a = Math.random() * Math.PI * 2, r = Math.random() * 1.2 * size;
+    c.position.set(Math.cos(a) * r, disc.position.y, Math.sin(a) * r); c.userData.seed = Math.random() * 9; c.userData.base = .5 + Math.random() * .5;
+    m.add(c);
+  }
+  m.position.set(pos.x, 0, pos.z); scene.add(m);
+  flameFloors.push({ pos: pos.clone(), r: 1.8 * size, until: now + 7, m });
+}
+
+function updateBlackFlames(dt) {
+  for (let i = blackFlames.length - 1; i >= 0; i--) {
+    const f = blackFlames[i], e = f.e;
+    if (e.dead || now > f.until || !enemies.includes(e)) {
+      scene.remove(f.m); blackFlames.splice(i, 1);
+      if (e.dead && enemies.includes(e)) leaveFloor(e.pos.clone(), e.t.size);
+      continue;
+    }
+    f.m.position.copy(e.pos);
+    const fade = Math.min(1, (f.until - now) / 1.5);
+    for (const c of f.m.children) {
+      const s = c.userData.base * (.75 + .25 * f.stack) * fade;
+      c.scale.set(s * (.8 + .2 * Math.sin(now * 11 + c.userData.seed)), s * (1 + .35 * Math.sin(now * 17 + c.userData.seed * 2)), s);
+      c.rotation.y += dt * 2;
+    }
+    if (now > f.tickAt) {
+      f.tickAt = now + AMA.tick;
+      flameTick(e, Math.round((9 + (e.maxHp ?? e.hp) * .011) * f.stack));
+      if (e.dead) continue;
+    }
+    f.emberAt -= dt;
+    if (f.emberAt <= 0) {
+      f.emberAt = .07;
+      const g = new THREE.Mesh(partGeo, blackMat);
+      g.position.copy(e.pos).add(new THREE.Vector3((Math.random() - .5) * e.t.size, (e.height ?? 2) * Math.random(), (Math.random() - .5) * e.t.size));
+      scene.add(g); bursts.push({ m: g, v: new THREE.Vector3((Math.random() - .5), 2.5 + Math.random() * 2, (Math.random() - .5)), t: 0, float: true });
+    }
+    // It jumps: anything standing close enough to a burning body catches.
+    if (now > f.spreadAt) {
+      f.spreadAt = now + AMA.spreadEvery;
+      if (Math.random() < AMA.spreadChance) {
+        const near = enemies.find((o) => !o.dead && !o.pvp && o !== e && !burning(o) && o.pos.distanceTo(e.pos) < 3.2 + e.t.size + o.t.size);
+        if (near) { igniteBlackFlame(near, 50); log(`The black flame jumps to ${near.t.name}.`); }
+      }
+    }
+  }
+  for (let i = flameFloors.length - 1; i >= 0; i--) {
+    const fl = flameFloors[i];
+    if (now > fl.until) { scene.remove(fl.m); flameFloors.splice(i, 1); continue; }
+    const fade = Math.min(1, (fl.until - now) / 1.5);
+    for (const c of fl.m.children) if (c.userData.base) c.scale.set(c.userData.base * fade, c.userData.base * fade * (1 + .4 * Math.sin(now * 15 + c.userData.seed)), c.userData.base * fade);
+    for (const o of enemies) if (!o.dead && !o.pvp && !burning(o) && Math.hypot(o.pos.x - fl.pos.x, o.pos.z - fl.pos.z) < fl.r + o.t.size * .5) igniteBlackFlame(o, 40);
+  }
+}
+
+/** Kagutsuchi: the flame, shaped. Every burning target is run through by spikes
+ *  of its own fire, which spends it; the spikes catch anything next to them. */
+function kagutsuchi() {
+  if ((player.cooldowns.kagutsuchi ?? 0) > now) return log(`Kagutsuchi needs ${((player.cooldowns.kagutsuchi) - now).toFixed(1)}s.`);
+  if (player.se < AMA.kaguCost) return log('Not enough Spirit Energy for Kagutsuchi.');
+  player.se -= AMA.kaguCost; player.regenBlockedUntil = now + 2.5;
+  player.cooldowns.kagutsuchi = now + AMA.kaguCd;
+  const lit = blackFlames.splice(0);
+  playAnim('slash', .4);
+  shout('Kagutsuchi'); center('KAGUTSUCHI', 1100);
+  screenFlash(.25); hitStop = Math.max(hitStop, .1); shake = Math.max(shake, 1.1);
+  sfx.boom();
+  const caught = new Set(lit.map((f) => f.e));
+  for (const f of lit) {
+    scene.remove(f.m);
+    const e = f.e; if (e.dead) continue;
+    const left = Math.max(0, f.until - now);
+    spikeBloom(e.pos.clone(), e.t.size, f.stack);
+    enemyTakeHit(e, 110 + left * 14 * f.stack, 'fire', null, { ignoreDef: true, knock: 0 });
+    e.status.stun = Math.max(e.status.stun ?? 0, .9);
+    // The spikes reach: whatever stands next to one is run through too, and lit.
+    for (const o of enemies) {
+      if (o.dead || o.pvp || caught.has(o) || o.pos.distanceTo(e.pos) > 5 + e.t.size) continue;
+      caught.add(o);
+      enemyTakeHit(o, 70, 'fire', e.pos, { ignoreDef: true, knock: 8 });
+      igniteBlackFlame(o, 20);
+    }
+  }
+}
+function spikeBloom(pos, size, stack) {
+  const n = 7 + stack * 3;
+  for (let i = 0; i < qfx(n); i++) {
+    const dir = new THREE.Vector3((Math.random() - .5) * 2, .4 + Math.random(), (Math.random() - .5) * 2).normalize();
+    const len = (2.2 + Math.random() * 2.4) * Math.max(1, size * .8);
+    const spike = new THREE.Mesh(new THREE.ConeGeometry(.22 * size, len, 5), blackMat);
+    spike.geometry.translate(0, len / 2, 0);
+    spike.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    spike.position.copy(pos).add(new THREE.Vector3(0, .6, 0));
+    spike.scale.set(1, .01, 1); scene.add(spike);
+    effects.push({ kind: 'spike', m: spike, t: 0, life: .7 });
+  }
+  inkBurst(pos.clone().add(new THREE.Vector3(0, 1, 0)), 18);
+  shockwave(pos.clone(), 0x6a1238, 1, 7 + size * 2, .45, 1);
+  flashLight(pos, 0xa01040, 90, .4, 40);
 }
 
 // ---- Rasengan: hold E to wind it up, release to drive it in ----------------
@@ -6431,6 +6769,11 @@ function updateProjectiles(dt) {
       f.m.scale.setScalar(f.r0 + (f.r1 - f.r0) * (1 - (1 - k) ** 2));
       f.m.material.opacity = Math.max(0, .95 * (1 - k));
       if (k >= 1) f.done = true;
+    } else if (f.kind === 'spike') {
+      // Kagutsuchi's spikes: out in a tenth of a second, hold, then crumble.
+      const k = f.t / f.life;
+      f.m.scale.y = k < .15 ? Math.max(.01, k / .15) : k < .7 ? 1 : Math.max(.01, 1 - (k - .7) / .3);
+      if (k >= 1) f.done = true;
     } else if (f.kind === 'beam') {
       f.m.material.opacity = Math.max(0, .85 * (1 - f.t / f.life)); f.m.material.transparent = true; if (f.t >= f.life) f.done = true;
     } else if (f.kind === 'domain') {
@@ -6627,6 +6970,7 @@ function applyStyle(id, announce = true) {
   endFlight();
   if (rasengan) { scene.remove(rasengan.m); rasengan = null; }
   if (chidori) { scene.remove(chidori.m); chidori = null; }
+  closeGaze();
   clearArmy();
   if (id !== 'gojo' && player.infinity) { player.infinity = false; if (shieldMesh) { scene.remove(shieldMesh); shieldMesh = null; } }
   player.maxSe = st.energy ?? 1000;
@@ -6977,6 +7321,8 @@ function frame(t) {
   updateFlight(playerDt);
   updateRasengan(playerDt);
   updateChidori(playerDt);
+  updateGaze(playerDt);
+  updateBlackFlames(worldDt);
   updateArmy(worldDt);
   updateDebris(worldDt);
   updateCollapses(worldDt);
@@ -7396,7 +7742,7 @@ function useGate(to) {
 }
 buildMap('times_square');
 requestAnimationFrame(frame);
-window.__rift = { condition, CONDITIONS, rollCondition, startAbduction, get now() { return now; }, get waveStartedAt() { return waveStartedAt; }, army, camera, scene, buildCharacter, CHARACTERS, GRADES, enemyTakeHit, strike, startEAction, endEAction, webLine, WEB_SLINGERS, startSwing, releaseSwing, killEnemy, get playerRig() { return playerRig; }, get firstPerson() { return firstPerson; }, get rasengan() { return rasengan; }, get chidori() { return chidori; }, spawnArmy, damageArmy, arcBolt, slashArc,
+window.__rift = { get gaze() { return gaze; }, blackFlames, flameFloors, startGaze, releaseGaze, kagutsuchi, AMA, condition, CONDITIONS, rollCondition, startAbduction, get now() { return now; }, get waveStartedAt() { return waveStartedAt; }, army, camera, scene, buildCharacter, CHARACTERS, GRADES, enemyTakeHit, strike, startEAction, endEAction, webLine, WEB_SLINGERS, startSwing, releaseSwing, killEnemy, get playerRig() { return playerRig; }, get firstPerson() { return firstPerson; }, get rasengan() { return rasengan; }, get chidori() { return chidori; }, spawnArmy, damageArmy, arcBolt, slashArc,
   SKILLS, STYLES, ENEMIES, MAPS, MAP_IDS, NATURE, travelTo, buildMap, portals,
   net, setMode, useGate, setSolo, setTier, TIERS, get tier() { return tierName; },
   get currentMap() { return currentMap; }, get nearPortal() { return nearPortal; }, eprojectiles, spawnEnemy, player, enemies, buildings, debris, cars, civilians, damageBuildings, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, startCharge, releaseCharge, hurtPlayer, castSkill, OUTPUT_TIERS, ARSENALS, cycleWeapon, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
