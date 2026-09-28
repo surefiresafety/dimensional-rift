@@ -2,11 +2,11 @@
 -- Every technique type, resolved on the server. Each handler is the web
 -- build's castSkill branch for that type, with distances scaled to studs.
 --
--- Ported: projectile, melee, dash, beam, trap, pull, yank, teleport, buff,
--- heal, shield, evade, freeze, clones, domain, toggle, and the transform and
--- Mahoraga ultimates. That is 272 of the 280 techniques.
--- Not yet: self (decoy), rewind, switch (weapon/suit sets), possess, devour.
--- Casting one of those refunds it and says so.
+-- Every technique type the web build has is here: projectile, melee, dash,
+-- beam, trap, pull, yank, teleport, buff, heal, shield, evade, freeze, clones,
+-- domain, toggle, self (decoy), rewind, switch (weapon and suit sets), possess
+-- and devour, plus the transform and Mahoraga ultimates. The basic attack and
+-- output charge (B) live here too, since both go through the same numbers.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -16,6 +16,7 @@ local Rules = require(Shared.Rules)
 local RulesData = require(Shared.Data.Rules)
 local Skills = require(Shared.Data.Skills)
 local Styles = require(Shared.Data.Styles)
+local Arsenals = require(Shared.Data.Arsenals)
 local Remotes = require(Shared.Remotes)
 
 local Combat = require(script.Parent.Combat)
@@ -23,6 +24,8 @@ local Projectiles = require(script.Parent.Projectiles)
 
 local STUDS = Config.STUDS_PER_UNIT
 local CooldownRemote = Remotes.get("Cooldown")
+
+local Abilities = {}
 
 type Ctx = {
 	ps: Combat.PState,
@@ -33,11 +36,32 @@ type Ctx = {
 	origin: Vector3, -- chest height
 	dir: Vector3, -- aim, unit
 	flat: Vector3, -- aim on the ground plane, unit
-	B: number, -- output multiplier (1 until output charge is ported)
+	B: number, -- output multiplier: 1, or the stored charge being spent
+	W: Rules.Weapon?, -- the drawn weapon, for a technique marked weaponScaled
+	WM: number, -- the drawn weapon's damage multiplier, or 1
 }
 
 local function colorOf(s: any): number
 	return s.color or RulesData.NATURE[s.nature].color
+end
+
+--- The weapon or suit a player has drawn, if their style carries a set.
+local function currentWeapon(ps: Combat.PState): Rules.Weapon?
+	local a = ps.style and (Arsenals :: any)[ps.style]
+	return if a and ps.weapon then a.items[ps.weapon] else nil
+end
+Abilities.currentWeapon = currentWeapon
+
+--- Split Soul and the knife: the same blow lands again on the soul a beat
+--- later, cursed and through any defence.
+function Abilities.soulCut(ps: Combat.PState, e: Combat.Enemy, power: number, delay: number, knock: number)
+	task.delay(delay, function()
+		local hum = Combat.humanoidOf(ps.player)
+		if not e.dead and hum and hum.Health > 0 then
+			Combat.hitEnemy(e, power, "cursed", e.root.Position, { knock = knock, ignoreDef = true }, ps)
+			Combat.fx("number", { at = e.root.Position + Vector3.new(0, 4, 0), text = "SOUL", tone = "se" })
+		end
+	end)
 end
 
 local function onHitOf(s: any, extra: Rules.OnHit?): Rules.OnHit
@@ -73,6 +97,7 @@ local function crit(c: Ctx, e: Combat.Enemy, power: number): number
 	local mul, ramp, landed = Rules.rollCrit(c.s.crit, c.ps.flashRamp, math.random())
 	c.ps.flashRamp = ramp
 	if landed then
+		Combat.emit(c.ps, "crit")
 		Combat.fx("banner", { text = c.s.crit.tag or "BLACK FLASH", color = c.s.crit.color or 0xff2d55 })
 		Combat.fx("burst", { at = e.root.Position, color = c.s.crit.color or 0xff2d55, count = 24 })
 	end
@@ -96,10 +121,10 @@ handlers.projectile = function(c)
 			if s.aoe then
 				Combat.fx("ring", { at = at, radius = s.aoe * STUDS, color = colorOf(s) })
 				for _, o in Combat.enemiesNear(at, s.aoe * STUDS) do
-					hit(c, o, s.power * c.B * bonus(s, o), at)
+					hit(c, o, s.power * c.B * c.WM * bonus(s, o), at)
 				end
 			else
-				hit(c, e, s.power * c.B * bonus(s, e), at)
+				hit(c, e, s.power * c.B * c.WM * bonus(s, e), at)
 			end
 		end,
 	})
@@ -108,21 +133,55 @@ end
 
 handlers.melee = function(c)
 	local s = c.s
-	local reach = s.range * STUDS
-	Combat.fx("slash", { at = c.origin + c.flat * STUDS * 1.4, dir = c.flat, reach = reach, color = colorOf(s) })
+	local W = c.W
+	local reach = s.range * (if W then W.range or 1 else 1) * STUDS
+	local tint = if W and W.color then W.color else colorOf(s)
+	Combat.fx("slash", { at = c.origin + c.flat * STUDS * 1.4, dir = c.flat, reach = reach, color = tint })
 	for _, e in table.clone(Combat.enemies) do
-		if e.dead then
+		if e.dead or not Combat.groundReachable(e, c.root.Position) then
 			continue
 		end
 		local to = (e.root.Position - c.root.Position) * Vector3.new(1, 0, 1)
 		local inReach = to.Magnitude <= reach + (e.t.size or 1) * STUDS
 		local inArc = s.arc == nil or to.Magnitude < 1e-3 or to.Unit:Dot(c.flat) > s.arc
 		if inReach and inArc then
-			local power = (s.power + (if s.percentMax then e.hum.MaxHealth * s.percentMax else 0)) * c.B * bonus(s, e)
+			local power = (s.power * c.WM + (if s.percentMax then e.hum.MaxHealth * s.percentMax else 0))
+				* c.B
+				* bonus(s, e)
 			if s.finisher then
 				power *= 1 + s.finisher * (1 - e.hum.Health / e.hum.MaxHealth)
 			end
-			hit(c, e, crit(c, e, power))
+			power = crit(c, e, power)
+			if (s.breaksBarrier or (W and W.breaksBarrier)) and e.defMul < 1 then
+				e.defMul = 1
+				Combat.fx(
+					"number",
+					{ at = e.root.Position + Vector3.new(0, 4, 0), text = "BARRIER BROKEN", tone = "se" }
+				)
+			end
+			hit(c, e, power, nil, {
+				knock = (s.knock or 0) + (if W then W.knock or 0 else 0),
+				ignoreDef = if s.ignoreDef or (W and W.ignoreDef) then true else nil,
+			})
+			-- The Chain of a Thousand Miles drags whatever it hits back in.
+			if W and W.pull and not e.dead then
+				local pull = (c.root.Position - e.root.Position) * Vector3.new(1, 0, 1)
+				if pull.Magnitude > 2 * STUDS then
+					local by = math.min(6 * STUDS, pull.Magnitude - 1.6 * STUDS)
+					e.root.CFrame += pull.Unit * by
+				end
+			end
+			if s.second then
+				local target, second = e, s.second
+				task.delay(second.delay, function()
+					if not target.dead then
+						Combat.hitEnemy(target, second.power * c.B, "cursed", c.root.Position, { knock = 4 }, c.ps)
+					end
+				end)
+			end
+			if W and W.soul then
+				Abilities.soulCut(c.ps, e, power * W.soul.mul, W.soul.delay, 2)
+			end
 		end
 	end
 	return true
@@ -133,12 +192,19 @@ local function clearPath(c: Ctx, from: Vector3, to: Vector3): Vector3
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	local ignore: { Instance } = {}
-	for _, inst in { c.ps.player.Character :: Instance?, workspace:FindFirstChild("Enemies") } do
+	for _, inst in
+		{
+			c.ps.player.Character :: Instance?,
+			workspace:FindFirstChild("Enemies"),
+			workspace:FindFirstChild("Worn"),
+		}
+	do
 		if inst then
 			table.insert(ignore, inst)
 		end
 	end
 	params.FilterDescendantsInstances = ignore
+	params.CollisionGroup = "ShotRay" -- rails and tree crowns do not stop a dash
 	local r = workspace:Raycast(from, to - from, params)
 	if r then
 		return r.Position - (to - from).Unit * 2
@@ -154,7 +220,8 @@ handlers.dash = function(c)
 	Combat.fx("dash", { from = start, to = finish, color = colorOf(s) })
 	for _, e in table.clone(Combat.enemies) do
 		if not e.dead and Projectiles.segDistance(start, finish, e.root.Position) < (2 + (e.t.size or 1)) * STUDS then
-			hit(c, e, crit(c, e, s.power * c.B * bonus(s, e)), start)
+			local ignore = if c.W and c.W.ignoreDef then true else nil
+			hit(c, e, crit(c, e, s.power * c.B * c.WM * bonus(s, e)), start, { ignoreDef = ignore })
 		end
 	end
 	return true
@@ -361,28 +428,241 @@ handlers.toggle = function(c)
 	return true
 end
 
+handlers.self = function(c)
+	if not c.s.decoy then
+		return false
+	end
+	c.ps.decoy = true
+	Combat.fx("burst", { at = c.origin + c.flat * 1.2 * STUDS, color = 0xffffff, count = 10 })
+	Combat.notice(c.ps.player, c.s.name .. "! A clone will take the next hit.")
+	return true
+end
+
+handlers.rewind = function(c)
+	local snap = Rules.rewindSnapshot(c.ps.history, Combat.now(), c.s.seconds or 6)
+	if not snap then
+		return false
+	end
+	local gained = math.max(0, Rules.round(snap.hp - c.hum.Health))
+	local back = Vector3.new(snap.x, snap.y, snap.z)
+	Combat.fx("burst", { at = c.root.Position, color = 0x9b6cff, count = 16 })
+	c.root.AssemblyLinearVelocity = Vector3.zero
+	c.root.CFrame = CFrame.new(back) * c.root.CFrame.Rotation
+	c.hum.Health = math.min(c.hum.MaxHealth, math.max(c.hum.Health, snap.hp))
+	c.ps.se = math.max(c.ps.se, snap.se)
+	Combat.fx("banner", { text = "REVERSE TIME", color = 0x9b6cff })
+	Combat.fx("burst", { at = back, color = 0x9b6cff, count = 24 })
+	if gained > 0 then
+		Combat.fx("number", { at = back + Vector3.new(0, 3, 0), text = "+" .. gained, tone = "heal" })
+	end
+	Combat.notice(
+		c.ps.player,
+		`Reverse Time: you are where you were {c.s.seconds or 6} seconds ago{if gained > 0
+			then `, {gained} HP back`
+			else ""}.`,
+		"gold"
+	)
+	return true
+end
+
+handlers.switch = function(c)
+	local a = (Arsenals :: any)[c.ps.style :: string]
+	if not a then
+		return false
+	end
+	Abilities.cycleWeapon(c.ps)
+	return true
+end
+
+--- The nearest enemy inside `range` studs whose direction is within the
+--- forward cone `dot` of the aim. The web build's Body Swap picks this way.
+local function nearestAhead(c: Ctx, range: number, dot: number): Combat.Enemy?
+	local best, bestD = nil, range
+	for _, e in Combat.enemies do
+		if e.dead or not Combat.groundReachable(e, c.root.Position) then
+			continue
+		end
+		local to = e.root.Position - c.root.Position
+		local d = to.Magnitude
+		if d < bestD and (d < 1e-3 or to.Unit:Dot(c.dir) > dot) then
+			best, bestD = e, d
+		end
+	end
+	return best
+end
+
+handlers.possess = function(c)
+	local s = c.s
+	local e = nearestAhead(c, s.range * STUDS, 0.1)
+	if not e then
+		return false
+	end
+	-- Out of the fight's enemy list; it walks for its wearer now.
+	Combat.take(e)
+	e.model.Name = "Worn " .. e.t.name
+	e.hum.DisplayName = "Worn  ·  " .. e.t.name
+	table.insert(Combat.worn, {
+		model = e.model,
+		hum = e.hum,
+		root = e.root,
+		owner = c.ps,
+		untilT = Combat.now() + (s.duration or 20),
+		next = Combat.now() + 0.5,
+		power = (s.power or 40) * c.B,
+		nature = e.t.nature,
+	})
+	local heal = Rules.round((s.heal or 0) * c.B)
+	c.hum.Health = math.min(c.hum.MaxHealth, c.hum.Health + heal)
+	Combat.fx("burst", { at = e.root.Position, color = 0xb06cff, count = 22 })
+	Combat.fx("number", { at = c.root.Position + Vector3.new(0, 3, 0), text = "+" .. heal, tone = "heal" })
+	Combat.fx("banner", { text = "BODY TAKEN", color = 0xb06cff })
+	Combat.notice(c.ps.player, "You step into the " .. e.t.name .. ". It fights for you now.", "gold")
+	return true
+end
+
+-- Set by Symbiote: a line of the symbiote's, to its host.
+Abilities.say = function(_ps: Combat.PState, _text: string, _loud: boolean?) end
+
+handlers.devour = function(c)
+	local s = c.s
+	local ps = c.ps
+	-- No clock on this one: what stops you feeding is being full.
+	if s.hungerGate and ps.hunger > s.hungerGate then
+		Combat.notice(ps.player, "The symbiote is not hungry yet.")
+		return nil
+	end
+	local prey = Combat.nearestEnemy(c.root.Position, s.range * STUDS)
+	if not prey then
+		return false
+	end
+	local root = c.root
+	-- Stun it, root it, stop it, and put it right in front of him at its own
+	-- height: a floating thing otherwise drifts back out before the bite.
+	local function hold(e: Combat.Enemy)
+		e.status.stun = math.max(e.status.stun or 0, 1.4)
+		e.status.root = math.max(e.status.root or 0, 1.4)
+		e.root.AssemblyLinearVelocity = Vector3.zero
+		local dir = (e.root.Position - root.Position) * Vector3.new(1, 0, 1)
+		if dir.Magnitude < 1e-3 then
+			dir = Vector3.zAxis
+		end
+		local at = root.Position + dir.Unit * 2.2 * STUDS
+		e.root.CFrame = CFrame.new(at.X, e.root.Position.Y, at.Z) * e.root.CFrame.Rotation
+	end
+	for i = 0, 1 do
+		Combat.fx("beam", {
+			from = c.origin + Vector3.new(if i == 0 then -0.4 else 0.4, 0.2, 0) * STUDS,
+			to = prey.root.Position + Vector3.new(0, 1.5, 0),
+			color = 0x1a1a24,
+			width = 0.3,
+			life = 0.45,
+		})
+	end
+	hold(prey)
+	local bite = s.power * c.B
+	task.delay(0.26, function()
+		local hum = Combat.humanoidOf(ps.player)
+		if not hum or hum.Health <= 0 then
+			return
+		end
+		if not prey.dead then
+			hold(prey)
+		end
+		local at = if prey.dead then root.Position + Vector3.new(0, 1.5, 0) * STUDS else prey.root.Position
+		Combat.fx("burst", { at = at, color = 0xc0294a, count = 26 })
+		Combat.fx("burst", { at = at, color = 0x1a1a24, count = 18 })
+		-- No knockback: it is being eaten, not punched.
+		if not prey.dead then
+			Combat.hitEnemy(prey, bite, s.nature, nil, { knock = 0, ignoreDef = true }, ps)
+		end
+		ps.hunger = math.min(100, ps.hunger + 70)
+		Abilities.say(ps, "Good.")
+		local before = hum.Health
+		hum.Health = hum.MaxHealth
+		Combat.fx("number", {
+			at = root.Position + Vector3.new(0, 3, 0),
+			text = "+" .. Rules.round(hum.MaxHealth - before),
+			tone = "heal",
+		})
+		Combat.fx("banner", { text = "FEED", color = 0xc0294a })
+		Combat.publish(ps)
+	end)
+	return true
+end
+
 -- Set by init: swaps a player into another style's body and kit, or back.
 local transformInto: (ps: Combat.PState, into: string?) -> () = function() end
 
-local Abilities = {}
 Abilities.setTransform = function(fn: (Combat.PState, string?) -> ())
 	transformInto = fn
+end
+--- A transform from inside the frame loop (the symbiote's takeover): on its
+--- own thread, since reloading the body yields.
+function Abilities.transform(ps: Combat.PState, into: string?)
+	task.spawn(transformInto, ps, into)
 end
 
 local function sendCooldown(ps: Combat.PState, key: string, readyAt: number, duration: number)
 	CooldownRemote:FireClient(ps.player, key, readyAt, duration)
 end
 
+--- Draws the next weapon or suit in the player's set.
+function Abilities.cycleWeapon(ps: Combat.PState): Rules.Weapon?
+	local a = ps.style and (Arsenals :: any)[ps.style]
+	if not a then
+		return nil
+	end
+	ps.weapon = Rules.nextWeapon(a.order, ps.weapon)
+	local w = a.items[ps.weapon :: string]
+	local root = Combat.rootOf(ps.player)
+	Combat.fx("banner", { text = string.upper(w.name), color = w.color })
+	if root then
+		Combat.fx("burst", { at = root.Position, color = w.color, count = 18 })
+	end
+	Combat.notice(ps.player, `Drew the {w.name} ({w.sub}). {w.note}`, "gold")
+	Combat.publish(ps)
+	return w
+end
+
+--- Spends a stored charge on the technique being cast. Returns the damage
+--- multiplier and the charge, so a cast that finds nothing can put it back.
+local function consumeOutput(ps: Combat.PState): (number, any)
+	local o = ps.output
+	if not o then
+		return 1, nil
+	end
+	ps.output = nil
+	Combat.fx("banner", { text = string.upper(o.name) .. " RELEASED", color = RulesData.OUTPUT_TIERS[o.tier].color })
+	return o.dmg, o
+end
+
+export type CastOpts = { free: boolean? }
+
 --- Resolves a cast. `which` is a slot number (1-5), "ult", or a skill id
---- sent for a signature (E) action. Returns whether it went off.
-function Abilities.cast(ps: Combat.PState, which: number | string, aim: Vector3): boolean
+--- (a signature on E, or a forced cast such as the symbiote feeding itself).
+--- `opts.free` skips cost and cooldown. Returns whether it went off.
+function Abilities.cast(ps: Combat.PState, which: number | string, aim: Vector3, opts: CastOpts?): boolean
+	local free = opts ~= nil and opts.free == true
 	local hum = Combat.humanoidOf(ps.player)
 	local root = Combat.rootOf(ps.player)
-	if not hum or not root or hum.Health <= 0 or not ps.style then
+	if not hum or not root or hum.Health <= 0 or not ps.style or ps.chargeStart then
 		return false
 	end
 	local now = Combat.now()
 	local style = Styles[ps.style]
+	-- G in a toggle transform (Venom, Antivenom) takes it off again, once the
+	-- ultimate's cooldown has settled (useUltimate in the web build).
+	if which == "ult" and ps.baseStyle and not free then
+		local baseUlt = Styles[ps.baseStyle].ultimate
+		if baseUlt and baseUlt.toggle then
+			if ps.ultReadyAt > now then
+				Combat.notice(ps.player, `The suit is still settling ({string.format("%.1f", ps.ultReadyAt - now)}s).`)
+				return false
+			end
+			transformInto(ps, nil)
+			return true
+		end
+	end
 	local id: string?, ult: any = nil, nil
 	if which == "ult" then
 		ult = style.ultimate
@@ -393,27 +673,33 @@ function Abilities.cast(ps: Combat.PState, which: number | string, aim: Vector3)
 		id = which
 	end
 
-	-- Cost and cooldown. An ultimate is priced and timed by its own entry.
+	-- Cost and cooldown. An ultimate is priced and timed by its own entry. A
+	-- drawn weapon scales both for the techniques built around it.
 	local buff = Combat.buffActive(ps)
 	local key = if ult then "ult" else id
 	if not key then
 		return false
 	end
+	local s = id and Skills[id]
+	local W = if s and s.weaponScaled and not ult then currentWeapon(ps) else nil
 	local readyAt = if ult then ps.ultReadyAt else (ps.cooldowns[key] or 0)
-	if not style.noCd and readyAt > now then
+	if not free and not style.noCd and readyAt > now then
 		return false
 	end
-	local cost = if ult
-		then ult.cost
-		else Rules.castCost(Skills[id :: string], { buffCostMul = if buff then buff.costMul else 1 })
+	local costArgs: Rules.CostArgs = {
+		weaponCostMul = if W then W.costMul else nil,
+		outputCostMul = if ps.output then ps.output.cost else nil,
+		buffCostMul = if buff then buff.costMul else nil,
+	}
+	local cost = if free then 0 elseif ult then Rules.castCost(ult, costArgs) else Rules.castCost(s, costArgs)
 	if ps.se < cost then
-		Combat.notice(
-			ps.player,
-			"Not enough Spirit Energy for " .. (if ult then ult.name else Skills[id :: string].name) .. "."
-		)
+		Combat.notice(ps.player, "Not enough Spirit Energy for " .. (if ult then ult.name else s.name) .. ".")
 		return false
 	end
-	local cd = if ult then (style.cdFlat or ult.cd) else Rules.cooldownFor(Skills[id :: string], style)
+	local cd = if free
+		then nil
+		elseif ult then (style.cdFlat or ult.cd)
+		else Rules.cooldownFor(s, style, if W then W.cdMul else nil)
 
 	-- The transform and Mahoraga ultimates have no technique behind them.
 	if ult and not id then
@@ -446,7 +732,6 @@ function Abilities.cast(ps: Combat.PState, which: number | string, aim: Vector3)
 		return true
 	end
 
-	local s = Skills[id :: string]
 	local handler = handlers[s.type]
 	if not handler then
 		Combat.notice(ps.player, s.name .. " (" .. s.type .. ") is not in the Roblox build yet.")
@@ -456,6 +741,12 @@ function Abilities.cast(ps: Combat.PState, which: number | string, aim: Vector3)
 	local dir = if aim.Magnitude > 0.01 then aim.Unit else root.CFrame.LookVector
 	local flat = dir * Vector3.new(1, 0, 1)
 	flat = if flat.Magnitude > 0.01 then flat.Unit else root.CFrame.LookVector * Vector3.new(1, 0, 1)
+	-- A free cast (auto-webbing, the symbiote feeding itself) never spends
+	-- the charge the player stored with B.
+	local B, stored = 1, nil
+	if not free then
+		B, stored = consumeOutput(ps)
+	end
 	local ctx: Ctx = {
 		ps = ps,
 		s = s,
@@ -465,15 +756,23 @@ function Abilities.cast(ps: Combat.PState, which: number | string, aim: Vector3)
 		origin = root.Position + Vector3.new(0, 1.5, 0),
 		dir = dir,
 		flat = flat.Unit,
-		B = 1,
+		B = B,
+		W = W,
+		WM = if W then W.mul or 1 else 1,
 	}
 
 	ps.se -= cost
 	ps.regenBlockedUntil = now + Config.SE_REGEN_DELAY
-	if handler(ctx) == false then
-		-- Nothing to aim at: the energy comes back and nothing locks.
+	local went = handler(ctx)
+	if went ~= true then
+		-- Nothing to aim at: the energy and the charge come back and nothing
+		-- locks. A handler that returns nil has already said why.
 		ps.se += cost
-		Combat.notice(ps.player, "Nothing in reach for " .. s.name .. ".")
+		ps.output = stored
+		if went == false then
+			Combat.notice(ps.player, "Nothing in reach for " .. s.name .. ".")
+		end
+		Combat.publish(ps)
 		return false
 	end
 	if cd then
@@ -487,8 +786,240 @@ function Abilities.cast(ps: Combat.PState, which: number | string, aim: Vector3)
 	if s.type == "domain" then
 		Combat.fx("banner", { text = "DOMAIN EXPANSION", color = s.edge or 0xffffff })
 	end
+	if not free then
+		Combat.emit(ps, "cast")
+		if stored then
+			Combat.emit(ps, "output")
+		end
+	end
 	Combat.publish(ps)
 	return true
+end
+
+--- The basic attack: the style's fist, or whatever weapon is drawn.
+function Abilities.strike(ps: Combat.PState, aim: Vector3)
+	local hum = Combat.humanoidOf(ps.player)
+	local root = Combat.rootOf(ps.player)
+	local now = Combat.now()
+	if not hum or not root or hum.Health <= 0 or not ps.style or ps.chargeStart or now < ps.strikeReadyAt then
+		return
+	end
+	ps.strikeReadyAt = now + 0.38
+	local W = currentWeapon(ps)
+	local st = Rules.strike(Styles[ps.style], W, math.random())
+	local flat = aim * Vector3.new(1, 0, 1)
+	flat = if flat.Magnitude > 0.01 then flat.Unit else (root.CFrame.LookVector * Vector3.new(1, 0, 1)).Unit
+	local reach = st.reach * STUDS
+	local tint = if st.blackFlash then 0xff2d55 elseif W and W.color then W.color else 0xffffff
+	Combat.fx("slash", { at = root.Position + flat * STUDS * 1.2, dir = flat, reach = reach, color = tint })
+	local landed = false
+	for _, e in table.clone(Combat.enemies) do
+		if e.dead or not Combat.groundReachable(e, root.Position) then
+			continue
+		end
+		local to = (e.root.Position - root.Position) * Vector3.new(1, 0, 1)
+		if to.Magnitude <= reach + (e.t.size or 1) * STUDS and (to.Magnitude < 1e-3 or to.Unit:Dot(flat) > 0.3) then
+			if st.blackFlash then
+				if not landed then
+					Combat.fx("banner", { text = "BLACK FLASH", color = 0xff2d55 })
+				end
+				Combat.fx("burst", { at = e.root.Position, color = 0xff2d55, count = 12 })
+				Combat.hitEnemy(e, st.power, "cursed", root.Position, { knock = st.knock }, ps)
+			else
+				Combat.hitEnemy(
+					e,
+					st.power,
+					"physical",
+					root.Position,
+					{ knock = st.knock, ignoreDef = if st.ignoreDef then true else nil },
+					ps
+				)
+				if W and W.soul then
+					Abilities.soulCut(ps, e, st.power * W.soul.mul, W.soul.delay, 1)
+				end
+			end
+			landed = true
+		end
+	end
+	if landed then
+		Combat.emit(ps, "strike")
+		if st.blackFlash then
+			Combat.emit(ps, "crit")
+		end
+	end
+end
+
+--- R, for a style with limbs or webbing of its own: hands the fight to them.
+function Abilities.toggleAuto(ps: Combat.PState)
+	local st = ps.style and Styles[ps.style]
+	if not st or not (st.autoLimbs or st.autoWeb) then
+		return
+	end
+	ps.autoAttack = not ps.autoAttack
+	Combat.notice(
+		ps.player,
+		if ps.autoAttack then "The suit fights on its own now (R to stop)." else "You have the fight back."
+	)
+	Combat.publish(ps)
+end
+
+--- Auto-attack, ten times a second: every limb that is ready lashes the
+--- nearest enemy in its reach (each limb its own, so a crowd is spread
+--- between them), rationed so a hundred tendrils do not flood the screen;
+--- and the webbing fires its technique at the nearest enemy in range.
+function Abilities.stepAuto(dt: number)
+	for _, ps in Combat.states do
+		local st = ps.style and Styles[ps.style]
+		local root = Combat.rootOf(ps.player)
+		local hum = Combat.humanoidOf(ps.player)
+		if not ps.autoAttack or not st or not root or not hum or hum.Health <= 0 then
+			continue
+		end
+		local cfg = st.autoLimbs
+		if cfg then
+			local budget = 2
+			local reach = cfg.reach * STUDS
+			for i = 1, cfg.count do
+				ps.limbCd[i] = (ps.limbCd[i] or (i * cfg.cd / cfg.count)) - dt
+				if ps.limbCd[i] > 0 then
+					continue
+				end
+				local best: Combat.Enemy? = nil
+				local n = #Combat.enemies
+				for k = 0, n - 1 do
+					local e = Combat.enemies[((k + i) % n) + 1]
+					if
+						e
+						and not e.dead
+						and Combat.groundReachable(e, root.Position)
+						and (e.root.Position - root.Position).Magnitude < reach
+					then
+						best = e
+						break
+					end
+				end
+				if not best then
+					ps.limbCd[i] = 0.25
+					continue
+				end
+				if budget <= 0 then
+					ps.limbCd[i] = 0.05
+					continue
+				end
+				budget -= 1
+				ps.limbCd[i] = cfg.cd * (0.85 + math.random() * 0.3)
+				local back = -root.CFrame.LookVector * 0.35 * STUDS
+				local side = root.CFrame.RightVector * math.sin(i * 2.7) * 0.5 * STUDS
+				Combat.fx("beam", {
+					from = root.Position + Vector3.new(0, 0.6 * STUDS, 0) + back + side,
+					to = best.root.Position,
+					color = cfg.color or 0x2a2a34,
+					width = 0.35,
+					life = 0.3,
+				})
+				local o: any = table.clone(cfg.onHit or {})
+				o.knock = cfg.knock or 4
+				Combat.hitEnemy(best, cfg.power, cfg.nature or "physical", root.Position, o, ps)
+			end
+		end
+		local w = st.autoWeb
+		if w then
+			ps.webCd -= dt
+			if ps.webCd <= 0 then
+				local best, bestD = nil, (w.range or 24) * STUDS
+				for _, e in Combat.enemies do
+					if not e.dead then
+						local d = (e.root.Position - root.Position).Magnitude
+						if d > 4 * STUDS and d < bestD then
+							best, bestD = e, d
+						end
+					end
+				end
+				if best then
+					ps.webCd = w.cd or 2.2
+					Abilities.cast(ps, w.skill, (best.root.Position - root.Position).Unit, { free = true })
+				else
+					ps.webCd = 0.4
+				end
+			end
+		end
+	end
+end
+
+--- Q: the dodge. The client moves its own character (it owns its physics);
+--- the server decides whether it is off cooldown and grants the moment of
+--- invulnerability, and everyone else sees the streak.
+function Abilities.dodge(ps: Combat.PState, dir: Vector3)
+	local hum = Combat.humanoidOf(ps.player)
+	local root = Combat.rootOf(ps.player)
+	local now = Combat.now()
+	local flatDir = dir * Vector3.new(1, 0, 1)
+	-- A dodge goes somewhere, and costs a little energy: not free i-frames.
+	if
+		not hum
+		or not root
+		or hum.Health <= 0
+		or now < ps.nextDodge
+		or flatDir.Magnitude < 0.5
+		or ps.se < Config.DODGE_COST
+	then
+		return
+	end
+	if ps.se ~= math.huge then
+		ps.se -= Config.DODGE_COST
+	end
+	ps.nextDodge = now + Config.DODGE_COOLDOWN - 0.05 -- a little slack for latency
+	-- Never shortens a longer invulnerability (the Vessel's takeover).
+	ps.invulnUntil = math.max(ps.invulnUntil, now + Config.DODGE_IFRAMES)
+	ps.dodgedAt, ps.perfectUsed = now, false
+	local flat = dir * Vector3.new(1, 0, 1)
+	if flat.Magnitude > 0.01 then
+		local to = root.Position + flat.Unit * Config.DODGE_SPEED * Config.DODGE_TIME * STUDS
+		Combat.fx("dash", { from = root.Position, to = to, color = 0xdfe8ff })
+	end
+end
+
+--- Hold B: powering up. Nothing else can be cast until it is let go.
+function Abilities.startCharge(ps: Combat.PState)
+	local hum = Combat.humanoidOf(ps.player)
+	if ps.chargeStart or not ps.style or not hum or hum.Health <= 0 then
+		return
+	end
+	ps.chargeStart = Combat.now()
+	ps.player:SetAttribute("ChargeStart", ps.chargeStart)
+	Combat.notice(ps.player, "Powering up. Hold B: 5 s for Medium Output, 10 s for Maximum.")
+end
+
+--- Let go of B: the tier reached is stored for the next technique. Maximum
+--- Output also blows everything close away.
+function Abilities.releaseCharge(ps: Combat.PState)
+	local start = ps.chargeStart
+	if not start then
+		return
+	end
+	ps.chargeStart = nil
+	ps.player:SetAttribute("ChargeStart", nil)
+	local tiers = RulesData.OUTPUT_TIERS
+	local i = Rules.outputTier(tiers, Combat.now() - start)
+	local tier = tiers[i]
+	ps.output = { dmg = tier.dmg, cost = tier.cost, name = tier.name, tier = i }
+	Combat.fx("banner", { text = string.upper(tier.name), color = tier.color })
+	local off = if tier.cost == 0
+		then " and costs nothing"
+		elseif tier.cost < 1 then ` at {Rules.round((1 - tier.cost) * 100)}% off`
+		else ""
+	Combat.notice(ps.player, `{tier.name} stored: your next technique hits for x{tier.dmg}{off}.`, "gold")
+	local root = Combat.rootOf(ps.player)
+	if root then
+		Combat.fx("burst", { at = root.Position, color = tier.color, count = if i == #tiers then 44 else 18 })
+		if i == #tiers then
+			Combat.fx("ring", { at = root.Position, radius = 14 * STUDS, color = 0xff2d55 })
+			for _, e in Combat.enemiesNear(root.Position, 14 * STUDS) do
+				Combat.hitEnemy(e, 60, "physical", root.Position, { knock = 26, root = 0.8 }, ps)
+			end
+		end
+	end
+	Combat.publish(ps)
 end
 
 return Abilities

@@ -259,7 +259,7 @@ function Rules.bondLoss(nature: string, dmg: number): number
 end
 
 --- The output tier a charge held for `held` seconds reaches.
-function Rules.outputTier(tiers: { { at: number } }, held: number): number
+function Rules.outputTier(tiers: { { at: number, [string]: any } }, held: number): number
 	local best = 1
 	for i, t in tiers do
 		if held >= t.at then
@@ -267,6 +267,253 @@ function Rules.outputTier(tiers: { { at: number } }, held: number): number
 		end
 	end
 	return best
+end
+
+export type Weapon = {
+	name: string,
+	m1: number,
+	mul: number?,
+	range: number?,
+	knock: number?,
+	cdMul: number?,
+	costMul: number?,
+	ignoreDef: boolean?,
+	breaksBarrier: boolean?,
+	pull: boolean?,
+	soul: { mul: number, delay: number }?,
+	color: number?,
+}
+
+export type Strike = { power: number, reach: number, knock: number, ignoreDef: boolean, blackFlash: boolean }
+
+--- The basic attack (strike). A drawn weapon replaces the style's own fist:
+--- its m1, and none of the style's extra reach. `roll` decides Black Flash for
+--- a style with m1BlackFlash, which hits for 40 cursed instead.
+function Rules.strike(
+	style: { m1: number?, m1Range: number?, m1BlackFlash: number? }?,
+	weapon: Weapon?,
+	roll: number
+): Strike
+	local reach = 2.8 + (if weapon then 0 else (style and style.m1Range or 0))
+	local chance = if style then style.m1BlackFlash or 0 else 0
+	if chance > 0 and roll < chance then
+		return { power = 16 * 2.5, reach = reach, knock = 9, ignoreDef = false, blackFlash = true }
+	end
+	return {
+		power = if weapon then weapon.m1 else (style and style.m1 or 16),
+		reach = reach,
+		knock = 5 + (if weapon then (weapon.knock or 0) * 0.4 else 0),
+		ignoreDef = weapon ~= nil and weapon.ignoreDef == true,
+		blackFlash = false,
+	}
+end
+
+--- Hunger falls by `drain` a second. Returns the new value and the line mark
+--- (75, 50, 30 or 15) it fell through this frame, if any.
+function Rules.hungerStep(hunger: number, drain: number, dt: number): (number, number?)
+	local after = math.max(0, hunger - drain * dt)
+	for _, mark in { 75, 50, 30, 15 } do
+		if hunger > mark and after <= mark then
+			return after, mark
+		end
+	end
+	return after, nil
+end
+
+--- The suit mends once it has been left alone for `regenAfter` seconds, and
+--- stops being torn once it is back over a quarter. Returns health, broken.
+function Rules.suitRegen(
+	sym: { suit: number, regen: number?, regenAfter: number? },
+	hp: number,
+	broken: boolean,
+	sinceHurt: number,
+	dt: number
+): (number, boolean)
+	if sinceHurt <= (sym.regenAfter or 5) or hp >= sym.suit then
+		return hp, broken
+	end
+	local after = math.min(sym.suit, hp + (sym.regen or 9) * dt)
+	return after, broken and after <= sym.suit * 0.25
+end
+
+--- The bond: fire and sound strip it (bondLoss); starving strips 6 a second;
+--- left alone for four seconds it comes back at 3.5 a second.
+function Rules.bondStep(bond: number, max: number, hunger: number, sinceHurt: number, dt: number): number
+	if hunger <= 0 then
+		return math.max(0, bond - 6 * dt)
+	end
+	if bond > 0 and bond < max and sinceHurt > 4 then
+		return math.min(max, bond + 3.5 * dt)
+	end
+	return bond
+end
+
+-- Elites -------------------------------------------------------------------
+
+export type Affix = {
+	key: string,
+	name: string, -- goes in front of the enemy's name
+	color: number,
+	hp: number?, -- multipliers
+	atk: number?,
+	speed: number?,
+	size: number?,
+	armor: number?, -- added to the flat cut, capped at 0.6
+	tempo: number?,
+	vampiric: number?, -- share of damage dealt to players it heals
+	volatile: { power: number, radius: number, delay: number }?, -- explodes when it dies
+}
+
+Rules.AFFIXES = {
+	{ key = "frenzied", name = "Frenzied", color = 0xff4d5e, speed = 1.35, tempo = 0.7 },
+	{ key = "armored", name = "Armored", color = 0xb8c2d0, hp = 1.4, armor = 0.2 },
+	{ key = "giant", name = "Giant", color = 0xffb340, hp = 1.8, atk = 1.3, size = 1.3, speed = 0.85 },
+	{ key = "vampiric", name = "Vampiric", color = 0xc0294a, hp = 1.2, vampiric = 0.6 },
+	{
+		key = "volatile",
+		name = "Volatile",
+		color = 0xff8a3d,
+		speed = 1.1,
+		volatile = { power = 45, radius = 5, delay = 1 },
+	},
+} :: { Affix }
+
+--- Whether an enemy arriving in wave `wave` (1-based) is an elite, and which.
+--- None in the first two waves; then 8%, rising 1.5% a wave to 30%. Bosses
+--- are never elites. `roll` and `pick` are uniform 0..1.
+--- `bonus` raises the chance (and its cap): Loose Threads adds 0.15, and a
+--- bonus of 1 or more makes every non-boss an elite from the first wave (the
+--- Seam, where everything is stitched).
+function Rules.rollAffix(wave: number, boss: boolean?, roll: number, pick: number, bonus: number?): Affix?
+	local b = bonus or 0
+	if boss or (wave < 3 and b < 1) then
+		return nil
+	end
+	local chance = math.min(0.3 + b, 0.08 + math.max(0, wave - 3) * 0.015 + b)
+	if roll >= chance then
+		return nil
+	end
+	local list = Rules.AFFIXES
+	return list[math.clamp(math.floor(pick * #list) + 1, 1, #list)]
+end
+
+--- Applies an affix to a per-instance copy of an enemy template.
+function Rules.applyAffix(t: any, a: Affix)
+	t.name = a.name .. " " .. t.name
+	t.hp = math.floor(t.hp * (a.hp or 1) + 0.5)
+	t.atk = math.floor(t.atk * (a.atk or 1) + 0.5)
+	t.speed = t.speed * (a.speed or 1)
+	t.size = (t.size or 1) * (a.size or 1)
+	if a.armor then
+		t.armor = math.min(0.6, (t.armor or 0) + a.armor)
+	end
+	t.color = a.color
+	t.affix = a.key
+end
+
+--- The Unbidden adapts: each hit of a nature counts, and from the fourth on
+--- that nature does a fifth of its damage. Returns the multiplier for this
+--- hit and whether it has adapted.
+function Rules.adapt(counts: { [string]: number }, nature: string): (number, boolean)
+	local n = (counts[nature] or 0) + 1
+	counts[nature] = n
+	if n > 3 then
+		return 0.2, true
+	end
+	return 1, false
+end
+
+-- Enemy behaviour ----------------------------------------------------------
+
+export type Ai = { state: string, stateUntil: number }
+
+export type AiInput = {
+	now: number,
+	dist: number, -- to the nearest player, in web-build units; math.huge if none
+	canAct: boolean, -- not stunned, rooted or paralysed
+	alerted: boolean, -- hit, or a packmate has seen someone
+	boss: boolean?,
+	notice: number, -- how close someone has to come before it sees them
+	leash: number, -- how far away before it loses interest
+	reach: number, -- starts a swing this close
+	shotReady: boolean, -- has a ranged attack off cooldown
+	charge: { tell: number?, time: number?, range: number? }?,
+	chargeReady: boolean,
+	tempo: number?, -- wind-ups and recoveries scale by this (Frenzied: 0.7)
+}
+
+--- One step of an enemy's mind. Mutates `ai` and says what happened, which
+--- the server turns into movement, telegraphs and hits:
+---   idle (wander), notice, chase, hold, giveup,
+---   windup, winding, strike (the swing lands now),
+---   aim, aiming, shoot,
+---   tell, telling, lunge, lunging, endLunge,
+---   recover, cancel.
+--- Every attack is announced before it lands: a wind-up before a swing, an
+--- aim before a shot, a tell before a charge.
+function Rules.aiStep(ai: Ai, i: AiInput): string
+	local st = ai.state
+	local tempo = i.tempo or 1
+	if st == "idle" then
+		if i.alerted or i.dist < i.notice then
+			ai.state = "chase"
+			return "notice"
+		end
+		return "idle"
+	elseif st == "chase" then
+		if i.dist > i.leash then
+			ai.state = "idle"
+			return "giveup"
+		end
+		if not i.canAct then
+			return "hold"
+		end
+		local c = i.charge
+		if c and i.chargeReady and i.dist > 6 and i.dist < (c.range or 26) then
+			ai.state, ai.stateUntil = "tell", i.now + (c.tell or 0.55) * tempo
+			return "tell"
+		end
+		if i.shotReady and i.dist > 4.5 and i.dist < 42 then
+			ai.state, ai.stateUntil = "aim", i.now + (if i.boss then 0.55 else 0.75) * tempo
+			return "aim"
+		end
+		if i.dist <= i.reach then
+			ai.state, ai.stateUntil = "windup", i.now + (if i.boss then 0.9 else 0.7) * tempo
+			return "windup"
+		end
+		return "chase"
+	elseif st == "windup" or st == "aim" or st == "tell" then
+		if not i.canAct then
+			ai.state = "chase"
+			return "cancel"
+		end
+		if i.now < ai.stateUntil then
+			return if st == "windup" then "winding" elseif st == "aim" then "aiming" else "telling"
+		end
+		if st == "windup" then
+			ai.state, ai.stateUntil = "recover", i.now + (if i.boss then 1.4 else 1.1) * tempo
+			return "strike"
+		elseif st == "aim" then
+			ai.state = "chase"
+			return "shoot"
+		end
+		ai.state, ai.stateUntil = "lunge", i.now + ((i.charge and i.charge.time) or 0.65)
+		return "lunge"
+	elseif st == "lunge" then
+		if i.now >= ai.stateUntil then
+			ai.state, ai.stateUntil = "recover", i.now + 0.65
+			return "endLunge"
+		end
+		return "lunging"
+	elseif st == "recover" then
+		if i.now >= ai.stateUntil then
+			ai.state = "chase"
+			return "chase"
+		end
+		return "recover"
+	end
+	ai.state = "idle"
+	return "idle"
 end
 
 return Rules

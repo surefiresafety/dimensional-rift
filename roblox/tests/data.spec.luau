@@ -10,6 +10,7 @@ local Characters = require("../src/shared/Data/Characters")
 local Maps = require("../src/shared/Data/Maps")
 local RulesData = require("../src/shared/Data/Rules")
 local Signature = require("../src/shared/Signature")
+local Arsenals = require("../src/shared/Data/Arsenals")
 
 -- Keep in step with the handlers table in src/server/Abilities.luau.
 local PORTED = {
@@ -29,8 +30,13 @@ local PORTED = {
 	clones = true,
 	domain = true,
 	toggle = true,
+	self = true,
+	rewind = true,
+	switch = true,
+	possess = true,
+	devour = true,
 }
-local NOT_YET = { self = true, rewind = true, switch = true, possess = true, devour = true }
+local NOT_YET: { [string]: boolean } = {}
 
 local function count(t: { [any]: any }): number
 	local n = 0
@@ -120,14 +126,58 @@ H.test("every equipped slot and ultimate on the roster is castable", function()
 			end
 		end
 	end
-	-- Reported, not failed: these are the known gaps the README lists.
-	print("       equipped but not yet castable: " .. (if #blocked == 0 then "none" else table.concat(blocked, ", ")))
+	H.eq(table.concat(blocked, ", "), "", "equipped but not castable")
+end)
+
+H.test("every weapon set is drawable and complete", function()
+	for style, a in Arsenals :: any do
+		assert(Styles[style], "weapon set for unknown style " .. style)
+		for _, id in a.order do
+			local w = a.items[id]
+			assert(w, style .. " orders a weapon it does not have: " .. id)
+			assert(
+				type(w.m1) == "number" and w.name and w.color,
+				style .. "/" .. id .. " is missing m1, name or colour"
+			)
+		end
+		-- A set is drawn either with R or with a switch technique in a slot.
+		local drawable = a.key == "r"
+		for _, k in Styles[style].slots do
+			drawable = drawable or Skills[k].type == "switch"
+		end
+		assert(drawable, style .. " has a weapon set and no way to draw it")
+	end
+	for id, s in Skills do
+		if s.type == "switch" then
+			local owned = false
+			for style, st in Styles do
+				if table.find(st.pool, id) then
+					owned = true
+					assert((Arsenals :: any)[style], style .. " can switch weapons but has no set")
+				end
+			end
+			assert(owned, id .. " is a switch nobody carries")
+		end
+	end
 end)
 
 H.test("signature casts name real techniques in that character's pool", function()
 	for style, skill in Signature do
 		assert(Styles[style], "signature for unknown style " .. style)
 		assert(Skills[skill], "signature casts unknown " .. skill)
+	end
+end)
+
+H.test("auto-attack: every limb set is sane and every auto-web technique exists", function()
+	for id, st in Styles :: any do
+		local l = st.autoLimbs
+		if l then
+			assert(l.count > 0 and l.reach > 0 and l.power > 0 and l.cd > 0, id .. " has a broken autoLimbs")
+		end
+		local w = st.autoWeb
+		if w then
+			assert(Skills[w.skill], id .. " auto-webs an unknown technique: " .. tostring(w.skill))
+		end
 	end
 end)
 
