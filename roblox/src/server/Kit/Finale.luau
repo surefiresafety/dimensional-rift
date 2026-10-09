@@ -90,7 +90,8 @@ local LIMBS: { [string]: { string } } = {
 local function paintBody(model: Model, body: { [string]: any })
 	local map = {}
 	for limb, color in body.colors do
-		for _, n in LIMBS[limb] or {} do
+		local names: { string } = LIMBS[limb] or {}
+		for _, n in names do
 			map[n] = { color = color, material = body.material }
 		end
 	end
@@ -129,7 +130,16 @@ local function surface(p: BasePart, face: Enum.NormalId, name: string, pps: numb
 	return g
 end
 
-local function frame(parent: Instance, name: string, x: number, y: number, w: number, h: number, color: number?, rot: number?): Frame
+local function frame(
+	parent: Instance,
+	name: string,
+	x: number,
+	y: number,
+	w: number,
+	h: number,
+	color: number?,
+	rot: number?
+): Frame
 	local f = Instance.new("Frame")
 	f.Name = name
 	f.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -147,7 +157,16 @@ local function frame(parent: Instance, name: string, x: number, y: number, w: nu
 	return f
 end
 
-local function outline(parent: Instance, name: string, x: number, y: number, w: number, h: number, color: number, px: number): UIStroke
+local function outline(
+	parent: Instance,
+	name: string,
+	x: number,
+	y: number,
+	w: number,
+	h: number,
+	color: number,
+	px: number
+): UIStroke
 	local f = frame(parent, name, x, y, w, h, nil)
 	local s = Instance.new("UIStroke")
 	s.Color = Palette.color(color)
@@ -254,7 +273,14 @@ local function hyakunui(b: any, rig: any, t: { [string]: any }, pal: { [string]:
 	local strips: { BasePart } = {}
 	entry(b, "HY·s", "R", 2, function()
 		for _, z in { -0.525, 0.525 } do
-			local p = b:mount(ut, nil, "block", V(0.12, 1.6, 0.05), C(0, 0, z), { color = STITCH, material = "Neon", name = "HY·s" })
+			local p = b:mount(
+				ut,
+				nil,
+				"block",
+				V(0.12, 1.6, 0.05),
+				C(0, 0, z),
+				{ color = STITCH, material = "Neon", name = "HY·s" }
+			)
 			table.insert(strips, p)
 		end
 	end)
@@ -284,7 +310,16 @@ local function hyakunui(b: any, rig: any, t: { [string]: any }, pal: { [string]:
 				local ws = s:FindFirstChildOfClass("Weld") :: Weld
 				local d = wp.C0.Position - ws.C0.Position
 				-- canvas x grows toward the character's left (-X); y grows down
-				outline(g, "Patch" .. tostring(p:GetAttribute("Side")), -d.X * pps, -d.Y * pps, (p.Size.X + 0.04) * pps, (p.Size.Y + 0.04) * pps, STITCH, 3)
+				outline(
+					g,
+					"Patch" .. tostring(p:GetAttribute("Side")),
+					-d.X * pps,
+					-d.Y * pps,
+					(p.Size.X + 0.04) * pps,
+					(p.Size.Y + 0.04) * pps,
+					STITCH,
+					3
+				)
 			end
 		end
 	end
@@ -391,6 +426,12 @@ local function white(c: number): number
 	return Costumes.lerp(c, 0xffffff, 0.3)
 end
 
+--- Phase-3 needle colour: steel lerped 30% toward the white-hot thread, not pure white (pure
+--- white lands steel at 0xb8bfc8, within RGB 9 of mahito's 0xbacccf, test 5b).
+function Finale.hotNeedle(): number
+	return Costumes.lerp(Costumes.STEEL, white(STITCH), 0.3)
+end
+
 --- Hyakunui's phase look (§5.1 Phases). Phases only go up; each includes the ones before.
 function Finale.phase(model: Model, phase: number)
 	local now = (model:GetAttribute("FinalePhase") :: number?) or 0
@@ -444,7 +485,7 @@ function Finale.phase(model: Model, phase: number)
 			p.Color = Palette.color(white(STITCH))
 		end
 		for _, p in piecesNamed(model, "HY·n") do
-			p.Color = Palette.color(white(Costumes.STEEL))
+			p.Color = Palette.color(Finale.hotNeedle())
 		end
 		if ut then
 			for _, d in ut:GetChildren() do
@@ -508,7 +549,10 @@ local function tempestFox(b: any, rig: any, t: { [string]: any }, _pal: { [strin
 	local ears: { BasePart } = {}
 	entry(b, "TF·ear", "R", 2, function()
 		for _, s in { -1, 1 } do
-			table.insert(ears, m("wedge", V(0.12, 0.7, 0.4), C(s * 0.25 * S, g + 2.2 * S, -1.25 * S) * rz(-s * 15), body("TF·ear")))
+			table.insert(
+				ears,
+				m("wedge", V(0.12, 0.7, 0.4), C(s * 0.25 * S, g + 2.2 * S, -1.25 * S) * rz(-s * 15), body("TF·ear"))
+			)
 		end
 	end)
 	entry(b, "TF·body", "R", 1, function()
@@ -521,7 +565,12 @@ local function tempestFox(b: any, rig: any, t: { [string]: any }, _pal: { [strin
 	entry(b, "TF·tail", "R", 3, function()
 		local hinge = V(0, g + 1.4 * S, 1.1 * S)
 		for _, a in { -20, 0, 20 } do
-			local p = m("ell", V(0.35, 0.35, 2.4), C(hinge.X, hinge.Y, hinge.Z) * rz(a) * rx(-35) * C(0, 0, 1.2 * S), body("TF·tail"))
+			local p = m(
+				"ell",
+				V(0.35, 0.35, 2.4),
+				C(hinge.X, hinge.Y, hinge.Z) * rz(a) * rx(-35) * C(0, 0, 1.2 * S),
+				body("TF·tail")
+			)
 			b:sway(hinge, 10, p)
 			table.insert(tails, p)
 		end
@@ -529,12 +578,13 @@ local function tempestFox(b: any, rig: any, t: { [string]: any }, _pal: { [strin
 	local legs: { [string]: BasePart } = {}
 	entry(b, "TF·leg", "L", 4, function()
 		-- {name, side, z, size, gait phase}: FL+HR at 0, FR+HL at 0.5
-		for _, l in {
+		local LEGS: { { any } } = {
 			{ "HL", -1, 0.8, V(0.45, 1.3, 0.6), 0.5 },
 			{ "HR", 1, 0.8, V(0.45, 1.3, 0.6), 0 },
 			{ "FL", -1, -0.8, V(0.4, 1.3, 0.5), 0 },
 			{ "FR", 1, -0.8, V(0.4, 1.3, 0.5), 0.5 },
-		} do
+		}
+		for _, l in LEGS do
 			local pivot = V(l[2] * 0.35 * S, g + 0.1 + 1.3 * S, l[3] * S)
 			local p = b:hinge(hrp, nil, "wedge", l[4] * S, pivot, CFrame.identity, body("TF·leg"), ABS)
 			b:gait(l[1], pivot, l[5], 22, p)
@@ -649,7 +699,14 @@ local function unbidden(b: any, rig: any, _t: { [string]: any }, _pal: { [string
 	end)
 	entry(b, "UB·p", "R", 2, function()
 		for _, s in { -1, 1 } do
-			local p = b:mount(ut, nil, "block", V(0.9, 0.8, 0.1), C(s * 0.5, 0.2, -0.55), { color = 0xc8c2b8, name = "UB·p" })
+			local p = b:mount(
+				ut,
+				nil,
+				"block",
+				V(0.9, 0.8, 0.1),
+				C(s * 0.5, 0.2, -0.55),
+				{ color = 0xc8c2b8, name = "UB·p" }
+			)
 			local g = surface(p, Enum.NormalId.Front, "Trim", 100, false)
 			outline(g, "Trim", 0, 0, p.Size.X * 100 - 8, p.Size.Y * 100 - 8, DULL, 4)
 		end
@@ -657,10 +714,17 @@ local function unbidden(b: any, rig: any, _t: { [string]: any }, _pal: { [string
 	entry(b, "UB·d", "R", 2, function()
 		for _, s in { -1, 1 } do
 			local side = if s < 0 then "Left" else "Right"
-			b:mount(rig.parts[side .. "UpperArm"], side .. "ShoulderAttachment", "ell", V(1.2, 0.7, 1.2), C(s * 0.15, 0.1, 0), {
-				color = 0xd9d4cc,
-				name = "UB·d",
-			})
+			b:mount(
+				rig.parts[side .. "UpperArm"],
+				side .. "ShoulderAttachment",
+				"ell",
+				V(1.2, 0.7, 1.2),
+				C(s * 0.15, 0.1, 0),
+				{
+					color = 0xd9d4cc,
+					name = "UB·d",
+				}
+			)
 		end
 	end)
 	paintBody(model, Finale.BODY.the_unbidden)
@@ -747,7 +811,7 @@ Finale.BUILDERS = {
 
 --- Dresses a finale walker. Returns the costume parts used and the builder.
 function Finale.dress(model: Model, enemyId: string, opts: { [string]: any }?): (number, any)
-	local o = opts or {}
+	local o: { [string]: any } = opts or {}
 	local id = Costumes.baseId(enemyId)
 	local spec = Costumes.ENEMY[id]
 	local name = (spec and spec.builder) or id
@@ -765,7 +829,7 @@ function Finale.dress(model: Model, enemyId: string, opts: { [string]: any }?): 
 			d:Destroy()
 		end
 	end
-	local body = Finale.BODY[name] or {}
+	local body: { [string]: any } = Finale.BODY[name] or {}
 	local budget = o.budget or body.budget or 14
 	if o.ally then
 		budget = 14 -- the ward: +1 for the cyan ring (Kit.ally)

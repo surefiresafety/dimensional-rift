@@ -308,12 +308,13 @@ end
 
 --- Exact for blocks, ellipsoids and balls; wedges, corner wedges and cylinders are tested as
 --- their bounding boxes (conservative: a pass on the box is a pass on the shape).
-local function hitsZone(cf, p)
+local function hitsZone(cf, p, kk)
 	local shape = shapeOf(p)
+	local half = p.Size / 2 / (kk or 1)
 	if shape == "ell" or shape == "ball" then
-		return ellipsoidHitsZone(cf, p.Size / 2)
+		return ellipsoidHitsZone(cf, half)
 	end
-	return obbHitsZone(cf, p.Size / 2)
+	return obbHitsZone(cf, half)
 end
 
 --- The pieces' rest frames in Head space (Orbit_* welds at 36 phases, §2.1 driver formula).
@@ -339,8 +340,9 @@ local function faceZoneViolations(model)
 	for _, p in model.Costume:GetDescendants() do
 		if p:IsA("BasePart") and not EXEMPT[p.Name] then
 			local weld = p:FindFirstChildOfClass("Weld")
+			local kk = head.Size.X / 1.2 -- test in nominal head space (scaled heads)
 			for _, cf in headFrames(head, weld) do
-				if hitsZone(cf, p) then
+				if hitsZone(CFrame.new(cf.Position / kk) * cf.Rotation, p, kk) then
 					table.insert(bad, p.Name)
 					break
 				end
@@ -349,7 +351,6 @@ local function faceZoneViolations(model)
 	end
 	return bad
 end
-
 
 local function costumeParts(model)
 	local out = {}
@@ -383,7 +384,6 @@ local function checkFlags(model, label)
 		end
 	end
 end
-
 
 local function rig(scale, headScale)
 	local model = dummy(scale)
@@ -472,7 +472,8 @@ end
 -- every phase, fresh and sequential
 local hyColours = {}
 local function collect(model, phaseLabel)
-	local skinParts = { Head = true, LeftHand = true, RightUpperArm = true, RightLowerArm = true, RightHand = true, FS = true }
+	local skinParts =
+		{ Head = true, LeftHand = true, RightUpperArm = true, RightLowerArm = true, RightHand = true, FS = true }
 	local hairParts = { HR = true, ["HR·k"] = true, ["HR·p"] = true }
 	local r15 = {}
 	for _, c in model:GetChildren() do
@@ -536,7 +537,7 @@ for phase = 1, 3 do
 			local base = w:GetAttribute("BasePos")
 			local f = if phase >= 2 then 1.4 else 1
 			check((w.C0.Position - base * f).Magnitude < 1e-4, label .. ": needle offset")
-			local want = if phase >= 3 then Costumes.lerp(Costumes.STEEL, 0xffffff, 0.3) else Costumes.STEEL
+			local want = if phase >= 3 then Finale.hotNeedle() else Costumes.STEEL
 			check(int(p.Color) == want, label .. ": needle colour")
 		elseif p.Name == "HY·s" then
 			local want = if phase >= 3 then Costumes.lerp(0xff2d55, 0xffffff, 0.3) else 0xff2d55
@@ -559,7 +560,10 @@ for phase = 1, 3 do
 		end
 	end
 	check(hair == (if phase >= 3 then 0 else 2), label .. ": HR·p / HR·k")
-	check(m.Highlight.FillTransparency == (if phase >= 3 then 0.6 else 0.9), label .. ": highlight fill")
+	check(
+		math.abs(m.Highlight.FillTransparency - (if phase >= 3 then 0.6 else 0.9)) < 1e-4,
+		label .. ": highlight fill"
+	)
 	collect(m, label)
 end
 do -- sequential 1 -> 2 -> 3 matches a fresh phase 3
@@ -582,7 +586,9 @@ do
 	local NOT = { browAngle = true, hairLen = true, height = true, headScale = true }
 	local src = {}
 	for _, id in { "mahito", "kenjaku" } do
-		for _, row in { Characters[id], Characters[id .. "C"], EnemyLooks["boss_" .. id], EnemyLooks[id .. "_b"], EnemyLooks[id] } do
+		for _, row in
+			{ Characters[id], Characters[id .. "C"], EnemyLooks["boss_" .. id], EnemyLooks[id .. "_b"], EnemyLooks[id] }
+		do
 			if type(row) == "table" then
 				for k, v in row do
 					if type(v) == "number" and not NOT[k] then
@@ -650,7 +656,10 @@ do
 			body = p
 		end
 	end
-	check(body and (body.Size - Vector3.new(1, 0.9, 2.2) * S).Magnitude < 1e-4, "tempest_fox: body is not exactly S-sized (test 12)")
+	check(
+		body and (body.Size - Vector3.new(1, 0.9, 2.2) * S).Magnitude < 1e-4,
+		"tempest_fox: body is not exactly S-sized (test 12)"
+	)
 	local gaits, sways = {}, 0
 	for _, d in m.Costume:GetDescendants() do
 		if d:IsA("Weld") and string.match(d.Name, "^Gait_") then
@@ -660,14 +669,20 @@ do
 			check(d:GetAttribute("SwayAmp") == 10, "tempest_fox: tail SwayAmp")
 		end
 	end
-	check(gaits.Gait_FL == 0 and gaits.Gait_HR == 0 and gaits.Gait_FR == 0.5 and gaits.Gait_HL == 0.5, "tempest_fox: gait phases")
+	check(
+		gaits.Gait_FL == 0 and gaits.Gait_HR == 0 and gaits.Gait_FR == 0.5 and gaits.Gait_HL == 0.5,
+		"tempest_fox: gait phases"
+	)
 	check(sways == 3, "tempest_fox: 3 swaying tails")
 	check(count(m, "Beam") == 3, "tempest_fox: 3 tail tip beams")
 	-- tell
 	check(m:GetAttribute("Tell") == false, "tempest_fox: Tell starts false")
 	Finale.setTell(m, Finale.tellAction("tell"))
 	check(m:GetAttribute("Tell") == true, "tempest_fox: tell sets Tell")
-	check(Finale.tellAction("windup") == nil and Finale.tellAction("lunge") == nil, "tempest_fox: windup/lunge leave Tell")
+	check(
+		Finale.tellAction("windup") == nil and Finale.tellAction("lunge") == nil,
+		"tempest_fox: windup/lunge leave Tell"
+	)
 	for _, a in { "endLunge", "cancel", "death" } do
 		Finale.setTell(m, true)
 		Finale.setTell(m, Finale.tellAction(a))
@@ -708,7 +723,10 @@ do
 		end
 		for _, p in costumeParts(m) do
 			if p.Name == "UB·p" then
-				check(int(p.Trim.Trim.UIStroke.Color) == RulesData.NATURE[nature].color, `the_unbidden: trim echo {nature}`)
+				check(
+					int(p.Trim.Trim.UIStroke.Color) == RulesData.NATURE[nature].color,
+					`the_unbidden: trim echo {nature}`
+				)
 			end
 		end
 		local label = "the_unbidden after " .. nature
