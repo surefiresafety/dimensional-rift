@@ -4,6 +4,7 @@
 local Hud = require(script.Hud)
 local Select = require(script.Select)
 local Fx = require(script.Fx)
+local CostumeFx = require(script.CostumeFx)
 local Hub = require(script.Hub)
 local Loadout = require(script.Loadout)
 local Input = require(script.Input)
@@ -19,6 +20,7 @@ Screens.build()
 StoryUi.build()
 Hud.onMenu = Hub.toggle
 Fx.start()
+CostumeFx.start()
 Input.start()
 Select.show() -- nobody spawns until they have picked someone
 Tips.start()

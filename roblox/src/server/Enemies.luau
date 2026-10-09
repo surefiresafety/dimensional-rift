@@ -1,8 +1,8 @@
 --!strict
--- Spawning and driving enemies. Human-shaped ones and every character boss
--- are R15 rigs in their costume colours; the creature shapes (toad, blob,
--- wraith, golem, imp) are an R15 walker with its limbs hidden inside a body
--- shape, so they path and animate like everything else.
+-- Spawning and driving enemies. Every enemy is an R15 walker dressed by role
+-- (docs/design/characters.md §6.2): finale bosses by Kit/Finale, character
+-- bosses, creatures and human enemies by Kit/Creatures. Creature walkers are
+-- hidden inside their bodies, so they path and animate like everything else.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -96,66 +96,137 @@ local function deepCopy<T>(t: T): T
 	return out :: any
 end
 
-local SHAPES: { [string]: { part: Enum.PartType, size: Vector3 } } = {
-	toad = { part = Enum.PartType.Ball, size = Vector3.new(2.6, 1.9, 2.6) },
-	blob = { part = Enum.PartType.Ball, size = Vector3.new(2.2, 2.2, 2.2) },
-	wraith = { part = Enum.PartType.Ball, size = Vector3.new(1.8, 2.8, 1.8) },
-	golem = { part = Enum.PartType.Block, size = Vector3.new(2.6, 3.2, 2) },
-	imp = { part = Enum.PartType.Ball, size = Vector3.new(1.5, 1.7, 1.5) },
-}
+local Creatures = require(script.Parent.Kit.Creatures) :: any
+local FinaleKit = require(script.Parent.Kit.Finale) :: any
+local Costumes = require(Shared.Costumes) :: any
 
-local function creatureBody(model: Model, t: any)
-	local shape = SHAPES[t.shape]
-	if not shape then
-		return
+--- Set by Waves.start: the current world is stitched (§4.5), and its id (street variant).
+Enemies.stitched = false
+Enemies.mapId = nil :: string?
+
+--------------------------------------------------------------------------------
+-- Highlight budget (§6.4): bosses always (at most 4), elites while the total is 12 or fewer.
+--------------------------------------------------------------------------------
+
+local highlights: { [Model]: Highlight } = {}
+local highlightCount = 0
+local ELITE_HIGHLIGHTS = 12
+
+--- Claims a Highlight for `model`. `prio` is "boss" (finale and character bosses) or "elite";
+--- anything else never gets one. Returns the Highlight, or nil over budget.
+function Enemies.claimHighlight(model: Model, prio: string, outline: number?, fillTransparency: number?): Highlight?
+	local have = highlights[model]
+	if have then
+		return have
 	end
-	for _, d in model:GetDescendants() do
-		if d:IsA("BasePart") and d.Name ~= "HumanoidRootPart" then
-			d.Transparency = 1
-		elseif d:IsA("Decal") then
-			d.Transparency = 1
+	if prio ~= "boss" and (prio ~= "elite" or highlightCount >= ELITE_HIGHLIGHTS) then
+		return nil
+	end
+	local h = Instance.new("Highlight")
+	local c = Palette.color(outline or 0xff2d55)
+	h.OutlineColor = c
+	h.FillColor = c
+	h.FillTransparency = fillTransparency or 0.8
+	h.DepthMode = Enum.HighlightDepthMode.Occluded
+	h.Parent = model
+	highlights[model] = h
+	highlightCount += 1
+	return h
+end
+
+--- Gives back `model`'s Highlight (death, Combat.take, Kit.ally). Safe to call twice.
+function Enemies.releaseHighlight(model: Model)
+	local h = highlights[model]
+	if h then
+		highlights[model] = nil
+		highlightCount -= 1
+		h:Destroy()
+	end
+end
+
+function Enemies.highlightCount(): number
+	return highlightCount
+end
+
+--------------------------------------------------------------------------------
+-- Looks
+--------------------------------------------------------------------------------
+
+export type SpawnOpts = { stitchedParent: boolean? }
+
+local CREATURE_PRESET: { [string]: string } = { golem = "heavy", imp = "small" }
+
+--- Builds and dresses the walker for `id` by role (§6.2 steps 3–4). Never errors: a look that
+--- fails to build leaves a plain walker in the base colour.
+local function buildModel(id: string, t: any, role: string, pal: any, affix: any?, stitched: boolean): Model
+	local size = t.size or 1
+	local base = Costumes.baseId(id)
+	local enemy = Costumes.ENEMY[base]
+	local var = (enemy and enemy.variant) or {}
+	local shape = (enemy and enemy.shape) or t.shape or "human"
+	local seed = math.random(1, 1000000)
+	local opts = {
+		enemyId = id,
+		role = role,
+		t = t,
+		pal = pal,
+		affix = affix,
+		stitched = stitched,
+		mapId = Enemies.mapId,
+		seed = seed,
+	}
+	local ok, result = pcall(function(): Model
+		if role == "finale" then
+			local spec = Costumes.ENEMY[base]
+			local body = FinaleKit.BODY[(spec and spec.builder) or base] or {}
+			return Looks.buildNpc(body, size, opts)
+		elseif role == "charBoss" then
+			local look = Costumes.effectiveLook(Costumes.styleFromEnemyId(id), "charBoss")
+			return Looks.buildNpc(look, size, opts)
+		elseif shape ~= "human" then
+			local look = {
+				skin = pal.base,
+				top = pal.base,
+				bottom = pal.base,
+				preset = var.preset or CREATURE_PRESET[shape] or "standard",
+				widthScale = var.widthScale,
+			}
+			return Looks.buildNpc(look, size, opts)
 		end
+		local cols, row = Creatures.humanColors(id, role, opts)
+		local look = {
+			skin = cols.skin,
+			top = cols.top,
+			sleeves = cols.sleeves,
+			bottom = cols.bottom,
+			bare = row.bare or var.bare,
+			height = row.height,
+			headScale = row.headScale,
+			preset = var.preset or (if base == "grey" then Costumes.GREY.preset else nil),
+			widthScale = var.widthScale,
+		}
+		return Looks.buildNpc(look, size, opts)
+	end)
+	if ok then
+		return result
 	end
-	local root = model:FindFirstChild("HumanoidRootPart") :: BasePart
-	local body = Instance.new("Part")
-	body.Name = "Body"
-	body.Shape = shape.part
-	body.Size = shape.size * STUDS * 0.55 * (t.size or 1)
-	body.Color = Palette.color(t.color or RulesData.NATURE[t.nature].color)
-	body.Material = if t.float then Enum.Material.Neon else Enum.Material.SmoothPlastic
-	body.CanCollide = false
-	body.Massless = true
-	body.CFrame = root.CFrame * CFrame.new(0, body.Size.Y * 0.1, 0)
-	local w = Instance.new("WeldConstraint")
-	w.Part0 = root
-	w.Part1 = body
-	w.Parent = body
-	body.Parent = model
-	-- One big eye, which is most of what makes a curse read as a curse.
-	local eye = Instance.new("Part")
-	eye.Shape = Enum.PartType.Ball
-	eye.Size = Vector3.one * body.Size.X * 0.32
-	eye.Color = Color3.fromRGB(255, 228, 92)
-	eye.Material = Enum.Material.Neon
-	eye.CanCollide = false
-	eye.Massless = true
-	eye.CFrame = body.CFrame * CFrame.new(0, body.Size.Y * 0.12, -body.Size.Z * 0.42)
-	local w2 = Instance.new("WeldConstraint")
-	w2.Part0 = body
-	w2.Part1 = eye
-	w2.Parent = eye
-	eye.Parent = model
+	warn(`Enemies: the look for {id} ({role}) failed: {result}`)
+	local plain = Looks.buildNpc({ skin = pal.base, top = pal.base, bottom = 0x24242c }, size)
+	return plain
 end
 
 --- Spawns one enemy of type `id` at `at`. Returns nil at the server's cap.
 --- `scale` toughens it: health times scale, attack by half as much again
---- (Loose Threads uses 1.6).
-function Enemies.spawn(id: string, at: Vector3, affix: Rules.Affix?, scale: number?): Combat.Enemy?
+--- (Loose Threads uses 1.6). `opts.stitchedParent`: summoned by a stitched enemy.
+function Enemies.spawn(id: string, at: Vector3, affix: Rules.Affix?, scale: number?, opts: SpawnOpts?): Combat.Enemy?
 	local template = Worlds.enemy(id)
 	if not template or #Combat.enemies >= Config.MAX_ENEMIES then
 		return nil
 	end
+	-- The palette is read before the affix paints the template (F10, §4.1).
+	local pal = Costumes.palette(template, affix, Costumes.ENEMY[Costumes.baseId(id)])
 	local t = deepCopy(template)
+	local role = Costumes.role(id, t, affix)
 	if affix then
 		Rules.applyAffix(t, affix)
 	end
@@ -164,22 +235,13 @@ function Enemies.spawn(id: string, at: Vector3, affix: Rules.Affix?, scale: numb
 		t.hp = math.floor(t.hp * sc + 0.5)
 		t.atk = math.floor(t.atk * (1 + (sc - 1) * 0.5) + 0.5)
 	end
-	local look = Worlds.look(id)
-		or {
-			skin = 0xd8c0b0,
-			hair = 0x1a1a22,
-			hairStyle = "short",
-			top = t.color or RulesData.NATURE[t.nature].color,
-			bottom = 0x24242c,
-			eye = 0xffe45c,
-		}
-	local model = Looks.buildNpc(look, t.size or 1)
+	local stitchable = role ~= "finale" and role ~= "charBoss" and role ~= "alpha"
+	local stitched = stitchable
+		and ((role == "elite" and Enemies.stitched) or (opts ~= nil and opts.stitchedParent == true))
+	local model = buildModel(id, t, role, pal, affix, stitched)
 	model.Name = t.name
 	local hum = model:FindFirstChildOfClass("Humanoid") :: Humanoid
 	local root = model:FindFirstChild("HumanoidRootPart") :: BasePart
-	if t.shape ~= "human" then
-		creatureBody(model, t)
-	end
 	hum.MaxHealth = t.hp
 	hum.Health = t.hp
 	hum.WalkSpeed = t.speed * STUDS
@@ -217,26 +279,39 @@ function Enemies.spawn(id: string, at: Vector3, affix: Rules.Affix?, scale: numb
 		nextCharge = now + (if t.charge then t.charge.cd * (0.5 + math.random()) else 0),
 		nextAura = now + (if t.aura then t.aura.every or 0.6 else 0),
 		allyUntil = 0,
+		pal = pal,
+		stitched = stitched,
 	}
 	-- Into the world only once its record is whole, so a bad template can
 	-- never leave a body standing that nothing drives.
 	model:SetAttribute("Boss", t.boss == true)
 	model:SetAttribute("Hunting", false)
+	model:SetAttribute("Role", role)
+	model:SetAttribute("NatureColor", pal.nature)
+	model:SetAttribute("Scale", t.size or 1)
+	local enemy = Costumes.ENEMY[Costumes.baseId(id)]
+	model:SetAttribute("Shape", (enemy and enemy.shape) or t.shape or "human")
+	model:SetAttribute("Float", t.float == true)
+	if affix then
+		model:SetAttribute("Affix", affix.name)
+	end
 	model.Parent = folder
 	root:SetNetworkOwner(nil) -- the server drives them
 	e.anims = loadAnims(hum)
-	if affix then
-		-- An elite glows its colour so it reads from across the arena.
-		local h = Instance.new("Highlight")
-		h.OutlineColor = Palette.color(affix.color)
-		h.FillColor = Palette.color(affix.color)
-		h.FillTransparency = 0.8
-		h.DepthMode = Enum.HighlightDepthMode.Occluded
-		h.Parent = model
-		model:SetAttribute("Affix", affix.name)
+	if role == "finale" then
+		local hl = FinaleKit.HIGHLIGHT[Costumes.baseId(id)] or {}
+		Enemies.claimHighlight(model, "boss", hl.outline, hl.fillTransparency)
+		if t.adapts then
+			FinaleKit.watch(model) -- dies with the model
+		end
+	elseif role == "charBoss" then
+		Enemies.claimHighlight(model, "boss", 0xff2d55, 0.85)
+	elseif role == "elite" and affix and not stitched then
+		-- An elite glows its colour so it reads from across the arena, within budget.
+		Enemies.claimHighlight(model, "elite", affix.color, 0.8)
 	end
 	table.insert(Combat.enemies, e)
-	Combat.fx("burst", { at = at, color = look.top or 0xb06cff, count = 12 })
+	Combat.fx("burst", { at = at, color = pal.base, count = 12 })
 	return e
 end
 
@@ -348,6 +423,10 @@ function Enemies.think()
 			tempo = e.affix and e.affix.tempo,
 		})
 		e.alerted = false
+		local tell = FinaleKit.tellAction(action)
+		if tell ~= nil then
+			FinaleKit.setTell(e.model, tell)
+		end
 		Nav.updateToss(e, target, e.state ~= "idle")
 		if action ~= "lunging" then
 			e.hum.WalkSpeed = e.t.speed * STUDS * mul
@@ -460,7 +539,8 @@ function Enemies.think()
 			for n = 1, math.min(sm.count or 2, (sm.max or 6) - mine) do
 				local a = math.random() * math.pi * 2
 				local near = e.root.Position + Vector3.new(math.cos(a), 0, math.sin(a)) * (3 + n) * STUDS
-				local child = Enemies.spawn(sm.of, Nav.clearSpot(near))
+				local child =
+					Enemies.spawn(sm.of, Nav.clearSpot(near), nil, nil, { stitchedParent = e.stitched == true })
 				if child then
 					child.alerted = true
 					child.summoned = true
@@ -469,6 +549,12 @@ function Enemies.think()
 		end
 	end
 end
+
+-- Out of the fight (dead or taken): the Highlight goes back to the budget, the tell ends.
+Combat.onGone(function(e)
+	Enemies.releaseHighlight(e.model)
+	FinaleKit.setTell(e.model, false)
+end)
 
 -- A volatile elite goes off a second after it dies: a ring to get out of,
 -- then the blast.

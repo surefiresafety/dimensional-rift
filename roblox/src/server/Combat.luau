@@ -11,6 +11,7 @@ local Config = require(Shared.Config)
 local Remotes = require(Shared.Remotes)
 local Rules = require(Shared.Rules)
 local RulesData = require(Shared.Data.Rules)
+local Costumes = require(Shared.Costumes)
 local Skills = require(Shared.Data.Skills)
 local Styles = require(Shared.Data.Styles)
 
@@ -30,7 +31,16 @@ export type Buff = {
 	chainNext: number,
 }
 
-export type Minion = { untilT: number, power: number, every: number, next: number, radius: number, color: number }
+export type Minion = {
+	untilT: number,
+	power: number,
+	every: number,
+	next: number,
+	radius: number,
+	color: number,
+	model: Model?, -- Kage Inukai's ward (§4.6): it walks with its caster and strikes from itself
+	nextMove: number?,
+}
 
 export type Domain = {
 	untilT: number,
@@ -141,6 +151,8 @@ export type Enemy = {
 	allyUntil: number,
 	-- A melee enemy that cannot reach its target lobs rocks instead (Nav).
 	tossing: boolean?,
+	pal: Costumes.Palette?, -- §4.1 colours captured before the affix
+	stitched: boolean?, -- dressed as stitched (§4.5): its summons are too
 }
 
 local Combat = {}
@@ -345,7 +357,9 @@ local function kill(e: Enemy, by: PState?)
 	end
 	remove(e)
 	e.hum.Health = 0
-	Combat.fx("burst", { at = e.root.Position, color = e.t.color or RulesData.NATURE[e.t.nature].color, count = 18 })
+	local base = if e.pal then e.pal.base else (e.t.color or RulesData.NATURE[e.t.nature].color)
+	Combat.fx("burst", { at = e.root.Position, color = base, count = 18 }) -- never the affix colour (F10, F17)
+	e.model:SetAttribute("Dying", true) -- the client's death read fades the costume
 	for _, fn in killedHandlers do
 		task.spawn(fn, e, by)
 	end
@@ -357,8 +371,9 @@ local function kill(e: Enemy, by: PState?)
 		t:Stop(0.1)
 	end
 	e.root:ApplyImpulse((Vector3.new(math.random() - 0.5, 0.6, math.random() - 0.5) * 30) * e.root.AssemblyMass)
+	local costume = e.model:FindFirstChild("Costume")
 	for _, d in e.model:GetDescendants() do
-		if d:IsA("BasePart") and d.Transparency < 1 then
+		if d:IsA("BasePart") and d.Transparency < 1 and not (costume and d:IsDescendantOf(costume)) then
 			TweenService:Create(d, TweenInfo.new(1.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
 				Transparency = 1,
 			}):Play()
@@ -416,6 +431,7 @@ function Combat.hitEnemy(e: Enemy, power: number, nature: string, from: Vector3?
 		local adapted
 		adaptMul, adapted = Rules.adapt(e.adapted :: { [string]: number }, nature)
 		if adapted and (e.adapted :: any)[nature] == 4 then
+			e.model:SetAttribute("Adapted_" .. nature, true) -- its collar tile lights (§5.3)
 			Combat.fx("number", { at = e.root.Position + Vector3.new(0, 5, 0), text = "ADAPTED", tone = "nve" })
 		end
 	end
@@ -670,14 +686,37 @@ function Combat.step(dt: number)
 		-- Summoned help: each strikes the nearest thing on its own clock.
 		for i = #ps.minions, 1, -1 do
 			local m = ps.minions[i]
+			local ward = m.model
+			if ward and not ward.Parent then
+				ward = nil
+			end
+			local wardRoot = ward and ward.PrimaryPart
 			if now >= m.untilT then
 				table.remove(ps.minions, i)
-			elseif now >= m.next then
+				if m.model then
+					m.model:Destroy()
+				end
+			elseif ward and wardRoot and now >= (m.nextMove or 0) then
+				m.nextMove = now + 0.5
+				local wardHum = ward:FindFirstChildOfClass("Humanoid")
+				if wardHum then
+					wardHum:MoveTo(root.Position + root.CFrame.LookVector * -4)
+				end
+			end
+			if now < m.untilT and now >= m.next then
 				m.next = now + m.every
 				local e = Combat.nearestEnemy(root.Position, m.radius)
 				if e then
+					local from = root.Position + Vector3.new(0, 2, 0)
+					if wardRoot then
+						from = wardRoot.Position
+						local flat = Vector3.new(e.root.Position.X, wardRoot.Position.Y, e.root.Position.Z)
+						if (flat - wardRoot.Position).Magnitude > 0.1 then
+							wardRoot.CFrame = CFrame.lookAt(wardRoot.Position, flat)
+						end
+					end
 					Combat.fx("beam", {
-						from = root.Position + Vector3.new(0, 2, 0),
+						from = from,
 						to = e.root.Position,
 						color = m.color,
 						width = 0.8,
@@ -710,6 +749,17 @@ function Combat.step(dt: number)
 		if now >= (nextPublish[ps] or 0) then
 			nextPublish[ps] = now + 0.1
 			Combat.publish(ps)
+		end
+	end
+end
+
+--- Destroys a player's ward models and drops their entries (§4.6 cleanup).
+function Combat.clearWards(ps: PState)
+	for i = #ps.minions, 1, -1 do
+		local m = ps.minions[i]
+		if m.model then
+			m.model:Destroy()
+			table.remove(ps.minions, i)
 		end
 	end
 end

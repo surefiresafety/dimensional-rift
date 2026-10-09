@@ -508,17 +508,14 @@ do
 	end
 	local t = table.clone(Enemies.rogue_ninja)
 	local m = dummy()
-	Creatures.dress(
-		m,
-		{
-			enemyId = "rogue_ninja",
-			role = "elite",
-			t = t,
-			pal = Costumes.palette(t, Rules.AFFIXES[1], nil),
-			affix = Rules.AFFIXES[1],
-			stitched = true,
-		}
-	)
+	Creatures.dress(m, {
+		enemyId = "rogue_ninja",
+		role = "elite",
+		t = t,
+		pal = Costumes.palette(t, Rules.AFFIXES[1], nil),
+		affix = Rules.AFFIXES[1],
+		stitched = true,
+	})
 	Kit.ally(m)
 	local strips, cyan = 0, false
 	for _, p in costumeParts(m) do

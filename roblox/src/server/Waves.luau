@@ -197,6 +197,13 @@ function Waves.start(mapId: string)
 	Waves.started = true
 	Waves.gen += 1
 	World.load(mapId)
+	-- Looks for this world: stitched elites on the Seam, the street variant by map (§4.4, §4.5).
+	local map = Worlds.get(mapId)
+	Enemies.stitched = map ~= nil and (map :: any).stitched == true
+	Enemies.mapId = mapId
+	for _, ps in Combat.states do
+		Combat.clearWards(ps)
+	end
 	-- Whatever was left of the old world goes without dropping anything.
 	Waves.clearing = true
 	for _, e in table.clone(Combat.enemies) do

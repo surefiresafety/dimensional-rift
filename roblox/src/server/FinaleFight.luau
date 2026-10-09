@@ -22,6 +22,7 @@ local Styles = require(Shared.Data.Styles)
 
 local Combat = require(script.Parent.Combat)
 local Enemies = require(script.Parent.Enemies)
+local Looks = require(script.Parent.Looks)
 local Nav = require(script.Parent.Nav)
 
 local STUDS = Config.STUDS_PER_UNIT
@@ -128,11 +129,13 @@ function FinaleFight.step()
 			f = { phase = 1, nextCut = now + 5, nextGrasp = now + 4 }
 			fights[e] = f
 			announce(1)
+			Looks.finalePhase(e.model, 1)
 		end
 		local phase = Finale.phaseOf(e.hum.Health / e.hum.MaxHealth)
 		if phase > f.phase then
 			f.phase = phase
 			announce(phase)
+			Looks.finalePhase(e.model, phase)
 			if phase == 2 then
 				-- It tears two things out of its own stitching.
 				for i, id in { "tempest_fox", "the_unbidden" } do

@@ -21,6 +21,9 @@ local Remotes = require(Shared.Remotes)
 
 local Combat = require(script.Parent.Combat)
 local Projectiles = require(script.Parent.Projectiles)
+local Enemies = require(script.Parent.Enemies)
+local Looks = require(script.Parent.Looks)
+local Kit = require(script.Parent.Kit) :: any
 
 local STUDS = Config.STUDS_PER_UNIT
 local CooldownRemote = Remotes.get("Cooldown")
@@ -218,6 +221,10 @@ handlers.dash = function(c)
 	local finish = clearPath(c, start, start + c.flat * s.range * STUDS)
 	c.root.CFrame = CFrame.lookAt(finish, finish + c.flat)
 	Combat.fx("dash", { from = start, to = finish, color = colorOf(s) })
+	if c.id == "glider_ram" and c.root.Parent then
+		-- the client Glide driver swings the glider disc under the feet (§2.1)
+		c.root.Parent:SetAttribute("GlideUntil", workspace:GetServerTimeNow() + 0.8)
+	end
 	for _, e in table.clone(Combat.enemies) do
 		if not e.dead and Projectiles.segDistance(start, finish, e.root.Position) < (2 + (e.t.size or 1)) * STUDS then
 			local ignore = if c.W and c.W.ignoreDef then true else nil
@@ -499,6 +506,7 @@ handlers.possess = function(c)
 	end
 	-- Out of the fight's enemy list; it walks for its wearer now.
 	Combat.take(e)
+	Kit.ally(e.model, Enemies.releaseHighlight) -- friend face, cyan ring, no Highlight (§4.5)
 	e.model.Name = "Worn " .. e.t.name
 	e.hum.DisplayName = "Worn  ·  " .. e.t.name
 	table.insert(Combat.worn, {
@@ -719,7 +727,27 @@ function Abilities.cast(ps: Combat.PState, which: number | string, aim: Vector3,
 				end
 			end
 		elseif ult.kind == "mahoraga" then
+			-- One ward per caster: the Unbidden at 1.3 as an ally, 4 studs behind (§4.6).
+			Combat.clearWards(ps)
+			local ward: Model? = nil
+			local ok, built = pcall(Looks.buildAlly, "the_unbidden", 1.3)
+			if ok then
+				ward = built
+				built:PivotTo(root.CFrame * CFrame.new(0, 0, 4))
+				built:SetAttribute("Owner", ps.player.UserId)
+				built.Parent = workspace
+				local wardRoot = built:FindFirstChild("HumanoidRootPart")
+				if wardRoot and wardRoot:IsA("BasePart") then
+					built.PrimaryPart = wardRoot
+					pcall(function()
+						wardRoot:SetNetworkOwner(nil)
+					end)
+				end
+			else
+				warn("Abilities: the ward did not build: " .. tostring(built))
+			end
 			table.insert(ps.minions, {
+				model = ward,
 				untilT = now + (ult.duration or 30),
 				power = 90,
 				every = 1.4,

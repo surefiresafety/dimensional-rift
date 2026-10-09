@@ -38,6 +38,7 @@ Players.CharacterAutoLoads = false -- a character is chosen before anyone spawns
 --- stored charge. Used on respawn and on picking a new character.
 local function resetCombat(ps: Combat.PState)
 	ps.transformUntil = nil
+	Combat.clearWards(ps)
 	ps.buff, ps.domain, ps.minions = nil, nil, {}
 	ps.shield, ps.shieldUntil, ps.shieldReflect = 0, 0, 0
 	ps.evadeUntil, ps.invulnUntil, ps.decoy = 0, 0, false
@@ -78,7 +79,9 @@ local function applyStyle(ps: Combat.PState, styleId: string, keepHealth: boolea
 	local hum = Combat.humanoidOf(ps.player)
 	local hp = if hum and keepHealth then hum.Health else nil
 	ps.reloading = true
-	Looks.dressPlayer(ps.player, styleId)
+	Combat.clearWards(ps) -- a new body sends the ward away (§4.6)
+	ps.player:SetAttribute("Weapon", ps.weapon) -- before the build: the Prop entry reads it
+	Looks.dressPlayer(ps.player, styleId, ps.weapon)
 	ps.reloading = false
 	local newHum = Combat.humanoidOf(ps.player)
 	local root = Combat.rootOf(ps.player)
@@ -180,6 +183,10 @@ local function onPlayerAdded(player: Player)
 		local hum = character:WaitForChild("Humanoid") :: Humanoid
 		hum.Died:Connect(function()
 			Progress.died(player)
+			local dead = Combat.states[player]
+			if dead then
+				Combat.clearWards(dead)
+			end
 			-- Rise again as the same character after a beat, unless they have
 			-- already picked someone new in the meantime.
 			task.delay(4, function()
@@ -208,6 +215,7 @@ Players.PlayerRemoving:Connect(function(player)
 	local ps = Combat.states[player]
 	if ps then
 		Symbiote.reset(ps)
+		Combat.clearWards(ps)
 	end
 	Combat.states[player] = nil
 	Combat.lastHitBy[player] = nil
