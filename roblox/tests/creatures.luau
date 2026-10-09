@@ -316,14 +316,59 @@ local function faceZoneViolations(model)
 	for _, p in model.Costume:GetDescendants() do
 		if p:IsA("BasePart") and not EXEMPT[p.Name] then
 			local weld = p:FindFirstChildOfClass("Weld")
+			local k = head.Size.Y / 1.2 -- nominal head space (uniformly scaled dummy)
+			local fake = {
+				Size = p.Size / k,
+				ClassName = p.ClassName,
+				Shape = if p:IsA("Part") then p.Shape else nil,
+				FindFirstChildOfClass = function(_, c)
+					return p:FindFirstChildOfClass(c)
+				end,
+			}
 			for _, cf in headFrames(head, weld) do
-				if hitsZone(cf, p) then
+				cf = CFrame.new(cf.Position / k) * cf.Rotation
+				if hitsZone(cf, fake) then
 					table.insert(bad, p.Name)
 					break
 				end
 			end
 		end
 	end
+	return bad
+end
+
+local function costumeParts(model)
+	local out = {}
+	local c = model:FindFirstChild("Costume")
+	if c then
+		for _, d in c:GetDescendants() do
+			if d:IsA("BasePart") then
+				table.insert(out, d)
+			end
+		end
+	end
+	return out
+end
+
+local function checkFlags(model, label)
+	for _, p in costumeParts(model) do
+		local w = p:FindFirstChildOfClass("Weld")
+		local big = math.max(p.Size.X, p.Size.Y, p.Size.Z)
+		check(
+			not p.CanCollide and not p.CanQuery and not p.CanTouch and p.Massless and not p.Anchored,
+			`{label}: {p.Name} collide/query/touch/massless/anchored flags`
+		)
+		check(w ~= nil and w.Part1 == p and w.Part0 ~= nil and w.C1 == CFrame.identity, `{label}: {p.Name} weld`)
+		if big < 0.6 then
+			check(not p.CastShadow, `{label}: {p.Name} small piece casts a shadow`)
+		else
+			check(not p:HasTag("CostumeDetail"), `{label}: {p.Name} large piece tagged CostumeDetail`)
+		end
+		if p.ClassName == "Part" and p.Shape == Enum.PartType.Ball then
+			check(p.Size.X == p.Size.Y and p.Size.Y == p.Size.Z, `{label}: {p.Name} ball with unequal axes`)
+		end
+	end
+end
 
 -- record every mount's host and scaling mode (test 12)
 local mounts = {}
@@ -367,24 +412,35 @@ for _, id in ids do
 	for _, case in cases do
 		local t = table.clone(t0)
 		local pal = Costumes.palette(t0, case.affix, Costumes.ENEMY[base])
-		if case.affix then Rules.applyAffix(t, case.affix) end
+		if case.affix then
+			Rules.applyAffix(t, case.affix)
+		end
 		local s = t.size or 1
 		local model = dummy(Vector3.one * s)
-		local label = `{id} {case.role}{case.affix and (" " .. case.affix.key) or ""}{case.stitched and " stitched" or ""}`
+		local label =
+			`{id} {case.role}{case.affix and (" " .. case.affix.key) or ""}{case.stitched and " stitched" or ""}`
 		local ok, used, b = pcall(Creatures.dress, model, {
-			enemyId = id, role = case.role, t = t, pal = pal, affix = case.affix, stitched = case.stitched, seed = 3,
+			enemyId = id,
+			role = case.role,
+			t = t,
+			pal = pal,
+			affix = case.affix,
+			stitched = case.stitched,
+			seed = 3,
 		})
 		check(ok, `{label}: {used}`)
 		if ok then
 			Bsum.builds += 1
-			local kind = if case.role == "charBoss" then "charBoss"
+			local kind = if case.role == "charBoss"
+				then "charBoss"
 				elseif base == "grey" then "grey"
-				elseif t0.shape == "human" then "human" else "creature"
+				elseif t0.shape == "human" then "human"
+				else "creature"
 			check(16 + used <= CAP[kind], `{label}: 16 + {used} over cap {CAP[kind]}`)
 			check(#costumeParts(model) == used, `{label}: costume {#costumeParts(model)} vs used {used}`)
 			if case.role ~= "charBoss" then
 				for _, rec in b.log do
-					if (rec.tier == "W" or rec.tier == "R") then
+					if rec.tier == "W" or rec.tier == "R" then
 						check(rec.mounted and not rec.missing, `{label}: {rec.tier} entry {rec.code} not mounted`)
 					end
 				end
@@ -414,7 +470,10 @@ print(`{Bsum.builds} enemy builds`)
 do
 	local t = table.clone(Enemies.mass_curse)
 	local model = dummy(Vector3.one * 1.6)
-	Creatures.dress(model, { enemyId = "mass_curse", role = "normal", t = t, pal = Costumes.palette(t, nil, Costumes.ENEMY.mass_curse) })
+	Creatures.dress(
+		model,
+		{ enemyId = "mass_curse", role = "normal", t = t, pal = Costumes.palette(t, nil, Costumes.ENEMY.mass_curse) }
+	)
 	local found = false
 	for _, p in costumeParts(model) do
 		if p.Name == "chest" then
@@ -425,7 +484,10 @@ do
 	check(found, "golem chest mounted")
 	t = table.clone(Enemies.cursed_toad)
 	model = dummy(Vector3.one * t.size)
-	Creatures.dress(model, { enemyId = "cursed_toad", role = "normal", t = t, pal = Costumes.palette(t, nil, Costumes.ENEMY.cursed_toad) })
+	Creatures.dress(
+		model,
+		{ enemyId = "cursed_toad", role = "normal", t = t, pal = Costumes.palette(t, nil, Costumes.ENEMY.cursed_toad) }
+	)
 	local B = 2.6 * 2.4 * 0.55 * t.size
 	for _, p in costumeParts(model) do
 		if p.Name == "body" then
@@ -440,16 +502,32 @@ do
 	local w = Creatures.buildWard(nil, model)
 	check(#costumeParts(w) == 14, `ward {#costumeParts(w)} parts, want 14`)
 	for _, d in w:GetDescendants() do
-		if d:IsA("BasePart") then check(not d.CanQuery, "ward CanQuery") end
+		if d:IsA("BasePart") then
+			check(not d.CanQuery, "ward CanQuery")
+		end
 	end
 	local t = table.clone(Enemies.rogue_ninja)
 	local m = dummy()
-	Creatures.dress(m, { enemyId = "rogue_ninja", role = "elite", t = t, pal = Costumes.palette(t, Rules.AFFIXES[1], nil), affix = Rules.AFFIXES[1], stitched = true })
+	Creatures.dress(
+		m,
+		{
+			enemyId = "rogue_ninja",
+			role = "elite",
+			t = t,
+			pal = Costumes.palette(t, Rules.AFFIXES[1], nil),
+			affix = Rules.AFFIXES[1],
+			stitched = true,
+		}
+	)
 	Kit.ally(m)
 	local strips, cyan = 0, false
 	for _, p in costumeParts(m) do
-		if p.Name == "STRIP" and p.Parent then strips += 1 end
-		if p.Name == "RING" and p.Color == Color3.fromRGB(90, 212, 255) then cyan = true end
+		if p.Name == "STRIP" and p.Parent then
+			strips += 1
+		end
+		if p.Name == "RING" and p.Color == Color3.fromRGB(90, 212, 255) then
+			cyan = true
+		end
 	end
 	check(strips == 0 and cyan, "Kit.ally removes strips and turns the ring cyan")
 end

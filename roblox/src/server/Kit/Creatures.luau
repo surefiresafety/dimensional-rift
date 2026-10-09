@@ -360,8 +360,14 @@ function Kit.affix(b: any, rig: any, affix: any, where: Where?): { BasePart }
 	elseif key == "volatile" then
 		rig.model:SetAttribute("Volatile", true)
 		if not w.creature and w.fuse then
-			local p =
-				mountSpot(b, w.fuse, "ball", V(0.35, 0.35, 0.35), nil, { color = affix.color, material = "Neon", name = "FUSE" })
+			local p = mountSpot(
+				b,
+				w.fuse,
+				"ball",
+				V(0.35, 0.35, 0.35),
+				nil,
+				{ color = affix.color, material = "Neon", name = "FUSE" }
+			)
 			if p then
 				p:SetAttribute("Pulse", 3)
 				table.insert(out, p)
@@ -570,7 +576,7 @@ local function props(cx: Cx, color: number, mat: string?, extra: { [string]: any
 		transparency = if mat == nil then cx.tr else 0,
 		reflectance = if mat == nil then cx.refl else 0,
 	}
-	for k, v in extra or {} do
+	for k, v in (extra or {}) :: { [string]: any } do
 		p[k] = v
 	end
 	return p
@@ -589,7 +595,16 @@ local function ut(cx: Cx, kind: string, size: Vector3, off: CFrame, pr: any): Ba
 	return cx.b:mount(cx.rig.parts.UpperTorso, nil, kind, size, off, pr, { absolute = true })
 end
 -- nominal mount (golem, imp)
-local function nom(cx: Cx, host: string, attach: string?, kind: string, size: Vector3, cf: CFrame, pr: any, keep: boolean?)
+local function nom(
+	cx: Cx,
+	host: string,
+	attach: string?,
+	kind: string,
+	size: Vector3,
+	cf: CFrame,
+	pr: any,
+	keep: boolean?
+)
 	return cx.b:mount(cx.rig.parts[host], attach, kind, size, cf, pr, { keep = keep })
 end
 
@@ -631,7 +646,13 @@ FAMILY.toad = {
 	hind = function(cx)
 		local B = cx.B
 		for _, s in { -1, 1 } do
-			local p = lt(cx, "block", V(0.35, 0.08, 0.5) * B, C(s * 0.4 * B, cx.g + 0.04 * B, 0.35 * B), props(cx, cx.col.dark))
+			local p = lt(
+				cx,
+				"block",
+				V(0.35, 0.08, 0.5) * B,
+				C(s * 0.4 * B, cx.g + 0.04 * B, 0.35 * B),
+				props(cx, cx.col.dark)
+			)
 			if p then
 				cx.b:gait(if s < 0 then "HL" else "HR", V(s * 0.4 * B, 0, 0.3 * B), 0.5, 22, p)
 			end
@@ -640,15 +661,26 @@ FAMILY.toad = {
 	front = function(cx)
 		local B = cx.B
 		for _, s in { -1, 1 } do
-			local p =
-				lt(cx, "block", V(0.3, 0.3, 0.35) * B, C(s * 0.35 * B, cx.g + 0.15 * B, -0.4 * B), props(cx, cx.col.dark))
+			local p = lt(
+				cx,
+				"block",
+				V(0.3, 0.3, 0.35) * B,
+				C(s * 0.35 * B, cx.g + 0.15 * B, -0.4 * B),
+				props(cx, cx.col.dark)
+			)
 			if p then
 				cx.b:gait(if s < 0 then "FL" else "FR", V(s * 0.35 * B, -0.1 * B, -0.35 * B), 0, 22, p)
 			end
 		end
 	end,
 	mouth = function(cx)
-		body(cx, "block", V(0.9 * cx.B, 0.08, 0.1), C(0, -0.05 * cx.B, -0.47 * cx.B), props(cx, 0x1a1a20, "SmoothPlastic"))
+		body(
+			cx,
+			"block",
+			V(0.9 * cx.B, 0.08, 0.1),
+			C(0, -0.05 * cx.B, -0.47 * cx.B),
+			props(cx, 0x1a1a20, "SmoothPlastic")
+		)
 	end,
 	haunches = function(cx)
 		local B = cx.B
@@ -691,14 +723,26 @@ FAMILY.blob = {
 		local bottom = cx.c.Y - 0.5 * B
 		for _, s in { -1, 1 } do
 			local top = toUT * V(s * 0.3 * B, bottom + 0.1 * B, 0)
-			local p = ut(cx, "cyl", V(0.6, 0.12, 0.12) * B, CFrame.new(top - V(0, 0.3 * B, 0)) * CYL_UP, props(cx, cx.col.body))
+			local p = ut(
+				cx,
+				"cyl",
+				V(0.6, 0.12, 0.12) * B,
+				CFrame.new(top - V(0, 0.3 * B, 0)) * CYL_UP,
+				props(cx, cx.col.body)
+			)
 			if p then
 				cx.b:gait(if s < 0 then "TL" else "TR", top, if s < 0 then 0 else 0.5, 15, p)
 			end
 		end
 	end,
 	mouth = function(cx)
-		body(cx, "block", V(0.5 * cx.B, 0.06, 0.05), C(0, -0.1 * cx.B, -0.5 * cx.B), props(cx, 0x1a1a20, "SmoothPlastic"))
+		body(
+			cx,
+			"block",
+			V(0.5 * cx.B, 0.06, 0.05),
+			C(0, -0.1 * cx.B, -0.5 * cx.B),
+			props(cx, 0x1a1a20, "SmoothPlastic")
+		)
 	end,
 	drips = function(cx)
 		local B = cx.B
@@ -708,7 +752,9 @@ FAMILY.blob = {
 	end,
 	segments = function(cx)
 		local B = cx.B
-		for i, row in { { 0.6, V(0, 0, -0.2) }, { 0.5, V(0, -0.05, 0.3) }, { 0.4, V(0, -0.1, 0.72) } } do
+		for i, row: any in
+			{ { 0.6 :: any, V(0, 0, -0.2) }, { 0.5 :: any, V(0, -0.05, 0.3) }, { 0.4 :: any, V(0, -0.1, 0.72) } } :: { any }
+		do
 			local _ = i
 			body(cx, "ball", ball(row[1] * B), CFrame.new(row[2] * B), props(cx, cx.col.body))
 		end
@@ -727,7 +773,7 @@ FAMILY.blob = {
 	end,
 	curledCore = function(cx)
 		local B = cx.B
-		for _, row in { { 0.4, V(-0.08, 0, 0) }, { 0.3, V(0.12, 0.1, 0.05) } } do
+		for _, row: any in { { 0.4 :: any, V(-0.08, 0, 0) }, { 0.3 :: any, V(0.12, 0.1, 0.05) } } :: { any } do
 			local p = body(cx, "ball", ball(row[1] * B), CFrame.new(row[2] * B), props(cx, cx.col.weak, "Neon"), true)
 			if p then
 				p:SetAttribute("Pulse", 1.5)
@@ -735,7 +781,13 @@ FAMILY.blob = {
 		end
 	end,
 	funnel = function(cx)
-		body(cx, "cyl", V(0.3, 0.3, 0.3) * cx.B, C(0, -0.1 * cx.B, -0.55 * cx.B) * CYL_FWD, props(cx, cx.col.dark, "SmoothPlastic"))
+		body(
+			cx,
+			"cyl",
+			V(0.3, 0.3, 0.3) * cx.B,
+			C(0, -0.1 * cx.B, -0.55 * cx.B) * CYL_FWD,
+			props(cx, cx.col.dark, "SmoothPlastic")
+		)
 	end,
 	reelFace = function(cx)
 		local B = cx.B
@@ -799,7 +851,13 @@ FAMILY.wraith = {
 	claws = function(cx)
 		local B = cx.B
 		for _, s in { -1, 1 } do
-			ut(cx, "wedge", V(0.1, 0.5, 0.3) * B, C(s * 0.6 * B, -0.3 * B, -0.3 * B), props(cx, cx.col.dark, "SmoothPlastic"))
+			ut(
+				cx,
+				"wedge",
+				V(0.1, 0.5, 0.3) * B,
+				C(s * 0.6 * B, -0.3 * B, -0.3 * B),
+				props(cx, cx.col.dark, "SmoothPlastic")
+			)
 		end
 	end,
 	hem = function(cx)
@@ -826,7 +884,13 @@ FAMILY.wraith = {
 	wings = function(cx)
 		local B = cx.B
 		for _, s in { -1, 1 } do
-			body(cx, "wedge", V(0.06, 0.9, 0.9) * B, C(s * 0.75 * B, 0.1 * B, 0.2 * B) * rz(-s * 40), props(cx, cx.col.dark))
+			body(
+				cx,
+				"wedge",
+				V(0.06, 0.9, 0.9) * B,
+				C(s * 0.75 * B, 0.1 * B, 0.2 * B) * rz(-s * 40),
+				props(cx, cx.col.dark)
+			)
 		end
 	end,
 	ears = function(cx)
@@ -840,7 +904,8 @@ FAMILY.wraith = {
 	end,
 	facePlate = function(cx)
 		local B = cx.B
-		local p = body(cx, "block", V(0.55, 0.6, 0.06) * B, C(0, 0.02 * B, -0.47 * B), props(cx, 0xd8ccb8, "SmoothPlastic"))
+		local p =
+			body(cx, "block", V(0.55, 0.6, 0.06) * B, C(0, 0.02 * B, -0.47 * B), props(cx, 0xd8ccb8, "SmoothPlastic"))
 		if p then
 			Kit.gui({ p }, { kind = "eyeHoles", color = 0x14100c, face = "Front" }, nil, nil)
 		end
@@ -870,7 +935,15 @@ FAMILY.wraith = {
 -- golem (nominal) -------------------------------------------------------------------------
 local function golemShard(cx: Cx, xs: { number }, color: number?)
 	for _, x in xs do
-		nom(cx, "UpperTorso", nil, "wedge", V(0.3, 1.0, 0.4), C(x, 0.5, 0.65) * ry(180), props(cx, color or cx.col.body))
+		nom(
+			cx,
+			"UpperTorso",
+			nil,
+			"wedge",
+			V(0.3, 1.0, 0.4),
+			C(x, 0.5, 0.65) * ry(180),
+			props(cx, color or cx.col.body)
+		)
 	end
 end
 
@@ -881,7 +954,8 @@ FAMILY.golem = {
 	chest = function(cx)
 		local list = {}
 		for _, s in { -1, 1 } do
-			local p = nom(cx, "UpperTorso", nil, "wedge", V(1.0, 1.5, 0.6), C(s * 0.575, 0.05, -0.3), props(cx, cx.col.body))
+			local p =
+				nom(cx, "UpperTorso", nil, "wedge", V(1.0, 1.5, 0.6), C(s * 0.575, 0.05, -0.3), props(cx, cx.col.body))
 			if p then
 				table.insert(list, p)
 			end
@@ -891,7 +965,16 @@ FAMILY.golem = {
 		end
 	end,
 	band = function(cx)
-		nom(cx, "Head", "FaceFrontAttachment", "block", V(0.9, 0.12, 0.05), C(0, 0.12, -0.03), props(cx, cx.col.eye, "Neon"), true)
+		nom(
+			cx,
+			"Head",
+			"FaceFrontAttachment",
+			"block",
+			V(0.9, 0.12, 0.05),
+			C(0, 0.12, -0.03),
+			props(cx, cx.col.eye, "Neon"),
+			true
+		)
 	end,
 	brow = function(cx)
 		nom(cx, "Head", nil, "wedge", V(1.2, 0.3, 0.4), C(0, 0.3, -0.5), props(cx, cx.col.body))
@@ -906,7 +989,15 @@ FAMILY.golem = {
 	end,
 	boulders = function(cx)
 		for _, s in { -1, 1 } do
-			nom(cx, LR(s) .. "UpperArm", LR(s) .. "ShoulderAttachment", "ball", ball(1.3), C(s * 0.1, 0.2, 0), props(cx, cx.col.body))
+			nom(
+				cx,
+				LR(s) .. "UpperArm",
+				LR(s) .. "ShoulderAttachment",
+				"ball",
+				ball(1.3),
+				C(s * 0.1, 0.2, 0),
+				props(cx, cx.col.body)
+			)
 		end
 	end,
 	moss = function(cx)
@@ -964,7 +1055,16 @@ FAMILY.imp = {
 	end,
 	eyes = function(cx)
 		for _, s in { -1, 1 } do
-			nom(cx, "Head", "FaceFrontAttachment", "ball", ball(0.2), C(s * 0.24, 0.12, -0.05), props(cx, cx.col.eye, "Neon"), true)
+			nom(
+				cx,
+				"Head",
+				"FaceFrontAttachment",
+				"ball",
+				ball(0.2),
+				C(s * 0.24, 0.12, -0.05),
+				props(cx, cx.col.eye, "Neon"),
+				true
+			)
 		end
 	end,
 	belly = function(cx)
@@ -1060,7 +1160,14 @@ FAMILY.ufo = {
 		local s = cx.s
 		for i = 0, 3 do
 			local a = math.rad(45 + 90 * i)
-			body(cx, "ball", ball(0.3 * s), C(2.1 * s * math.sin(a), 0, 2.1 * s * math.cos(a)), props(cx, cx.col.eye, "Neon"), true)
+			body(
+				cx,
+				"ball",
+				ball(0.3 * s),
+				C(2.1 * s * math.sin(a), 0, 2.1 * s * math.cos(a)),
+				props(cx, cx.col.eye, "Neon"),
+				true
+			)
 		end
 	end,
 }
@@ -1291,7 +1398,10 @@ local function dressCreature(model: Model, opts: any, enemy: any): (number, any)
 		local fn = fam[q.p.piece]
 		b.code = q.p.piece
 		if not fn then
-			table.insert(b.log, { tier = q.p.tier, code = q.p.piece, count = 0, mounted = false, parts = 0, missing = true })
+			table.insert(
+				b.log,
+				{ tier = q.p.tier, code = q.p.piece, count = 0, mounted = false, parts = 0, missing = true }
+			)
 			return
 		end
 		local before = #b.parts
@@ -1368,7 +1478,7 @@ local function rng(seed: number): () -> number
 	end
 end
 
-local HAIR_VARIANTS = {
+local HAIR_VARIANTS: { any } = {
 	{ "HR·s", n = 1 },
 	{ "HR·p", h = 0.6 },
 	{ "HR·p", h = 1.1 },
@@ -1491,7 +1601,10 @@ local function humanKit(id: string, opts: any): ({ any }, { [string]: number }, 
 		end
 	end
 	if has.gloves then
-		table.insert(kit, { "GL", n = 2, variant = "wraps", tint = sh(if ninja then 0xe8e0d0 else look.bottom, 0x2a2a30), tier = "D" })
+		table.insert(
+			kit,
+			{ "GL", n = 2, variant = "wraps", tint = sh(if ninja then 0xe8e0d0 else look.bottom, 0x2a2a30), tier = "D" }
+		)
 	end
 	if has.weapon then
 		if street then
@@ -1510,7 +1623,7 @@ local function humanKit(id: string, opts: any): ({ any }, { [string]: number }, 
 	for _, p in (var.pieces or {}) :: { any } do
 		local e = table.clone(p)
 		if e.tint then
-			e.tint = sh(e.tint, e.tint)
+			e.tint = sh(e.tint, e.tint :: number)
 		end
 		local replaced = false
 		for i, k in kit do
@@ -1543,7 +1656,8 @@ local function humanKit(id: string, opts: any): ({ any }, { [string]: number }, 
 	for _, k in kit do
 		have[k[1]] = true
 	end
-	local FLAG = { collar = "HC", sash = "SB", maskLower = "LM", vest = "VS", cape = "CP", belt = "SB" }
+	local FLAG: { [string]: string } =
+		{ collar = "HC", sash = "SB", maskLower = "LM", vest = "VS", cape = "CP", belt = "SB" }
 	local flagNames = {}
 	for f in FLAG do
 		table.insert(flagNames, f)
@@ -1699,7 +1813,8 @@ function Creatures.dress(model: Model, opts: any): (number, any)
 	if role == "charBoss" then
 		local styleId = Costumes.styleFromEnemyId(id)
 		local look = Costumes.effectiveLook(styleId, "charBoss")
-		local used, b = Kit.build(model, look, { role = "charBoss", style = Costumes.STYLE[styleId], budget = o.budget })
+		local used, b =
+			Kit.build(model, look, { role = "charBoss", style = Costumes.STYLE[styleId], budget = o.budget })
 		Kit.riftBoss(model)
 		return used, b
 	end
