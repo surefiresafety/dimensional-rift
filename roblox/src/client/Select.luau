@@ -12,8 +12,12 @@ local RulesData = require(Shared.Data.Rules)
 local Styles = require(Shared.Data.Styles)
 local Skills = require(Shared.Data.Skills)
 local Characters = require(Shared.Data.Characters)
+local EnemyData = require(Shared.Data.Enemies)
+local Progression = require(Shared.Progression)
 
 local Ui = require(script.Parent.Ui)
+local Profile = require(script.Parent.Profile)
+local Hud = require(script.Parent.Hud)
 
 local SelectStyle = Remotes.get("SelectStyle")
 
@@ -22,7 +26,30 @@ local Select = {}
 local gui: ScreenGui
 local grid: ScrollingFrame
 local countLabel: TextLabel
-local cards: { { frame: Frame, world: string, find: string } } = {}
+local cards: { { frame: Frame, world: string, find: string, id: string, pick: TextButton, lock: TextLabel } } = {}
+local continueButton: TextButton
+local pending: string? = nil -- asked for, not yet confirmed by the server
+
+--- Asks for a character. The screen closes when the server has put them in
+--- (their Style changes), not before: a refused pick leaves it open.
+local function choose(id: string)
+	local player = Players.LocalPlayer
+	if player:GetAttribute("Style") == id then
+		SelectStyle:FireServer(id)
+		Select.hide()
+		return
+	end
+	pending = id
+	SelectStyle:FireServer(id)
+	task.delay(3, function()
+		if pending == id then
+			pending = nil
+			Hud.log("That did not go through. Try again in a moment.")
+		end
+	end)
+end
+local rosterLabel: TextLabel
+local busy = false
 local world = "all"
 local query = ""
 
@@ -44,6 +71,56 @@ local function refilter()
 		end
 	end
 	countLabel.Text = if shown == #cards then `{shown} CHARACTERS` else `{shown} OF {#cards} CHARACTERS`
+end
+
+--- Owned, before the save has loaded: the starters.
+local function owns(id: string): boolean
+	if Profile.data then
+		return Profile.has(id)
+	end
+	return table.find(Progression.STARTERS, id) ~= nil
+end
+
+--- How a locked character is won, in a few words.
+local function howToUnlock(id: string): string
+	local boss = EnemyData["boss_" .. id]
+	local price = Progression.priceOf(id)
+	if boss then
+		return `Beat {boss.name} in the rift, or {price} shards`
+	end
+	return `{price} shards`
+end
+
+local function refreshLocks()
+	local d = Profile.data
+	local shards = if d then d.shards else 0
+	local owned = 0
+	for _, c in cards do
+		local has = owns(c.id)
+		if has then
+			owned += 1
+			c.pick.Text = "Play as this"
+			c.pick.BackgroundColor3 = Ui.ACCENT
+			c.pick.TextColor3 = Color3.new(1, 1, 1)
+			c.lock.Visible = false
+		else
+			local price = Progression.priceOf(c.id)
+			local afford = d ~= nil and shards >= price
+			c.pick.Text = if afford then `Unlock · {price} shards` else `Locked · {price} shards`
+			c.pick.BackgroundColor3 = if afford then Color3.fromRGB(200, 150, 30) else Ui.INK
+			c.pick.TextColor3 = if afford then Color3.new(1, 1, 1) else Ui.DIM
+			c.lock.Text = "🔒  " .. howToUnlock(c.id)
+			c.lock.Visible = true
+		end
+	end
+	rosterLabel.Text = if d
+		then `ROSTER {owned} / {#cards}  ·  {Profile.shards(shards)} SHARDS`
+		else "LOADING YOUR SAVE…"
+	local last = d and d.lastStyle
+	continueButton.Visible = last ~= nil and Styles[last] ~= nil and owns(last)
+	if continueButton.Visible then
+		continueButton.Text = "Continue as " .. string.split(Styles[last].name, ":")[1]
+	end
 end
 
 local function card(id: string, st: any): Frame
@@ -123,14 +200,40 @@ local function card(id: string, st: any): Frame
 		Parent = f,
 	}, { Ui.corner(18) })
 	pick.Activated:Connect(function()
-		SelectStyle:FireServer(id)
-		Select.hide()
+		if owns(id) then
+			choose(id)
+			return
+		end
+		if busy then
+			return
+		end
+		busy = true
+		task.spawn(function()
+			local r = Profile.ask("buy", id)
+			busy = false
+			Hud.log(r.message or "", if r.ok then "gold" else nil)
+		end)
 	end)
+	local lock = Ui.label({
+		Text = "",
+		Font = Ui.BOLD,
+		TextSize = 11,
+		TextColor3 = Ui.GOLD,
+		BackgroundTransparency = 0.25,
+		BackgroundColor3 = Ui.INK,
+		TextXAlignment = Enum.TextXAlignment.Center,
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 0, 1, -42),
+		Size = UDim2.new(1, 0, 0, 22),
+		Visible = false,
+		Parent = f,
+	})
+	Ui.corner(8).Parent = lock
 	local find = string.lower(st.name .. " " .. st.blurb .. " " .. table.concat(names, " "))
 	for _, k in st.pool do
 		find ..= " " .. string.lower(Skills[k].name)
 	end
-	table.insert(cards, { frame = f, world = wid, find = find })
+	table.insert(cards, { frame = f, world = wid, find = find, id = id, pick = pick, lock = lock })
 	return f
 end
 
@@ -245,6 +348,37 @@ function Select.build()
 		Size = UDim2.fromOffset(170, 32),
 		Parent = bar,
 	})
+	-- Your roster and shards, and straight back into the last one you played.
+	rosterLabel = Ui.label({
+		Text = "",
+		TextColor3 = Ui.GOLD,
+		Font = Ui.BOLD,
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Right,
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 0, 0, 2),
+		Size = UDim2.fromOffset(320, 14),
+		Parent = panel,
+	})
+	continueButton = Ui.make("TextButton", {
+		Text = "",
+		Font = Ui.BOLD,
+		TextSize = 15,
+		TextColor3 = Color3.new(1, 1, 1),
+		BackgroundColor3 = Color3.fromRGB(200, 150, 30),
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, 0, 0, 22),
+		Size = UDim2.fromOffset(260, 38),
+		Visible = false,
+		Parent = panel,
+	}, { Ui.corner(19) })
+	continueButton.Activated:Connect(function()
+		local d = Profile.data
+		local last = d and d.lastStyle
+		if last and owns(last) then
+			choose(last)
+		end
+	end)
 	grid = Ui.make("ScrollingFrame", {
 		Position = UDim2.fromOffset(0, 116),
 		Size = UDim2.new(1, 0, 1, -116),
@@ -280,6 +414,14 @@ function Select.build()
 		f.Parent = grid
 	end
 	refilter()
+	refreshLocks()
+	Profile.changed:Connect(refreshLocks)
+	player:GetAttributeChangedSignal("Style"):Connect(function()
+		if pending and player:GetAttribute("Style") == pending then
+			pending = nil
+			Select.hide()
+		end
+	end)
 end
 
 function Select.show()
