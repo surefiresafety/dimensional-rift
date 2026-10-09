@@ -730,6 +730,8 @@ function Abilities.cast(ps: Combat.PState, which: number | string, aim: Vector3,
 			-- One ward per caster: the Unbidden at 1.3 as an ally, 4 studs behind (§4.6).
 			Combat.clearWards(ps)
 			local ward: Model? = nil
+			local wardAnims: { [string]: AnimationTrack }? = nil
+			local wardAlign: AlignOrientation? = nil
 			local ok, built = pcall(Looks.buildAlly, "the_unbidden", 1.3)
 			if ok then
 				ward = built
@@ -742,12 +744,32 @@ function Abilities.cast(ps: Combat.PState, which: number | string, aim: Vector3,
 					pcall(function()
 						wardRoot:SetNetworkOwner(nil)
 					end)
+					-- it turns to face what it strikes without the server writing its CFrame
+					local att = Instance.new("Attachment")
+					att.Name = "WardFacing"
+					att.Parent = wardRoot
+					local align = Instance.new("AlignOrientation")
+					align.Mode = Enum.OrientationAlignmentMode.OneAttachment
+					align.Attachment0 = att
+					align.RigidityEnabled = false
+					align.Responsiveness = 25
+					align.MaxTorque = math.huge
+					align.Enabled = false
+					align.Parent = wardRoot
+					wardAlign = align
+				end
+				Looks.wardCollision(built)
+				local wardHum = built:FindFirstChildOfClass("Humanoid")
+				if wardHum then
+					wardAnims = Enemies.loadAnims(wardHum)
 				end
 			else
 				warn("Abilities: the ward did not build: " .. tostring(built))
 			end
 			table.insert(ps.minions, {
 				model = ward,
+				anims = wardAnims,
+				align = wardAlign,
 				untilT = now + (ult.duration or 30),
 				power = 90,
 				every = 1.4,

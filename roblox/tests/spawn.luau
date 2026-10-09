@@ -528,6 +528,16 @@ do
 	reset()
 	local child = Enemies.spawn(ids[1], Vector3.zero, nil, nil, { stitchedParent = true })
 	check(child ~= nil, "summon with stitchedParent did not spawn")
+	if child then
+		local strips = 0
+		for _, d in child.model:GetDescendants() do
+			if d:IsA("BasePart") and d.Name == "STRIP" then
+				strips += 1
+			end
+		end
+		check(strips > 0 or child.model:GetAttribute("Stitched") == true, "stitched summon has no stitched look")
+		check(partsOf(child.model) <= 30, "stitched summon over 30 parts")
+	end
 end
 
 -- Kit.ally on a worn body and the ward (§4.5, §4.6) ---------------------------------------------

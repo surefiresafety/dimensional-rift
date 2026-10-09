@@ -40,6 +40,9 @@ export type Minion = {
 	color: number,
 	model: Model?, -- Kage Inukai's ward (§4.6): it walks with its caster and strikes from itself
 	nextMove: number?,
+	anims: { [string]: AnimationTrack }?, -- the ward's idle / walk tracks
+	moving: string?,
+	align: AlignOrientation?, -- turns the ward to its target while it stands
 }
 
 export type Domain = {
@@ -699,8 +702,25 @@ function Combat.step(dt: number)
 			elseif ward and wardRoot and now >= (m.nextMove or 0) then
 				m.nextMove = now + 0.5
 				local wardHum = ward:FindFirstChildOfClass("Humanoid")
+				local goal = root.Position + root.CFrame.LookVector * -4
+				local far = (goal - wardRoot.Position).Magnitude > 3
 				if wardHum then
-					wardHum:MoveTo(root.Position + root.CFrame.LookVector * -4)
+					wardHum:MoveTo(goal)
+				end
+				if m.align then
+					m.align.Enabled = not far -- walking: the Humanoid turns it (AutoRotate)
+				end
+				local want = if far then "walk" else "idle"
+				if m.anims and m.moving ~= want then
+					local old = m.moving and m.anims[m.moving]
+					if old then
+						old:Stop(0.2)
+					end
+					local new = m.anims[want]
+					if new then
+						new:Play(0.2)
+					end
+					m.moving = want
 				end
 			end
 			if now < m.untilT and now >= m.next then
@@ -711,8 +731,8 @@ function Combat.step(dt: number)
 					if wardRoot then
 						from = wardRoot.Position
 						local flat = Vector3.new(e.root.Position.X, wardRoot.Position.Y, e.root.Position.Z)
-						if (flat - wardRoot.Position).Magnitude > 0.1 then
-							wardRoot.CFrame = CFrame.lookAt(wardRoot.Position, flat)
+						if m.align and (flat - wardRoot.Position).Magnitude > 0.1 then
+							m.align.CFrame = CFrame.lookAt(wardRoot.Position, flat)
 						end
 					end
 					Combat.fx("beam", {

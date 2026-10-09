@@ -81,8 +81,21 @@ local function applyStyle(ps: Combat.PState, styleId: string, keepHealth: boolea
 	ps.reloading = true
 	Combat.clearWards(ps) -- a new body sends the ward away (§4.6)
 	ps.player:SetAttribute("Weapon", ps.weapon) -- before the build: the Prop entry reads it
-	Looks.dressPlayer(ps.player, styleId, ps.weapon)
-	ps.reloading = false
+	local why: any = nil
+	local okDress = xpcall(function()
+		Looks.dressPlayer(ps.player, styleId, ps.weapon)
+	end, function(e)
+		why = e
+	end)
+	ps.reloading = false -- always, or the player is stuck mid-reload
+	if not okDress then
+		warn(`applyStyle: dressing {styleId} failed: {why}`)
+		if not ps.player.Character then
+			pcall(function()
+				ps.player:LoadCharacterAsync()
+			end)
+		end
+	end
 	local newHum = Combat.humanoidOf(ps.player)
 	local root = Combat.rootOf(ps.player)
 	if newHum then

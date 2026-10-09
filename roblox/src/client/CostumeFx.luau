@@ -25,7 +25,12 @@ local LOD_DRIVE = 160 -- nothing is driven beyond this
 local CYL_UP = CFrame.Angles(0, 0, math.pi / 2)
 local TAU = math.pi * 2
 
-type Driven = { weld: Weld, rest: CFrame }
+-- p: pivot or centre, axis: orbit axis, a: amp / rate, ph: phase (read once per scan)
+type Driven = { weld: Weld, rest: CFrame, p: Vector3, axis: Vector3, a: number, ph: number }
+
+-- The rest C0 of every driven weld, read once: a rescan mid-animation must not take an
+-- animated C0 as the rest (orbit and sway would drift). Kit rebuilds make new Welds.
+local restOf: { [Weld]: CFrame } = setmetatable({}, { __mode = "k" }) :: any
 type Rec = {
 	model: Model,
 	dirty: boolean,
@@ -85,7 +90,22 @@ local function scan(rec: Rec)
 	for _, d in m:GetDescendants() do
 		if d:IsA("Weld") then
 			local n = d.Name
-			local entry = { weld = d, rest = d.C0 }
+			local rest = restOf[d]
+			if not rest then
+				rest = d.C0
+				restOf[d] = rest
+			end
+			local entry: Driven =
+				{ weld = d, rest = rest :: CFrame, p = Vector3.zero, axis = Vector3.yAxis, a = 0, ph = 0 }
+			if string.sub(n, 1, 5) == "Gait_" then
+				entry.p, entry.a, entry.ph = vec(d, "GaitPivot"), num(d, "GaitAmp", 22), num(d, "GaitPhase", 0)
+			elseif string.sub(n, 1, 6) == "Orbit_" then
+				local axis = vec(d, "OrbitAxis")
+				entry.axis = if axis.Magnitude < 1e-3 then Vector3.yAxis else axis.Unit
+				entry.p, entry.a, entry.ph = vec(d, "OrbitCenter"), num(d, "OrbitRate", 0.25), num(d, "OrbitPhase", 0)
+			elseif string.sub(n, 1, 5) == "Sway_" then
+				entry.p, entry.a = vec(d, "SwayPivot"), num(d, "SwayAmp", 18)
+			end
 			if string.sub(n, 1, 5) == "Gait_" then
 				table.insert(rec.gait, entry)
 			elseif string.sub(n, 1, 6) == "Orbit_" then
@@ -394,28 +414,21 @@ local function step(dt: number)
 		rec.stride = (rec.stride + f * dt) % 1000
 
 		for _, g in rec.gait do
-			local w = g.weld
-			local p = vec(w, "GaitPivot")
-			local a = num(w, "GaitAmp", 22) * math.clamp(speed / 4, 0, 1)
-			local ang = a * math.sin(TAU * (rec.stride + num(w, "GaitPhase", 0)))
-			w.C0 = CFrame.new(p) * CFrame.Angles(math.rad(ang), 0, 0) * CFrame.new(-p) * g.rest
+			local p = g.p
+			local a = g.a * math.clamp(speed / 4, 0, 1)
+			local ang = a * math.sin(TAU * (rec.stride + g.ph))
+			g.weld.C0 = CFrame.new(p) * CFrame.Angles(math.rad(ang), 0, 0) * CFrame.new(-p) * g.rest
 		end
 		for _, o in rec.orbit do
-			local w = o.weld
-			local c = vec(w, "OrbitCenter")
-			local axis = vec(w, "OrbitAxis")
-			if axis.Magnitude < 1e-3 then
-				axis = Vector3.yAxis
-			end
-			local ang = TAU * (num(w, "OrbitRate", 0.25) * t + num(w, "OrbitPhase", 0))
-			w.C0 = CFrame.new(c) * CFrame.fromAxisAngle(axis.Unit, ang) * CFrame.new(-c) * o.rest
+			local c = o.p
+			local ang = TAU * (o.a * t + o.ph)
+			o.weld.C0 = CFrame.new(c) * CFrame.fromAxisAngle(o.axis, ang) * CFrame.new(-c) * o.rest
 		end
 		if rec.swayOn then
 			for _, s in rec.sway do
-				local w = s.weld
-				local p = vec(w, "SwayPivot")
-				local th = -num(w, "SwayAmp", 18) * math.clamp(speed / 16, 0, 1) + 3 * math.sin(TAU * 1.2 * t)
-				w.C0 = CFrame.new(p) * CFrame.Angles(math.rad(th), 0, 0) * CFrame.new(-p) * s.rest
+				local p = s.p
+				local th = -s.a * math.clamp(speed / 16, 0, 1) + 3 * math.sin(TAU * 1.2 * t)
+				s.weld.C0 = CFrame.new(p) * CFrame.Angles(math.rad(th), 0, 0) * CFrame.new(-p) * s.rest
 			end
 		end
 		if #rec.glide > 0 then
@@ -458,7 +471,12 @@ local function step(dt: number)
 	end
 end
 
+local started = false
 function CostumeFx.start()
+	if started then
+		return
+	end
+	started = true
 	refresh()
 	local acc = 0
 	RunService.Heartbeat:Connect(function(dt)

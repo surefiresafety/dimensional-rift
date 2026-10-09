@@ -1284,7 +1284,16 @@ local TIER_RANK = { ["0"] = 1, ["1"] = 2, W = 3, R = 4, L = 5, D = 6 }
 --- Markers for a role (§4.5) as {code, count, fn(b, rig)} (tier 1, mounted right after FP).
 function Creatures.markers(role: string, affix: any?, stitched: boolean?, where: Where, sd: boolean?): { any }
 	local list = {}
-	if role == "elite" and affix then
+	if stitched and (role == "normal" or role == "elite") then
+		table.insert(list, {
+			code = "STRIP",
+			count = 3,
+			fn = function(b: any, rig: any)
+				Kit.stitch(b, rig, affix, where)
+			end,
+		})
+		return list -- the stitched ring replaces SD, as on an elite
+	elseif role == "elite" and affix then
 		if stitched then
 			table.insert(list, {
 				code = "STRIP",
@@ -1806,7 +1815,8 @@ function Creatures.dress(model: Model, opts: any): (number, any)
 	local role: string = opts.role or Costumes.role(id, t, opts.affix, false)
 	local o = table.clone(opts)
 	o.role = role
-	o.stitched = opts.stitched == true and role == "elite"
+	-- an elite on a stitched map, or a normal foe summoned by a stitched parent (§4.5)
+	o.stitched = opts.stitched == true and (role == "elite" or role == "normal")
 	if role == "finale" then
 		error("Creatures.dress: finale ids are built by Finale.luau BUILDERS", 0)
 	end

@@ -174,9 +174,38 @@ end
 -- Players
 --------------------------------------------------------------------------------
 
+-- The ward walks with its owner without shoving them: "Ward" and "Players" never collide.
+local groupsReady = false
+local function groups()
+	if groupsReady then
+		return
+	end
+	groupsReady = true
+	pcall(function()
+		local PhysicsService = game:GetService("PhysicsService")
+		for _, g in { "Ward", "Players" } do
+			if not PhysicsService:IsCollisionGroupRegistered(g) then
+				PhysicsService:RegisterCollisionGroup(g)
+			end
+		end
+		PhysicsService:CollisionGroupSetCollidable("Ward", "Players", false)
+	end)
+end
+
+local function setGroup(model: Model, group: string)
+	groups()
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.CollisionGroup = group
+		end
+	end
+end
+
 type PlayerState = { conns: { RBXScriptConnection }, suit: boolean, weapon: string? }
 local playerState: { [Model]: PlayerState } = setmetatable({}, { __mode = "k" }) :: any
 local playerConns: { [Player]: { RBXScriptConnection } } = {}
+local redressGen: { [Model]: number } = setmetatable({}, { __mode = "k" }) :: any
+local playerGen: { [Player]: number } = setmetatable({}, { __mode = "k" }) :: any
 
 local function disconnect(list: { RBXScriptConnection }?)
 	if list then
@@ -209,12 +238,17 @@ function Looks.redress(character: Model)
 	if type(styleId) ~= "string" then
 		return
 	end
+	local gen = (redressGen[character] or 0) + 1
+	redressGen[character] = gen
 	local look = Costumes.effectiveLook(styleId, "player", nil, suitKey(styleId, weaponOf(character)))
 	local hum = character:FindFirstChildOfClass("Humanoid")
 	if hum then
 		pcall(function()
 			hum:ApplyDescriptionAsync(Looks.description(look))
 		end)
+	end
+	if not character.Parent or redressGen[character] ~= gen then
+		return -- gone, or a newer redress started while this one yielded
 	end
 	Looks.dress(character, look, { styleId = styleId, role = "player" })
 	local st = playerState[character]
@@ -234,11 +268,26 @@ function Looks.dressPlayer(player: Player, styleId: string, weapon: string?)
 	end
 	player:SetAttribute("Weapon", key)
 	local look = Costumes.effectiveLook(styleId, "player", nil, suitKey(styleId, key))
-	player:LoadCharacterWithHumanoidDescriptionAsync(Looks.description(look))
-	local character = player.Character
-	if not character then
+	local gen = (playerGen[player] or 0) + 1
+	playerGen[player] = gen
+	local ok, err = pcall(function()
+		player:LoadCharacterWithHumanoidDescriptionAsync(Looks.description(look))
+	end)
+	if not ok then
+		warn(`Looks: loading {styleId} failed ({err}); plain character instead`)
+		pcall(function()
+			player:LoadCharacterAsync()
+		end)
+	end
+	-- a newer dress started while this one yielded: it owns the character and the listeners
+	if playerGen[player] ~= gen then
 		return
 	end
+	local character = player.Character
+	if not character or not character.Parent then
+		return
+	end
+	setGroup(character, "Players")
 	character:SetAttribute("StyleId", styleId)
 	character:SetAttribute("Weapon", key) -- before Kit.build: the Prop entry reads it
 	Looks.dress(character, look, { styleId = styleId, role = "player" })
@@ -322,6 +371,11 @@ function Looks.buildAlly(id: string, size: number): Model
 	Looks.dress(model, nil, { enemyId = id, role = "finale" })
 	Kit.ally(model)
 	return model
+end
+
+--- Puts a ward's parts in the "Ward" group (no collision with any player character).
+function Looks.wardCollision(model: Model)
+	setGroup(model, "Ward")
 end
 
 --- Hyakunui's phase looks (§5.1).

@@ -80,6 +80,7 @@ local function attackAnim(e: Combat.Enemy, name: string)
 end
 
 local Enemies = {}
+Enemies.loadAnims = loadAnims
 
 local folder = Instance.new("Folder")
 folder.Name = "Enemies"
@@ -131,6 +132,10 @@ function Enemies.claimHighlight(model: Model, prio: string, outline: number?, fi
 	h.Parent = model
 	highlights[model] = h
 	highlightCount += 1
+	-- a model destroyed any other way still gives its Highlight back
+	model.Destroying:Connect(function()
+		Enemies.releaseHighlight(model)
+	end)
 	return h
 end
 
