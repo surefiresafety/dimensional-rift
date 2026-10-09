@@ -4,8 +4,8 @@
 --   lune run tests/kit          (from the roblox folder; builds build/kit-test.rbxl with rojo)
 -- Checks part counts per code against docs/design/characters.md §2.3, the costume flags,
 -- welds, CostumeDetail/CastShadow, the face-zone rule (§2.2, orbiting pieces at 36 phases),
--- ringOver, emblem Frame counts, budget trimming, and each style's +N (§3) minus the §3.1
--- bespoke pieces that stage 2 adds.
+-- ringOver, emblem Frame counts, budget trimming, each style's +N (§3) with every kit entry
+-- built (largest prop and default prop), the suit tendrils, and every Arsenal prop (§2.6).
 local fs = require("@lune/fs")
 local process = require("@lune/process")
 local roblox = require("@lune/roblox")
@@ -480,6 +480,33 @@ local CASES = {
 	{ { "WR", n = 2 }, 2 },
 	{ { "FS", n = 2 }, 2 },
 	{ { "SD" }, 1 },
+	-- §3.1 bespoke pieces and the §2.6 Prop slot (Bespoke.luau)
+	{ { "HAT", n = 3, tints = { b = 0x101010, c = 0x101010, n = 0x9b1a2a } }, 3 },
+	{ { "FTH", n = 2 }, 2 },
+	{ { "CLP", fx = "ember", fxAt = "hands", fxColor = 0x5a5a78 }, 1 },
+	{ { "LF" }, 1 },
+	{ { "BLM" }, 1 },
+	{ { "ORB" }, 1 },
+	{ { "WSP", fx = "wind" }, 1 },
+	{ { "SHD", n = 4, tints = { beam = 0x8a6cff }, gui = { kind = "edge", glow = 0x8a6cff } }, 4 },
+	{ { "VL", n = 2 }, 2 },
+	{ { "TIE", gui = { kind = "stripes", bars = 3, rot = 30, color = 0x8a6a4a } }, 1 },
+	{ { "WCH" }, 1 },
+	{ { "BLD", gui = { kind = "gripWrap", bands = 3, color = 0x3a3a42 } }, 1 },
+	{ { "HMR", n = 2, tints = { s = 0x5a4a3a, h = 0x9aa4b0 } }, 2 },
+	{ { "FLT" }, 1 },
+	{ { "CN" }, 1 },
+	{ { "MZ" }, 1 },
+	{ { "STF", fx = "spark", fxAt = "tips" }, 1 },
+	{ { "TIP" }, 1 },
+	{ { "PLT", n = 2, tints = { L = 0xd8c0a8, R = 0x8a6244 }, gui = { kind = "edge", emblem = "E11" } }, 2 },
+	{ { "SEAM" }, 1 },
+	{ { "TSL", n = 2 }, 2 },
+	{ { "EDG" }, 1 },
+	{ { "CRY", n = 3 }, 3 },
+	{ { "SPL", n = 2, gui = { kind = "ring", color = 0x2fb7a8 } }, 2 },
+	{ { "SM", n = 4 }, 4 },
+	{ { "Prop", max = 3, style = "tophat", key = "sniper" }, 3 },
 }
 
 print("§2.3 pieces (scale 1 and scale 1.3):")
@@ -663,34 +690,6 @@ local PLUS_N = {
 	eleven = 6,
 	tophat = 12,
 }
--- §3.1 bespoke pieces (stage 2, Bespoke.luau) and the §2.6 Prop slot
-local BESPOKE = {
-	HAT = 3,
-	FTH = 2,
-	CLP = 1,
-	LF = 1,
-	BLM = 1,
-	ORB = 1,
-	WSP = 1,
-	SHD = 4,
-	VL = 2,
-	TIE = 1,
-	WCH = 1,
-	BLD = 1,
-	HMR = 2,
-	FLT = 1,
-	CN = 1,
-	MZ = 1,
-	STF = 1,
-	TIP = 1,
-	PLT = 2,
-	SEAM = 1,
-	TSL = 2,
-	EDG = 1,
-	CRY = 3,
-	SPL = 2,
-	SM = 4,
-}
 
 local STYLES = {}
 if Costumes and type(Costumes.STYLE) == "table" then
@@ -703,7 +702,25 @@ else
 	end
 end
 
-print("\nstyles (+N from §3; stage-1 parts = +N minus §3.1 bespoke and Prop):")
+local Arsenals = load(Shared.Data.Arsenals)
+
+-- the largest prop key of a style (Arsenals order), and its parts
+local function largestProp(id)
+	local a = Arsenals[id]
+	if not a then
+		return nil, 0
+	end
+	local best, n = nil, -1
+	for _, key in a.order do
+		local p = Kit.propParts(id, key)
+		if p > n then
+			best, n = key, p
+		end
+	end
+	return best, n
+end
+
+print("\nstyles (+N from §3; built with the largest prop, and with the default prop):")
 local ids = {}
 for id in STYLES do
 	table.insert(ids, id)
@@ -712,6 +729,18 @@ table.sort(ids)
 local count = 0
 for _, id in ids do
 	local st = STYLES[id]
+	for _, code in
+		(function()
+			local t = {}
+			for _, e in st.kit do
+				table.insert(t, e[1])
+			end
+			return t
+		end)()
+	do
+		check(Kit.PIECES[code] ~= nil, `{id}: kit code {code} has no builder`)
+	end
+	local bigKey = largestProp(id)
 	for _, role in { "player", "charBoss" } do
 		local look = st
 		if Costumes and Costumes.effectiveLook then
@@ -720,54 +749,71 @@ for _, id in ids do
 				look = eff
 			end
 		end
-		local model = dummy()
-		local ok, used, b = pcall(Kit.build, model, look, { role = role, style = st })
-		check(ok, `{id} {role}: {used}`)
-		if ok then
-			local missing, missingCodes = 0, {}
-			for _, e in st.kit do
-				local code = e[1]
-				if not Kit.PIECES[code] then
-					local n = if code == "Prop" then (e.max or 0) else (BESPOKE[code] or e.n or 1)
-					missing += n
-					table.insert(missingCodes, code)
-				end
+		for _, weapon in (if bigKey then { bigKey, false } else { false }) do
+			local model = dummy()
+			if weapon then
+				model:SetAttribute("Weapon", weapon)
 			end
-			local want = PLUS_N[id]
-			check(want ~= nil, `{id}: no +N in the test table`)
-			if want then
-				check(used == want - missing, `{id} {role}: built {used}, §3 +{want} minus {missing} stage-2`)
-			end
-			check(
-				#costumeParts(model) == used,
-				`{id} {role}: Costume holds {#costumeParts(model)} parts, builder says {used}`
-			)
-			checkFlags(model, id)
-			local bad = faceZoneViolations(model)
-			check(#bad == 0, `{id} {role}: face zone crossed by {table.concat(bad, ", ")}`)
-			if st.sigPiece and Kit.PIECES[st.sigPiece] then
-				local found = false
-				for _, rec in b.log do
-					if rec.code == st.sigPiece and rec.mounted then
-						found = true
+			local ok, used, b = pcall(Kit.build, model, look, { role = role, style = st })
+			check(ok, `{id} {role}: {used}`)
+			if ok then
+				local want = PLUS_N[id]
+				check(want ~= nil, `{id}: no +N in the test table`)
+				local propMax, propBuilt = 0, 0
+				for _, e in st.kit do
+					if e[1] == "Prop" then
+						propMax = e.max or 3
 					end
 				end
-				check(found, `{id}: sigPiece {st.sigPiece} did not survive`)
-			end
-			local fp = Kit.faceOf(model)
-			check(fp ~= nil and fp:FindFirstChild("FaceBase") and fp:FindFirstChild("FaceGlow"), `{id}: face guis`)
-			check(model.Head:FindFirstChild("face") == nil, `{id}: default face decal destroyed`)
-			if role == "player" then
-				count += 1
-				print(
-					string.format(
-						"  %-11s +%-2d built %-2d  stage 2: %s",
-						id,
-						want or -1,
-						used,
-						if #missingCodes > 0 then table.concat(missingCodes, " ") else "-"
+				if propMax > 0 then
+					local def = weapon or (st.props and st.props.default)
+					propBuilt = Kit.propParts(id, def)
+				end
+				if want then
+					check(
+						used == want - (propMax - propBuilt),
+						`{id} {role} {weapon or "default"}: built {used}, §3 +{want} (prop {propBuilt}/{propMax})`
 					)
+					if weapon then
+						check(used == want, `{id} {role}: largest prop {weapon} builds {used}, §3 +{want}`)
+					end
+				end
+				check(16 + used <= 30, `{id}: {16 + used} parts over the cap`)
+				for _, rec in b.log do
+					check(not rec.missing, `{id}: {rec.code} skipped as missing`)
+					check(rec.mounted, `{id} {role}: {rec.code} not mounted`)
+				end
+				check(
+					#costumeParts(model) == used,
+					`{id} {role}: Costume holds {#costumeParts(model)} parts, builder says {used}`
 				)
+				checkFlags(model, id)
+				local bad = faceZoneViolations(model)
+				check(#bad == 0, `{id} {role}: face zone crossed by {table.concat(bad, ", ")}`)
+				if st.sigPiece then
+					local found = false
+					for _, rec in b.log do
+						if rec.code == st.sigPiece and rec.mounted then
+							found = true
+						end
+					end
+					check(found, `{id}: sigPiece {st.sigPiece} did not survive`)
+				end
+				local fp = Kit.faceOf(model)
+				check(fp ~= nil and fp:FindFirstChild("FaceBase") and fp:FindFirstChild("FaceGlow"), `{id}: face guis`)
+				check(model.Head:FindFirstChild("face") == nil, `{id}: default face decal destroyed`)
+				if st.suitTN then
+					local tn = Kit.suitTN(model, true, look)
+					check(#tn == 2 and #model.Costume.SuitTN:GetChildren() == 2, `{id}: suit TN mounts 2`)
+					check(#costumeParts(model) == want + 2, `{id}: with the suit {#costumeParts(model)} ~= {want + 2}`)
+					check(#faceZoneViolations(model) == 0, `{id}: suit TN face zone`)
+					Kit.suitTN(model, false)
+					check(model.Costume:FindFirstChild("SuitTN") == nil, `{id}: suit TN removed`)
+				end
+				if role == "player" and weapon == false then
+					count += 1
+					print(string.format("  %-11s +%-2d built %-2d (default prop)", id, want or -1, used))
+				end
 			end
 		end
 	end
@@ -789,6 +835,69 @@ if Costumes and Costumes.entryParts then
 	print(`Kit.count = Costumes.entryParts on {agreed} style entries (Costumes.effectiveLook used for the builds)`)
 else
 	print("NOTE Costumes not loaded: styles built from the raw Styles data")
+end
+
+-- props (§2.6, test 8): every key in Arsenals order exists, builds at most 3 parts, swaps cleanly
+do
+	local n = 0
+	for style, a in Arsenals do
+		for _, key in a.order do
+			local spec = Costumes.ARSENAL_PROP[style] and Costumes.ARSENAL_PROP[style][key]
+			check(spec ~= nil, `ARSENAL_PROP.{style}.{key} missing`)
+			check((spec and spec.suit == true) == (style == "ironman"), `{style}.{key}: suit flag`)
+			if spec and STYLES[style] then
+				local model = dummy()
+				Kit.build(model, Costumes.effectiveLook(style, "player"), { style = STYLES[style] })
+				local before = #costumeParts(model)
+				Kit.prop(model, style, key)
+				Kit.prop(model, style, key) -- a second swap replaces, never stacks
+				local folder = model.Costume:FindFirstChild("Prop")
+				local got = if folder then #folder:GetChildren() else 0
+				local inProp = 0
+				if folder then
+					for _, d in folder:GetDescendants() do
+						if d:IsA("BasePart") then
+							inProp += 1
+						end
+					end
+				end
+				check(inProp <= 3, `{style}.{key}: {inProp} prop parts`)
+				check(inProp == (spec.pieces and #spec.pieces or 0), `{style}.{key}: {inProp} ~= spec`)
+				check(got == inProp, `{style}.{key}: prop folder holds only parts`)
+				check(#costumeParts(model) - before <= 3, `{style}.{key}: prop grew the costume past 3`)
+				checkFlags(model, style .. "." .. key)
+				check(#faceZoneViolations(model) == 0, `{style}.{key}: face zone`)
+				if spec.glTint then
+					for _, p in model.Costume:GetChildren() do
+						if p.Name == "GL" then
+							check(p.Color == Color3.fromRGB(0xd8, 0x68, 0x3a), `{style}.{key}: GL tape recoloured`)
+						end
+					end
+					Kit.prop(model, style, "knife")
+					for _, p in model.Costume:GetChildren() do
+						if p.Name == "GL" then
+							check(p.Color == Color3.fromRGB(0xe8, 0xe0, 0xd0), `{style}: GL tape restored`)
+						end
+					end
+				end
+				n += 1
+			end
+		end
+	end
+	print(`props: {n} Arsenal keys built`)
+end
+
+-- LP forms a V: each lapel's top sits further out than its bottom
+do
+	local model = dummy()
+	local rig = Kit.rig(model)
+	local b = Kit.new(model, 99)
+	for _, p in Kit.PIECES.LP(b, rig, { "LP" }, LOOK) do
+		local c0 = p:FindFirstChildOfClass("Weld").C0
+		local up = c0.YVector * p.Size.Y / 2
+		local top, bot = c0.Position + up, c0.Position - up
+		check(math.abs(top.X) > math.abs(bot.X), `LP lapel top {top.X} not outside bottom {bot.X}`)
+	end
 end
 
 -- BA tips end behind the back plane, z > +0.5 in UpperTorso space (§2.3 worked example)

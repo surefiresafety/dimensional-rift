@@ -134,7 +134,14 @@ return function(Kit: any)
 	end
 
 	-- a mirrored pair: cf(s) with s = -1 for the character's left
-	local function pair(code: string, host: (number) -> string, attach: ((number) -> string?)?, kind: string, size: Vector3, cf: (number) -> CFrame)
+	local function pair(
+		code: string,
+		host: (number) -> string,
+		attach: ((number) -> string?)?,
+		kind: string,
+		size: Vector3,
+		cf: (number) -> CFrame
+	)
 		P[code] = function(b, rig, entry, look)
 			local out = {}
 			for _, s in { -1, 1 } do
@@ -146,7 +153,15 @@ return function(Kit: any)
 		COUNT[code] = fixed(2)
 	end
 
-	local function orbiting(b: any, p: BasePart?, axis: Vector3, rate: number, phase: number, center: Vector3, name: string)
+	local function orbiting(
+		b: any,
+		p: BasePart?,
+		axis: Vector3,
+		rate: number,
+		phase: number,
+		center: Vector3,
+		name: string
+	)
 		if p then
 			b:orbit(axis, rate, phase, center, name, p)
 		end
@@ -164,13 +179,20 @@ return function(Kit: any)
 	COUNT.HAT = fixed(3)
 
 	-- FTH: feathers rising from the mantle, tops back and out
-	pair("FTH", function()
-		return "UpperTorso"
-	end, function()
-		return "NeckAttachment"
-	end, "wedge", V(0.1, 0.6, 0.25), function(s)
-		return C(s * 0.45, 0.25, 0.45) * rx(20) * rz(-s * 15)
-	end)
+	pair(
+		"FTH",
+		function()
+			return "UpperTorso"
+		end,
+		function()
+			return "NeckAttachment"
+		end,
+		"wedge",
+		V(0.1, 0.6, 0.25),
+		function(s)
+			return C(s * 0.45, 0.25, 0.45) * rx(20) * rz(-s * 15)
+		end
+	)
 
 	single("CLP", "Head", nil, "wedge", V(0.08, 0.25, 0.12), C(-0.44, 0.22, -0.67))
 	single("LF", "Head", nil, "wedge", V(0.1, 0.4, 0.3), C(0.56, 0.92, 0) * rz(-40))
@@ -178,7 +200,17 @@ return function(Kit: any)
 
 	P.ORB = function(b, rig, entry, look)
 		local out = {}
-		local p = add(out, b:mount(part(rig, "UpperTorso"), nil, "ball", V(0.5, 0.5, 0.5), C(-1.3, 1.3, 0.4), props("ORB", entry, look)))
+		local p = add(
+			out,
+			b:mount(
+				part(rig, "UpperTorso"),
+				nil,
+				"ball",
+				V(0.5, 0.5, 0.5),
+				C(-1.3, 1.3, 0.4),
+				props("ORB", entry, look)
+			)
+		)
 		orbiting(b, p, V(0, 1, 0), 0.6, 0, V(-1.1, 1.3, 0.4), "orb")
 		return out
 	end
@@ -186,7 +218,10 @@ return function(Kit: any)
 
 	P.WSP = function(b, rig, entry, look)
 		local out = {}
-		local p = add(out, b:mount(part(rig, "UpperTorso"), nil, "ball", V(0.5, 0.5, 0.5), C(1.2, 1.2, 0.7), props("WSP", entry, look)))
+		local p = add(
+			out,
+			b:mount(part(rig, "UpperTorso"), nil, "ball", V(0.5, 0.5, 0.5), C(1.2, 1.2, 0.7), props("WSP", entry, look))
+		)
 		orbiting(b, p, V(0, 1, 0), 0.6, 0.5, V(1.0, 1.2, 0.7), "wisp")
 		return out
 	end
@@ -232,11 +267,18 @@ return function(Kit: any)
 	end
 	COUNT.SHD = fixed(4)
 
-	pair("VL", function(s)
-		return LR(s) .. "LowerArm"
-	end, nil, "cyl", V(0.4, 0.14, 0.14), function(s)
-		return C(s * 0.61, -0.28, 0) * CYL_UP
-	end)
+	pair(
+		"VL",
+		function(s)
+			return LR(s) .. "LowerArm"
+		end,
+		nil,
+		"cyl",
+		V(0.4, 0.14, 0.14),
+		function(s)
+			return C(s * 0.61, -0.28, 0) * CYL_UP
+		end
+	)
 
 	single("TIE", "UpperTorso", nil, "block", V(0.25, 0.9, 0.05), C(0, 0.17, -0.53))
 	single("WCH", "LeftLowerArm", nil, "cyl", V(0.08, 0.3, 0.3), C(-0.54, -0.4, 0))
@@ -258,23 +300,37 @@ return function(Kit: any)
 	single("STF", "UpperTorso", "BodyBackAttachment", "cyl", V(5.0, 0.16, 0.16), C(0, -0.2, 0.2) * rz(35) * CYL_UP)
 	single("TIP", "Head", nil, "block", V(1.08, 0.3, 0.32), C(0, -1.15, 0.62))
 
-	pair("PLT", function(s)
-		return LR(s) .. "UpperArm"
-	end, function(s)
-		return LR(s) .. "ShoulderAttachment"
-	end, "block", V(0.9, 0.25, 1.0), function(s)
-		return C(s * 0.05, 0.12, 0) * rz(-s * 15)
-	end)
+	pair(
+		"PLT",
+		function(s)
+			return LR(s) .. "UpperArm"
+		end,
+		function(s)
+			return LR(s) .. "ShoulderAttachment"
+		end,
+		"block",
+		V(0.9, 0.25, 1.0),
+		function(s)
+			return C(s * 0.05, 0.12, 0) * rz(-s * 15)
+		end
+	)
 
 	single("SEAM", "UpperTorso", nil, "block", V(0.08, 1.4, 0.05), C(0.2, -0.05, -0.53))
 
-	pair("TSL", function()
-		return "LowerTorso"
-	end, function()
-		return "WaistFrontAttachment"
-	end, "cyl", V(0.9, 0.12, 0.12), function(s)
-		return C(s * 0.35, -0.5, -0.05) * CYL_UP
-	end)
+	pair(
+		"TSL",
+		function()
+			return "LowerTorso"
+		end,
+		function()
+			return "WaistFrontAttachment"
+		end,
+		"cyl",
+		V(0.9, 0.12, 0.12),
+		function(s)
+			return C(s * 0.35, -0.5, -0.05) * CYL_UP
+		end
+	)
 
 	single("EDG", "UpperTorso", "NeckAttachment", "block", V(1.3, 0.06, 0.06), C(0, -0.15, -0.67))
 
@@ -283,24 +339,51 @@ return function(Kit: any)
 		local head = part(rig, "Head")
 		local n = if type(entry.n) == "number" then entry.n else 3
 		for k = 0, n - 1 do
-			local p = add(out, b:mount(head, nil, "wedge", V(0.12, 0.4, 0.2), ry(360 / n * k) * C(0, 0.6, -0.9), props("CRY", entry, look)))
+			local p = add(
+				out,
+				b:mount(
+					head,
+					nil,
+					"wedge",
+					V(0.12, 0.4, 0.2),
+					ry(360 / n * k) * C(0, 0.6, -0.9),
+					props("CRY", entry, look)
+				)
+			)
 			orbiting(b, p, V(0, 1, 0), 0.2, 0, Vector3.zero, "cry" .. k)
 		end
 		return out
 	end
 	COUNT.CRY = nOr(3)
 
-	pair("SPL", function(s)
-		return LR(s) .. "LowerArm"
-	end, nil, "cyl", V(0.5, 0.3, 0.3), function(s)
-		return C(s * 0.56, -0.25, 0) * CYL_UP
-	end)
+	pair(
+		"SPL",
+		function(s)
+			return LR(s) .. "LowerArm"
+		end,
+		nil,
+		"cyl",
+		V(0.5, 0.3, 0.3),
+		function(s)
+			return C(s * 0.56, -0.25, 0) * CYL_UP
+		end
+	)
 
 	P.SM = function(b, rig, entry, look)
 		local out = {}
 		for _, limb in { "LowerArm", "LowerLeg" } do
 			for _, s in { -1, 1 } do
-				add(out, b:mount(part(rig, LR(s) .. limb), nil, "block", V(0.06, 1.0, 0.06), C(s * 0.52, 0, 0), props("SM", entry, look)))
+				add(
+					out,
+					b:mount(
+						part(rig, LR(s) .. limb),
+						nil,
+						"block",
+						V(0.06, 1.0, 0.06),
+						C(s * 0.52, 0, 0),
+						props("SM", entry, look)
+					)
+				)
 			end
 		end
 		return out
@@ -394,7 +477,7 @@ return function(Kit: any)
 			end
 		end
 		if #mains == 0 and #tops > 0 then
-			table.insert(mains, table.remove(tops, 1))
+			table.insert(mains, table.remove(tops, 1) :: number)
 		end
 		local frames: { CFrame } = {}
 		local function info(i: number): (string, Vector3, string, number)
@@ -481,7 +564,10 @@ return function(Kit: any)
 		for i, pc in spec.pieces do
 			local cf = frames[i]
 			if type(pc.cf) == "table" then
-				local rot = if pc.cf.rot == "CYL_FWD" then CYL_FWD elseif pc.cf.rot == "CYL_UP" then CYL_UP else CFrame.identity
+				local rot = if pc.cf.rot == "CYL_FWD"
+					then CYL_FWD
+					elseif pc.cf.rot == "CYL_UP" then CYL_UP
+					else CFrame.identity
 				cf = CFrame.new(Kit.toV3(pc.cf.pos) or Vector3.zero) * rot
 			else
 				cf = base * cf
