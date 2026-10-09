@@ -126,7 +126,7 @@ return {
 			{ "MT", tint = 0x14141c, variant = "crow mantle" },
 			{ "FTH", n = 2, tint = 0x2a2233 },
 			-- clip in the forelock; grey-violet ember from the hands (EMITTERS ember, Karasu colour 0x5a5a78)
-			{ "CLP", tint = 0x7a8ad8, fx = "ember", fxAt = "hands" },
+			{ "CLP", tint = 0x7a8ad8, fx = "ember", fxAt = "hands", fxColor = 0x5a5a78 },
 		},
 		sigPiece = "CLP",
 		face = { marks = {}, glow = 0x7a8ad8 },

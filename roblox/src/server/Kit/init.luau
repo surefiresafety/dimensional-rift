@@ -2236,7 +2236,7 @@ P.LP = function(b, rig, entry, look)
 	local out = {}
 	local ut = part(rig, "UpperTorso")
 	for _, s in { -1, 1 } do
-		local cf = C(s * 0.35, 0.1, -0.04) * rz(s * 18)
+		local cf = C(s * 0.35, 0.1, -0.04) * rz(-s * 18) -- tops out, bottoms in: a V
 		add(
 			out,
 			b:mount(ut, "BodyFrontAttachment", "wedge", V(0.5, 1.1, 0.08), cf, Kit.props("LP", entry, look, nil, s))
@@ -2961,5 +2961,8 @@ function Kit.build(model: Model, look: Look, opts: BuildOpts?): (number, Builder
 	Kit.paintParts(model, look.paint or style.paint)
 	return b.used, b
 end
+
+-- stage-2 pieces register themselves (an installer, so there is no recursive require)
+require(script.Bespoke)(Kit)
 
 return Kit
