@@ -239,6 +239,49 @@
   #eye-up small { display: block; font: 700 11px/1 Rubik, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #ff7a8e; }
   #eye-up b { display: block; margin: 5px 0 6px; font: 400 30px/1 Bangers, sans-serif; letter-spacing: .04em; color: #fff; }
   #eye-up p { margin: 0; font: 400 13px/1.35 Rubik, sans-serif; color: #f2d6dc; }
+  /* The dodge bar: red, a sliver of green, a white marker crossing it once. */
+  #qte { position: absolute; left: 50%; bottom: 190px; transform: translateX(-50%); width: min(440px, calc(100vw - 32px));
+    display: grid; grid-template-columns: 54px 1fr; grid-template-rows: auto auto; column-gap: 12px; align-items: center; pointer-events: auto; z-index: 9; }
+  #qte .qte-eye { grid-row: span 2; width: 54px; height: 54px; }
+  #qte .qte-eye .eye-svg { width: 100%; height: 100%; animation: eye-spin 1.2s linear infinite; }
+  #qte .qte-label { font: 400 22px/1 Bangers, sans-serif; letter-spacing: .08em; color: #fff; text-shadow: 0 0 10px #ff2448, 2px 2px 0 #000; margin-bottom: 6px; }
+  #qte kbd { display: inline-block; min-width: 26px; padding: 2px 6px; border-radius: 6px; background: #fff; color: #120008; font: 800 16px/1.2 Rubik, sans-serif; text-align: center; text-shadow: none; }
+  #qte .qte-bar { position: relative; height: 24px; border-radius: 6px; background: linear-gradient(#e0203c, #9a0c22); border: 2px solid #12000a;
+    box-shadow: 0 0 22px rgba(255, 36, 72, .5); overflow: visible; }
+  #qte .qte-green { position: absolute; top: 0; bottom: 0; background: linear-gradient(#5dff8e, #18b24a); box-shadow: 0 0 14px #36ff7a; }
+  #qte .qte-cursor { position: absolute; top: -7px; bottom: -7px; width: 5px; margin-left: -2px; border-radius: 3px; background: #fff; box-shadow: 0 0 10px #fff, 0 0 2px #000; }
+  #qte.ok .qte-bar { border-color: #36ff7a; box-shadow: 0 0 30px #36ff7a; }
+  #qte.miss { animation: qte-miss .3s; }
+  #qte.ok, #qte.miss { opacity: 0; transition: opacity .4s .05s; }
+  @keyframes qte-miss { 25% { transform: translateX(calc(-50% - 10px)); } 75% { transform: translateX(calc(-50% + 10px)); } }
+  /* A dodge: the eye you dodged with, big in the middle of the screen. */
+  #eye-pop { position: absolute; left: 50%; top: 50%; width: 150px; height: 150px; margin: -75px 0 0 -75px; pointer-events: none; z-index: 8; }
+  #eye-pop .eye-svg { width: 100%; height: 100%; filter: drop-shadow(0 0 18px rgba(255, 30, 60, .7)); }
+  #eye-pop.show { animation: eye-pop .9s ease-out forwards; }
+  @keyframes eye-pop { 0% { opacity: .95; transform: scale(.55) rotate(0); } 20% { opacity: .9; transform: scale(1.05) rotate(-90deg); } 100% { opacity: 0; transform: scale(1.25) rotate(-300deg); } }
+  .slot.eye.locked { opacity: .5; }
+  /* Account chip on the title card, and the locks on the select screen. */
+  .acct { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding: 8px 10px; border-radius: 14px;
+    background: rgba(255, 255, 255, .04); border: 1px solid var(--line); max-width: 460px; }
+  .acct img { width: 34px; height: 34px; border-radius: 50%; flex: none; }
+  .acct-who { flex: 1; min-width: 0; }
+  .acct-who b { font-size: 14px; }
+  .acct-who small { display: block; opacity: .7; font-size: 11px; margin-top: 2px; }
+  .acct-xp { height: 4px; margin-top: 5px; border-radius: 2px; background: rgba(255, 255, 255, .1); overflow: hidden; }
+  .acct-xp i { display: block; height: 100%; background: var(--gold); }
+  .admin-badge { margin-left: 8px; padding: 2px 7px; border-radius: 999px; font: 800 9px/1.4 Rubik, sans-serif; letter-spacing: .14em;
+    color: #120008; background: var(--gold); vertical-align: 2px; }
+  .ms-card.locked { filter: grayscale(.85) brightness(.7); }
+  .ms-card.locked::after { content: '\1F512'; position: absolute; top: 12px; right: 14px; font-size: 22px; filter: none; }
+  .ms-card.locked:hover { transform: none; }
+  .adm-card { max-width: 720px; }
+  .adm-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .adm-head h2 { margin: 0; font-size: 34px; }
+  .adm-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 12px; }
+  .adm-row select { margin-left: 6px; max-width: 220px; background: #140f22; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px; }
+  .adm-toggle { flex: 1 1 150px; text-align: left; background: rgba(255, 255, 255, .04); border: 1px solid var(--line); color: var(--text); border-radius: 12px; padding: 10px 12px; }
+  .adm-toggle small { display: block; opacity: .65; font-weight: 400; margin-top: 3px; }
+  .adm-toggle.on { border-color: var(--gold); background: rgba(255, 213, 74, .14); color: var(--gold); }
   #freeze { position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(120, 200, 255, .05), rgba(90, 169, 255, .35)); box-shadow: inset 0 0 200px rgba(140, 220, 255, .6); }
   #output { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); font-size: 16px;
     padding: 5px 18px; border: 1px solid rgba(255, 213, 74, .6); border-radius: var(--r-pill);
@@ -529,6 +572,8 @@
     <div id="freeze" hidden></div>
     <div id="eye-view" hidden><div id="eye-marks"></div><div id="eye-read"></div></div>
     <div id="eye-up" hidden></div>
+    <div id="eye-pop" hidden></div>
+    <div id="qte" hidden><div class="qte-eye"></div><div class="qte-label">PRESS <kbd>C</kbd></div><div class="qte-bar"><div class="qte-green"></div><div class="qte-cursor"></div></div></div>
     <div id="speedlines"></div>
     <div id="output" class="display" hidden></div>
     <div id="portal-prompt" hidden></div>
@@ -559,6 +604,7 @@
   <div id="start" class="overlay">
     <div class="card">
       <div class="hero">
+        <div class="acct"></div>
         <p class="eyebrow">A multiverse under one torn sky</p>
         <h1 class="display">Dimensional Rift</h1>
         <p class="tagline">The rift over Times Square is spilling cursed spirits and rogue ninja into New York. Threadrunner threw you a web-shooter before it pulled him through. Everything you beat hands over its technique &mdash; and five of them fit.</p>
@@ -659,6 +705,12 @@
     </div>
   </div>
 
+  <div id="admin" class="overlay" hidden>
+    <div class="card adm-card">
+      <div class="adm-head"><h2 class="display">Admin</h2><button class="ghost" id="admin-close">Close</button></div>
+      <div id="admin-body"></div>
+    </div>
+  </div>
   <div id="movesets" class="overlay" hidden>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
@@ -4090,11 +4142,146 @@ function releaseChidori() {
   if (!hit) log(`Chidori spent on the air (${Math.round(k * 100)}% charged).`);
 }
 
+// =============================================================================
+// Accounts
+//
+// Your account is your claude.ai sign-in: nothing to register, no password to
+// keep. Progress lives in this page's store under your own private path, so it
+// follows you to any device. Whoever owns this page is the admin: every
+// character from the start, and the admin panel on the ` key. Everyone else
+// starts with six fighters and unlocks two more each account level. Opened
+// somewhere without a sign-in, it plays as a guest and saves on this device.
+// =============================================================================
+const ACCOUNT_XP = { kill: 5, boss: 60, wave: 25 };
+const STARTERS = ['naruto', 'yuji', 'spiderman', 'megumi', 'miles', 'eleven'];
+const account = { ready: false, cloud: false, id: null, name: '', avatar: '', admin: false, xp: 0, eye: {},
+  cheats: { god: false, energy: false, nocd: false, onehit: false } };
+let accountDb = null, accountSaveT = null;
+const cheatOn = (k) => account.admin && !!account.cheats[k];
+const levelXp = (L) => 40 * L * (L - 1) / 2;          // total XP to reach level L
+function accountLevel(xp = account.xp) { let L = 1; while (xp >= levelXp(L + 1)) L++; return L; }
+function unlockOrder() { return [...STARTERS.filter((id) => STYLES[id]), ...Object.keys(STYLES).filter((id) => !STARTERS.includes(id))]; }
+function unlockLevel(id) { const i = unlockOrder().indexOf(id); return i < STARTERS.length ? 1 : 2 + Math.floor((i - STARTERS.length) / 2); }
+const isUnlocked = (id) => account.admin || accountLevel() >= unlockLevel(id);
+
+async function initAccount() {
+  // An earlier build kept the Sharingan on this device only; bring it along.
+  try { const old = JSON.parse(localStorage.getItem('rift.sharingan') ?? 'null'); if (old) account.eye = { ...old }; } catch { /* storage off */ }
+  try { const g = JSON.parse(localStorage.getItem('rift.account') ?? 'null'); if (g) { account.xp = g.xp ?? 0; account.eye = { ...account.eye, ...(g.eye ?? {}) }; } } catch { /* storage off */ }
+  if (typeof claude !== 'undefined' && claude && typeof claude.use === 'function') {
+    const user = await claude.use('user').catch(() => null);
+    if (user) {
+      const me = await user.me();
+      account.id = me.id; account.name = me.name; account.avatar = me.avatarUrl; account.admin = !!me.isOwner;
+    }
+    accountDb = account.id ? await claude.use('db').catch(() => null) : null;
+    if (accountDb) {
+      try {
+        const snap = await accountDb.doc(`data/users/${account.id}/profile`).get();
+        const d = snap.exists ? snap.data() : null;
+        // A saved account is the record. With none yet, this device's progress
+        // becomes the account's first save.
+        if (d) {
+          account.xp = Number(d.xp) || 0;
+          account.eye = {}; for (const [k, v] of Object.entries(d.eye ?? {})) account.eye[k] = Number(v) || 0;
+          account.cheats = { ...account.cheats, ...(d.cheats ?? {}) };
+        }
+        account.cloud = true;
+        if (!d) saveAccount();
+      } catch { account.cloud = false; }
+    }
+  }
+  account.ready = true;
+  renderAccount();
+  if (!$('#movesets').hidden) openMoveSets(msMode);   // redraw the locks
+}
+function saveAccount() {
+  try { localStorage.setItem('rift.account', JSON.stringify({ xp: account.xp, eye: account.eye })); } catch { /* storage off */ }
+  if (!account.cloud) return;
+  clearTimeout(accountSaveT);
+  accountSaveT = setTimeout(() => {
+    accountDb.doc(`data/users/${account.id}/profile`).set({ xp: account.xp, eye: account.eye, cheats: account.cheats, at: Date.now() })
+      .catch(() => { /* the next save will carry it */ });
+  }, 1500);
+}
+function gainAccountXp(n) {
+  if (!n) return;
+  const before = accountLevel();
+  account.xp += n; saveAccount();
+  const after = accountLevel();
+  if (after > before) {
+    const fresh = account.admin ? [] : unlockOrder().filter((id) => { const L = unlockLevel(id); return L > before && L <= after; });
+    center(`LEVEL ${after}`, 1600);
+    log(fresh.length ? `Account level ${after}. Unlocked: ${fresh.map((id) => STYLES[id].name).join(', ')}. Press M to switch.` : `Account level ${after}.`, true);
+  }
+  renderAccount();
+}
+function renderAccount() {
+  const L = accountLevel(), into = account.xp - levelXp(L), need = levelXp(L + 1) - levelXp(L);
+  const owned = Object.keys(STYLES).filter(isUnlocked).length, total = Object.keys(STYLES).length;
+  for (const el of document.querySelectorAll('.acct')) {
+    el.innerHTML = `<img alt="" src="${account.avatar || ''}" ${account.avatar ? '' : 'hidden'}>
+      <div class="acct-who"><b></b>${account.admin ? '<span class="admin-badge">ADMIN</span>' : ''}
+        <small>Level ${L} · ${owned}/${total} characters${account.ready ? (account.cloud ? ' · saved to your account' : ' · guest, saved on this device') : ' · signing in…'}</small>
+        <div class="acct-xp"><i style="width:${100 * into / need}%"></i></div></div>
+      ${account.admin ? '<button class="ghost acct-admin">Admin panel</button>' : ''}`;
+    el.querySelector('b').textContent = account.name || (account.id ? 'You' : 'Guest');
+    el.querySelector('.acct-admin')?.addEventListener('click', openAdmin);
+  }
+}
+
+// ---- Admin panel (the page's owner only) -----------------------------------
+function openAdmin() {
+  if (!account.admin) return;
+  const p = $('#admin'); p.hidden = false; document.exitPointerLock?.();
+  renderAdmin();
+}
+function renderAdmin() {
+  const T = hasEye() ? eyeTier(player.style, 'top') : null;
+  const bosses = Object.keys(ENEMIES).filter((k) => ENEMIES[k].boss).sort((a, b) => ENEMIES[a].name.localeCompare(ENEMIES[b].name));
+  $('#admin-body').innerHTML = `
+    <div class="adm-row">${[['god', 'God mode', 'nothing hurts you'], ['energy', 'Infinite energy', 'Spirit Energy never drops'], ['nocd', 'No cooldowns', 'every move, every time'], ['onehit', 'One-hit kills', 'anything you hit dies']]
+      .map(([k, n, d]) => `<button class="adm-toggle${account.cheats[k] ? ' on' : ''}" data-cheat="${k}"><b>${n}</b><small>${d}</small></button>`).join('')}</div>
+    <div class="adm-row">
+      <button class="ghost" data-act="kill">Clear the wave</button>
+      <button class="ghost" data-act="heal">Full health & energy</button>
+      <button class="ghost" data-act="xp">+1000 account XP</button>
+    </div>
+    <div class="adm-row"><label>Spawn a boss <select id="adm-boss">${bosses.map((k) => `<option value="${k}">${ENEMIES[k].name}</option>`).join('')}</select></label><button class="ghost" data-act="boss">Spawn</button></div>
+    <div class="adm-row">${T ? `<span>Sharingan (${STYLES[player.style].name}): <b>${T.name}</b></span>
+      <button class="ghost" data-act="eye-">Level −</button><button class="ghost" data-act="eye+">Level +</button><button class="ghost" data-act="eyemax">Max it</button>` : '<span style="opacity:.6">Pick Kurobane or Karasu to set Sharingan levels.</span>'}</div>
+    <p class="note">You are the admin because you own this page. Everyone else levels up to unlock characters. Close with Esc or \`.</p>`;
+  for (const b of $('#admin-body').querySelectorAll('[data-cheat]')) b.onclick = () => { account.cheats[b.dataset.cheat] = !account.cheats[b.dataset.cheat]; saveAccount(); renderAdmin(); };
+  for (const b of $('#admin-body').querySelectorAll('[data-act]')) b.onclick = () => adminAct(b.dataset.act);
+}
+function adminAct(a) {
+  if (!account.admin) return;
+  if (a === 'kill') { for (const e of enemies) if (!e.dead && !e.pvp) { e.hp = 0; killEnemy(e); } }
+  if (a === 'heal') { player.hp = player.maxHp; if (isFinite(player.maxSe)) player.se = player.maxSe; }
+  if (a === 'xp') gainAccountXp(1000);
+  if (a === 'boss' && running) {
+    const at = player.pos.clone().add(new THREE.Vector3(Math.sin(player.yaw) * 12, 0, Math.cos(player.yaw) * 12));
+    spawnEnemy($('#adm-boss').value, at);
+  }
+  if (hasEye() && a.startsWith('eye')) {
+    const tiers = SHARINGAN[player.style], i = eyeTier(player.style, 'top').level - 1;
+    const to = a === 'eyemax' ? tiers.length - 1 : Math.max(0, Math.min(tiers.length - 1, i + (a === 'eye+' ? 1 : -1)));
+    account.eye[player.style] = tiers[to].xp; saveAccount();
+    if (eye.on) setLook(player.style);
+    renderSlots();
+  }
+  renderAdmin();
+}
+function closeAdmin() { $('#admin').hidden = true; if (running) canvas.requestPointerLock?.(); }
+
 // ---- Sharingan: Kurobane's and Karasu's E -----------------------------------
-// Press E and the eye opens. It costs nothing and has no cooldown. While it is
-// open it shows you every enemy nearby (through walls, and off the edge of the
-// screen) and it reads attacks before they land: an attack it reads misses.
-// The first press also slips everything for a moment.
+// Press E and the eye opens; once the Mangekyō has awakened, B opens that
+// instead. Neither costs anything or has a cooldown. While it is open it shows
+// you every enemy nearby (through walls, and off the edge of the screen), and
+// when an attack is about to land the world slows and a bar comes up: press C
+// (or B) while the marker is in the green and the attack misses. The green is
+// wider the further the eye has grown. The first press also slips everything
+// for a moment.
 // The eye grows with use. Dodges and kills made while it is open feed it, and
 // it climbs the forms from the show: one tomoe, two, three, the Mangekyō, and
 // past that each of them goes his own way.
@@ -4123,14 +4310,16 @@ const SHARINGAN = {
   ],
 };
 const EYE_XP = { dodge: 2, kill: 5, boss: 40 };
-const eye = { on: false, style: null, readyAt: 0, scanAt: 0, list: [], marks: new Map(), graceAt: -99, holdTimer: null };
-const eyeXp = (() => { try { return JSON.parse(localStorage.getItem('rift.sharingan')) ?? {}; } catch { return {}; } })();
+const eye = { on: false, mode: 'base', bypass: false, style: null, readyAt: 0, scanAt: 0, list: [], marks: new Map(), graceAt: -99, holdTimer: null };
 const hasEye = (style = player.style) => !!SHARINGAN[style];
-function eyeTier(style = player.style) {
+/** The form the eye is in. E caps it at three tomoe; B (and 'top') is the
+ *  furthest it has grown. `top` is that furthest level whichever is open. */
+function eyeTier(style = player.style, mode = eye.on && eye.style === style ? eye.mode : 'base') {
   const tiers = SHARINGAN[style]; if (!tiers) return null;
-  const xp = eyeXp[style] ?? 0;
-  let i = 0; while (i + 1 < tiers.length && xp >= tiers[i + 1].xp) i++;
-  return { ...tiers[i], level: i + 1, max: tiers.length, next: tiers[i + 1] ?? null, xpNow: xp };
+  const xp = account.eye[style] ?? 0;
+  let top = 0; while (top + 1 < tiers.length && xp >= tiers[top + 1].xp) top++;
+  const i = mode === 'base' ? Math.min(top, 2) : top;
+  return { ...tiers[i], level: i + 1, top: top + 1, max: tiers.length, next: tiers[top + 1] ?? null, xpNow: xp, xpBase: tiers[top].xp };
 }
 /** The look for the rig: his own dark eyes when it is shut, the current form open. */
 function eyeLookFor(style, L) {
@@ -4159,12 +4348,19 @@ function eyeSvg(e) {
   return `<svg viewBox="-50 -50 100 100" class="eye-svg${e.closed ? ' closed' : ''}"><circle r="46" fill="${fill}" stroke="#0b0003" stroke-width="4"/>${inner}</svg>`;
 }
 
-function toggleSharingan() { if (eye.on) closeSharingan(); else openSharingan(); }
-function openSharingan() {
+const toggleSharingan = () => openSharingan('base');
+const MANGEKYO_AT = 4;   // the fourth form is the first Mangekyō
+function openSharingan(mode = 'base') {
   if (!hasEye() || player.dead) return;
-  eye.on = true; eye.style = player.style; eye.scanAt = 0; eye.readyAt = 0;
+  if (mode === 'mangekyo') {
+    const top = eyeTier(player.style, 'top');
+    if (top.top < MANGEKYO_AT) return log(`The Mangekyō has not awakened yet: ${SHARINGAN[player.style][MANGEKYO_AT - 1].xp - top.xpNow} more Sharingan XP. Dodges and kills with the eye open (E) feed it.`);
+  }
+  if (eye.on && eye.mode === mode) return closeSharingan();
+  const wasOn = eye.on;
+  eye.on = true; eye.mode = mode; eye.style = player.style; eye.scanAt = 0;
   // The first look slips everything that is already on its way in.
-  if (now - eye.graceAt > 4) { eye.graceAt = now; player.invulnUntil = Math.max(player.invulnUntil ?? 0, now + 1.2); }
+  if (!wasOn) { eye.readyAt = 0; if (now - eye.graceAt > 4) { eye.graceAt = now; player.invulnUntil = Math.max(player.invulnUntil ?? 0, now + 1.2); } }
   const T = eyeTier();
   setLook(player.style); renderSlots();
   $('#eye-view').hidden = false;
@@ -4176,6 +4372,7 @@ function openSharingan() {
 }
 function closeSharingan(quiet = false) {
   if (!eye.on) return;
+  if (qte) resolveQte(false);
   eye.on = false;
   for (const el of eye.marks.values()) el.remove();
   eye.marks.clear(); eye.list = [];
@@ -4204,14 +4401,13 @@ function scanEnemies(announce = false) {
   }
 }
 
-function updateSharingan() {
-  const slot = $('#slots').querySelector('.slot.eye');
-  if (slot) {
-    const T = eyeTier();
-    const ready = !eye.on || now >= eye.readyAt;
-    slot.classList.toggle('reading', eye.on && ready);
+function updateSharingan(real) {
+  updateQte(real);
+  for (const slot of $('#slots').querySelectorAll('.slot.eye')) {
+    const T = eyeTier(player.style, 'top');
+    slot.classList.toggle('reading', eye.on && now >= eye.readyAt);
     const bar = slot.querySelector('.xp i');
-    if (bar && T) bar.style.width = T.next ? `${100 * (T.xpNow - T.xp) / (T.next.xp - T.xp)}%` : '100%';
+    if (bar && T) bar.style.width = T.next ? `${100 * (T.xpNow - T.xpBase) / (T.next.xp - T.xpBase)}%` : '100%';
   }
   if (!eye.on) return;
   if (player.style !== eye.style || player.dead) return closeSharingan(player.style !== eye.style);
@@ -4239,11 +4435,67 @@ function updateSharingan() {
   $('#eye-read').innerHTML = `<b>${T.name}</b> · ${eye.list.length ? `${eye.list.length} ${eye.list.length === 1 ? 'enemy' : 'enemies'} within ${T.reveal}m · nearest ${near.e.t.name}, ${Math.round(near.d)}m` : `nothing within ${T.reveal}m`}`;
 }
 
-/** Called before any hit lands on him. A read attack misses. */
-function sharinganDodge(from) {
-  if (!eye.on || player.dead || now < eye.readyAt) return false;
+/** Called before any hit lands on him. With the eye open and ready, the hit
+ *  waits on a quick-time bar instead of landing. Anything else that arrives
+ *  while the bar is up rides on the same press. */
+function sharinganIntercept(atk, nature, from) {
+  if (!eye.on || eye.bypass || player.dead) return false;
+  if (qte) { qte.hits.push({ atk, nature, from }); return true; }
+  if (now < eye.readyAt) return false;
+  startQte({ atk, nature, from });
+  return true;
+}
+
+// ---- The dodge bar ----------------------------------------------------------
+// Red, with a small green window; a marker runs across it once. Press C (or B)
+// with the marker in the green. The world crawls while it is up, and the green
+// is wider the further the eye has grown.
+const QTE_GREEN = [.1, .13, .16, .2, .24, .28];
+const QTE_TIME = 1.1;   // seconds of real time for the marker to cross
+let qte = null;
+function startQte(hit) {
   const T = eyeTier();
-  eye.readyAt = now + T.read;
+  const w = QTE_GREEN[Math.min(T.level, QTE_GREEN.length) - 1];
+  const a = .28 + Math.random() * (.64 - w);
+  qte = { t: 0, a, b: a + w, hits: [hit], T };
+  if (!player.sense.active) timeScale = .12;
+  const el = $('#qte'); el.hidden = false; el.className = '';
+  el.querySelector('.qte-green').style.cssText = `left:${a * 100}%;width:${w * 100}%`;
+  el.querySelector('.qte-eye').innerHTML = eyeSvg(T.eye);
+  el.querySelector('.qte-cursor').style.left = '0%';
+  sfx.lock(1);
+}
+function updateQte(real) {
+  if (!qte) return;
+  qte.t += real;
+  const k = qte.t / QTE_TIME;
+  $('#qte .qte-cursor').style.left = `${Math.min(1, k) * 100}%`;
+  if (k >= 1) resolveQte(false);
+}
+/** C or B (or a tap on the bar). Returns false when there is no bar up. */
+function pressQte() {
+  if (!qte) return false;
+  const k = qte.t / QTE_TIME;
+  resolveQte(k >= qte.a && k <= qte.b);
+  return true;
+}
+function resolveQte(ok) {
+  const q = qte; if (!q) return;
+  qte = null;
+  timeScale = player.sense.active ? .35 : 1;
+  eye.readyAt = now + q.T.read;
+  const el = $('#qte'); el.className = ok ? 'ok' : 'miss';
+  clearTimeout(resolveQte.t); resolveQte.t = setTimeout(() => { if (!qte) el.hidden = true; }, 420);
+  if (ok) return eyeDodge(q.hits[q.hits.length - 1].from, q.T);
+  // Missed it: everything that was waiting lands.
+  log('Too early or too late. Hit the green with C.');
+  eye.bypass = true;
+  try { for (const h of q.hits) hurtPlayer(h.atk, h.nature, h.from); } finally { eye.bypass = false; }
+}
+
+/** A read attack misses: the sidestep, the afterimage, and the eye itself. */
+function eyeDodge(from, T) {
+  popEye(T);
   afterimage(T.eye.rinnegan ? 0x9b6cff : 0xff2040);
   const attacker = from && !from.dead && from.t ? from : null;
   if (T.swap && attacker) {
@@ -4269,6 +4521,13 @@ function sharinganDodge(from) {
   gainEyeXp(EYE_XP.dodge);
   return true;
 }
+/** The eye, big, in the middle of the screen: whichever form you dodged with. */
+function popEye(T) {
+  const el = $('#eye-pop');
+  el.innerHTML = eyeSvg(T.eye); el.hidden = false;
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  clearTimeout(popEye.t); popEye.t = setTimeout(() => { el.hidden = true; }, 900);
+}
 /** A red copy of him left where the hit was meant to land. */
 function afterimage(color) {
   if (!playerRig) return;
@@ -4282,11 +4541,11 @@ function afterimage(color) {
 
 function gainEyeXp(n) {
   if (!hasEye()) return;
-  const before = eyeTier().level;
-  eyeXp[player.style] = (eyeXp[player.style] ?? 0) + n;
-  try { localStorage.setItem('rift.sharingan', JSON.stringify(eyeXp)); } catch { /* private window */ }
-  const T = eyeTier();
-  if (T.level > before) eyeLevelUp(T);
+  const before = eyeTier(player.style, 'top').top;
+  account.eye[player.style] = (account.eye[player.style] ?? 0) + n;
+  saveAccount();
+  const T = eyeTier(player.style, 'top');
+  if (T.top > before) eyeLevelUp(T);
 }
 function eyeLevelUp(T) {
   if (eye.on) setLook(player.style);
@@ -4296,7 +4555,7 @@ function eyeLevelUp(T) {
   card.hidden = false; card.classList.remove('show'); void card.offsetWidth; card.classList.add('show');
   clearTimeout(eyeLevelUp.t); eyeLevelUp.t = setTimeout(() => { card.hidden = true; }, 4200);
   screenFlash(.35); shake = Math.max(shake, .6); sfx.gaze();
-  log(`Your Sharingan has grown: ${T.name}. ${T.perk}`, true);
+  log(`Your Sharingan has grown: ${T.name}. ${T.perk}${T.level === MANGEKYO_AT ? ' Press B to open it.' : ''}`, true);
 }
 
 // ---- Rasengan: hold E to wind it up, release to drive it in ----------------
@@ -4936,6 +5195,7 @@ function enemyTakeHit(e, power, nature, from, onHit = {}) {
   let mine = true;
   if (!onHit.fromNet && typeof netInterceptHit === 'function' && netInterceptHit(e, dmg, nature)) mine = false;
   if (e.pvp) mine = false;
+  if (mine && cheatOn('onehit')) e.hp = 0;
   if (mine) e.hp -= dmg;
   e.hitFlash = .12;
   // A symbiote that feeds: a slice of whatever it deals comes back. A rage that
@@ -5161,6 +5421,7 @@ function killEnemy(e) {
   e.dead = true; e.bar.remove();
   player.kills++;
   if (eye.on) gainEyeXp(e.t.boss ? EYE_XP.boss : EYE_XP.kill);
+  gainAccountXp(e.t.boss ? ACCOUNT_XP.boss : ACCOUNT_XP.kill);
   // Extraction: the "catch".
   const drop = e.t.drops;
   const centre = e.pos.clone().add(new THREE.Vector3(0, (e.height ?? 2) * .5, 0));
@@ -5543,9 +5804,10 @@ function symbioteTakeover(duration) {
 }
 function hurtPlayer(atk, nature, from) {
   if (player.dead) return;
+  if (cheatOn('god')) return;
   if (player.infinity) { floatText(player.pos, 'INFINITY', 'heal'); return; }
   if (now < player.invulnUntil || now < player.graceUntil) { floatText(player.pos, 'DODGED', 'heal'); return; }
-  if (sharinganDodge(from)) return;
+  if (sharinganIntercept(atk, nature, from)) return;
   if (now < player.evadeUntil) { floatText(player.pos, 'SPIDER-SENSE', 'heal'); hitStop = Math.max(hitStop, .05); player.vel.add(player.pos.clone().sub(from.pos).setY(0).normalize().multiplyScalar(6)); player.se = Math.min(player.maxSe, player.se + 3); return; }
   if (player.shield > 0 && now < player.shieldUntil) { player.shield--; floatText(player.pos, 'INFINITY', 'heal'); burst(player.pos.clone().add(new THREE.Vector3(0, 1.3, 0)), 0xb06cff, 10); if (player.shield === 0) { if (shieldMesh) { scene.remove(shieldMesh); shieldMesh = null; } player.shieldReflect = 0; }
     if (player.shieldReflect && from && !from.dead) { enemyTakeHit(from, player.shieldReflect, 'lightning', player.pos, { paralyze: 1.5, knock: 8 }); }
@@ -5589,6 +5851,7 @@ function hurtPlayer(atk, nature, from) {
   if (player.hp <= 0) die();
 }
 function dodge() {
+  if (pressQte()) return;        // C answers the Sharingan's dodge bar first
   if (now < player.nextDodge || player.dead) return;
   const perfect = player.sense.active;
   releaseSwing(false);
@@ -5729,7 +5992,7 @@ function aimDir() {
 }
 // A style can either skip cooldowns entirely or run one flat number in place of
 // every technique's own. Gojo does the latter: four seconds on everything.
-const noCooldowns = () => !!(player.style && STYLES[player.style]?.noCd);
+const noCooldowns = () => cheatOn('nocd') || !!(player.style && STYLES[player.style]?.noCd);
 const flatCd = () => (player.style ? STYLES[player.style]?.cdFlat : null) ?? null;
 function buffCost() { return player.buff && now < player.buff.until ? (player.buff.costMul ?? 1) : 1; }
 function activateSlot(i) {
@@ -6848,12 +7111,17 @@ function renderSlots() {
     el.appendChild(d);
   });
   if (hasEye()) {
-    // The sixth ability: the Sharingan, on E.
-    const T = eyeTier(); const d = document.createElement('div');
-    d.className = 'slot eye' + (eye.on ? ' on' : '');
-    d.innerHTML = `<span class="key">E</span><span class="cost">Lv ${T.level}/${T.max}</span><div class="name">Sharingan</div><div class="nature" style="color:#ff5470">${T.name}</div>${eyeSvg(T.eye)}<div class="xp" title="${T.next ? `${T.xpNow - T.xp} / ${T.next.xp - T.xp} to ${T.next.name}` : 'Fully awakened'}"><i></i></div>`;
-    if (IS_TOUCH) { d.style.pointerEvents = 'auto'; d.addEventListener('pointerdown', (ev) => { ev.preventDefault(); toggleSharingan(); }); }
-    el.appendChild(d);
+    // The sixth ability is the Sharingan on E; the Mangekyō sits beside it on B.
+    const base = eyeTier(player.style, 'base'), top = eyeTier(player.style, 'top');
+    const tip = top.next ? `${top.xpNow - top.xpBase} / ${top.next.xp - top.xpBase} XP to ${top.next.name}` : 'Fully awakened';
+    for (const [key, mode, T, label] of [['E', 'base', base, 'Sharingan'], ['B', 'mangekyo', top, 'Mangekyō']]) {
+      const locked = mode === 'mangekyo' && top.top < MANGEKYO_AT;
+      const d = document.createElement('div');
+      d.className = 'slot eye' + (eye.on && eye.mode === mode ? ' on' : '') + (locked ? ' locked' : '');
+      d.innerHTML = `<span class="key">${key}</span><span class="cost">Lv ${top.top}/${top.max}</span><div class="name">${label}</div><div class="nature" style="color:#ff5470">${locked ? `Awakens at ${SHARINGAN[player.style][MANGEKYO_AT - 1].xp} XP` : T.name}</div>${eyeSvg(locked ? { mangekyo: player.style === 'sasuke' ? 'sasuke' : 'itachi', closed: true } : T.eye)}<div class="xp" title="${tip}"><i></i></div>`;
+      if (IS_TOUCH) { d.style.pointerEvents = 'auto'; d.addEventListener('pointerdown', (ev) => { ev.preventDefault(); if (!pressQte()) openSharingan(mode); }); }
+      el.appendChild(d);
+    }
   }
   const st = player.style ? STYLES[player.style] : null;
   if (st?.ultimate && !player.transform?.toggle) {
@@ -7163,6 +7431,8 @@ addEventListener('pointercancel', endTouch, { passive: true });
 addEventListener('blur', () => { stickId = null; stickOrigin = null; clearStick(); lookId = null; lookLast = null; for (const a of [...held]) tbPress(a, false); });
 
 addEventListener('keydown', (e) => {
+  if (!$('#admin').hidden) { if (e.code === 'Escape' || e.code === 'Backquote') { e.preventDefault(); closeAdmin(); } return; }
+  if (e.code === 'Backquote' && account.admin) { e.preventDefault(); openAdmin(); return; }
   if (!$('#worldmap').hidden) { if (e.code === 'Escape' || e.code === 'KeyN') { e.preventDefault(); $('#wm-close').click(); } return; }
   if (!$('#movesets').hidden) { if (e.code === 'Escape' || e.code === 'KeyM') { e.preventDefault(); if (msMode !== 'start') $('#ms-close').click(); } return; }
   if (e.code === 'KeyM') { e.preventDefault(); if (!running || player.dead) return; openMoveSets('ingame'); return; }
@@ -7179,7 +7449,7 @@ addEventListener('keydown', (e) => {
   if (/^Digit[1-5]$/.test(e.code) && !e.repeat) activateSlot(Number(e.code[5]) - 1);
   if (e.code === 'KeyG' && !e.repeat) useUltimate();
   if (e.code === 'KeyQ' && !e.repeat) { if (nearPortal) useGate(nearPortal.to); else log('No gate within reach. They ring the arena.'); }
-  if (e.code === 'KeyB' && !e.repeat) startCharge();
+  if (e.code === 'KeyB' && !e.repeat) { if (pressQte()) { /* answered the bar */ } else if (hasEye()) openSharingan('mangekyo'); else startCharge(); }
   if (e.code === 'KeyL' && !e.repeat) toggleShiftLock();   // alias for Shift
   // Consume moved off E when E went back to swinging. It is on V now, and it
   // is still in every symbiote's pool if you would rather slot it.
@@ -7226,7 +7496,7 @@ function frame(t) {
   requestAnimationFrame(frame);
   let real = Math.min(.05, (t - lastT) / 1000); lastT = t;
   if (!running) { renderer.render(scene, camera); return; }
-  if (!$('#loadout').hidden || !$('#movesets').hidden || !$('#worldmap').hidden) { renderer.render(scene, camera); return; }
+  if (!$('#loadout').hidden || !$('#movesets').hidden || !$('#worldmap').hidden || !$('#admin').hidden) { renderer.render(scene, camera); return; }
   if (hitStop > 0) { hitStop -= real; renderer.render(scene, camera); return; }
   now += real;
   // Sasuke's Time Freeze stops the world outright; Spider-Sense merely slows it.
@@ -7269,7 +7539,8 @@ function frame(t) {
   updateFlight(playerDt);
   updateRasengan(playerDt);
   updateChidori(playerDt);
-  updateSharingan();
+  updateSharingan(real);
+  if (cheatOn('energy') && isFinite(player.maxSe)) player.se = player.maxSe;
   updateArmy(worldDt);
   updateDebris(worldDt);
   updateCollapses(worldDt);
@@ -7295,7 +7566,7 @@ function frame(t) {
   updatePortals(real);
   const iRunWaves = typeof net === 'undefined' || !net.on || net.host;
   if (iRunWaves && net.mode !== 'vs' && enemies.every((e) => e.dead || e.pvp || e.t.shape === 'ufo') && !player.dead) {
-    wave++; player.hp = Math.min(player.maxHp, player.hp + 120); spawnWave();
+    wave++; player.hp = Math.min(player.maxHp, player.hp + 120); gainAccountXp(ACCOUNT_XP.wave); spawnWave();
   }
 
   if (net.on) {
@@ -7670,6 +7941,8 @@ async function joinRoom() {
 }
 if (typeof claude !== 'undefined' && claude && typeof claude.use === 'function') joinRoom();
 else { netStatus('Solo'); renderLobby(); }
+initAccount();
+renderAccount();
 
 function useGate(to) {
   if (!net.on || net.host || livePeers().length === 0) { travelTo(to); return; }
@@ -7689,7 +7962,7 @@ function useGate(to) {
 }
 buildMap('times_square');
 requestAnimationFrame(frame);
-window.__rift = { eye, eyeXp, eyeTier, gainEyeXp, toggleSharingan, hurtPlayer, condition, CONDITIONS, rollCondition, startAbduction, get now() { return now; }, get waveStartedAt() { return waveStartedAt; }, army, camera, scene, buildCharacter, CHARACTERS, GRADES, enemyTakeHit, strike, startEAction, endEAction, webLine, WEB_SLINGERS, startSwing, releaseSwing, killEnemy, get playerRig() { return playerRig; }, get firstPerson() { return firstPerson; }, get rasengan() { return rasengan; }, get chidori() { return chidori; }, spawnArmy, damageArmy, arcBolt, slashArc,
+window.__rift = { account, accountLevel, isUnlocked, openAdmin, adminAct, pressQte, get qte() { return qte; }, eye, eyeTier, gainEyeXp, toggleSharingan, hurtPlayer, condition, CONDITIONS, rollCondition, startAbduction, get now() { return now; }, get waveStartedAt() { return waveStartedAt; }, army, camera, scene, buildCharacter, CHARACTERS, GRADES, enemyTakeHit, strike, startEAction, endEAction, webLine, WEB_SLINGERS, startSwing, releaseSwing, killEnemy, get playerRig() { return playerRig; }, get firstPerson() { return firstPerson; }, get rasengan() { return rasengan; }, get chidori() { return chidori; }, spawnArmy, damageArmy, arcBolt, slashArc,
   SKILLS, STYLES, ENEMIES, MAPS, MAP_IDS, NATURE, travelTo, buildMap, portals,
   net, setMode, useGate, setSolo, setTier, TIERS, get tier() { return tierName; },
   get currentMap() { return currentMap; }, get nearPortal() { return nearPortal; }, eprojectiles, spawnEnemy, player, enemies, buildings, debris, cars, civilians, damageBuildings, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, startCharge, releaseCharge, hurtPlayer, castSkill, OUTPUT_TIERS, ARSENALS, cycleWeapon, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
@@ -7755,6 +8028,10 @@ function moveSetCard(id, st) {
       ${extra.length ? `<div class="ms-extra">${extra.join('<br>')}</div>` : ''}
       <button class="pick">${msMode === 'start' ? 'Play as this' : 'Switch to this'}</button>
     </div>`;
+  if (!isUnlocked(id)) {
+    card.classList.add('locked');
+    const b = card.querySelector('button.pick'); b.disabled = true; b.textContent = `Unlocks at level ${unlockLevel(id)}`;
+  }
   card.onclick = (ev) => { selectMoveSet(id); if (ev.target.classList.contains('pick')) confirmMoveSet(); };
   return card;
 }
@@ -7888,6 +8165,10 @@ function applyMoveSetFilter() {
   if (n) n.textContent = shown === grid.children.length ? `${shown} characters` : `${shown} of ${grid.children.length} characters`;
 }
 function selectMoveSet(id) {
+  if (!isUnlocked(id)) {
+    $('#ms-hint').textContent = `${STYLES[id].name} unlocks at account level ${unlockLevel(id)}. You are level ${accountLevel()}: clear waves and beat enemies to level up.`;
+    return;
+  }
   msSelected = id;
   for (const c of $('#ms-grid').children) c.classList.toggle('selected', c.dataset.id === id);
   $('#ms-hint').textContent = `${STYLES[id].name}: ${STYLES[id].slots.map((k) => SKILLS[k].name).join(' · ')}`;
@@ -7899,7 +8180,7 @@ function openMoveSets(mode) {
   $('#ms-confirm').textContent = mode === 'start' ? 'Enter the Rift' : 'Switch';
   $('#ms-close').hidden = mode === 'start';
   $('#ms-confirm').disabled = true; $('#ms-hint').textContent = 'Select a character.';
-  if (player.style) selectMoveSet(player.style); else if (msSelected) selectMoveSet(msSelected);
+  if (player.style) selectMoveSet(player.style); else if (msSelected && isUnlocked(msSelected)) selectMoveSet(msSelected);
   msWorld = 'all';
   for (const b of document.querySelectorAll('#ms-filters .tab')) b.setAttribute('aria-selected', String(b.dataset.world === 'all'));
   if ($('#ms-search')) $('#ms-search').value = '';
@@ -7908,7 +8189,7 @@ function openMoveSets(mode) {
   previewStart(grid);
 }
 function confirmMoveSet() {
-  if (!msSelected) return;
+  if (!msSelected || !isUnlocked(msSelected)) return;
   previewStop();
   $('#movesets').hidden = true;
   if (msMode === 'start') start(msSelected);
@@ -7934,6 +8215,8 @@ function openWorldMap() {
 $('#wm-close').onclick = () => { $('#worldmap').hidden = true; canvas.requestPointerLock?.(); };
 for (const b of document.querySelectorAll('.mode-btn')) b.onclick = () => setMode(b.dataset.mode);
 for (const b of document.querySelectorAll('.solo-btn')) b.onclick = () => setSolo(!net.disabled);
+$('#admin-close').onclick = closeAdmin;
+$('#qte').addEventListener('pointerdown', (ev) => { ev.preventDefault(); pressQte(); });
 $('#net-name').oninput = (e) => {
   net.name = e.target.value.slice(0, 14);
   try { localStorage.setItem('rift.name', net.name); } catch (err) { void err; }
