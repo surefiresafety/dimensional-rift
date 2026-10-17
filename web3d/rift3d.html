@@ -260,6 +260,10 @@
   #eye-pop.show { animation: eye-pop .9s ease-out forwards; }
   @keyframes eye-pop { 0% { opacity: .95; transform: scale(.55) rotate(0); } 20% { opacity: .9; transform: scale(1.05) rotate(-90deg); } 100% { opacity: 0; transform: scale(1.25) rotate(-300deg); } }
   .slot.eye.locked { opacity: .5; }
+  #menu-btn { position: absolute; left: 50%; top: 12px; transform: translateX(-50%); pointer-events: auto; z-index: 7;
+    padding: 6px 14px; border-radius: 999px; font: 600 12px/1 Rubik, sans-serif; color: var(--text);
+    background: rgba(12, 8, 22, .7); border: 1px solid var(--line); cursor: pointer; }
+  #menu-btn:hover { border-color: var(--gold); color: var(--gold); }
   /* The Sharingan sidebar, down the right-hand edge. */
   #eye-side { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 7; pointer-events: auto;
     display: flex; flex-direction: column; gap: 4px; width: 168px; max-height: calc(100vh - 230px); overflow-y: auto; padding: 8px;
@@ -563,6 +567,7 @@
     <div id="vignette"></div>
     <div id="speedlines"></div>
     <div id="reticle"></div>
+    <button id="menu-btn" title="Back to the main menu (H)">&#8592; Main menu</button>
     <div id="lock-tag" hidden>SHIFT LOCK</div>
     <div id="fp-tag" hidden>FIRST PERSON</div>
     <div id="lock-hint" hidden>Click to give the mouse back to the game</div>
@@ -636,6 +641,7 @@
           <div><b id="stat-worlds">9</b><span>Worlds</span></div>
         </div>
         <div class="cta">
+          <button id="resume" hidden>Continue</button>
           <button id="open-movesets">Select your character</button>
           <button class="ghost solo-btn">Play solo</button>
           <span class="hint">Swap character any time with <b>M</b>.</span>
@@ -4361,8 +4367,8 @@ function eyeForms(style, list) {
   return list.map(([name, xp, eye, lore], i) => {
     const f = { name, xp, eye, read: 0,
       reveal: Math.min(250, Math.round(24 + 13 * i + i * i * .3)),
-      refund: i >= 2 ? 6 + 2 * i : 0,
-      heal: i >= 4 ? 3 * (i - 3) : 0,
+      refund: i >= 2 ? Math.min(100, 6 + 2 * i) : 0,
+      heal: i >= 4 ? Math.min(120, 3 * (i - 3)) : 0,
       counter: i >= 3 ? Math.min(500, Math.round(15 * (i - 2) * (1 + (i - 2) * .12))) : 0,
       blast: i >= 9 ? Math.min(30, 8 + (i - 9) * 2) : 0,
       swap: style === 'sasuke' && i >= 5 };
@@ -4371,6 +4377,14 @@ function eyeForms(style, list) {
     f.perk = `${lore ? lore + ' ' : ''}Sees ${f.reveal}m.${does.length ? ' Each dodge: ' + does.join(', ') + '.' : ''}`;
     return f;
   });
+}
+// Past the named forms in the show the eye keeps going: thirty more each, in
+// the same patterns, a new colour every step, and a little further apart.
+const hsl = (h, sat, l) => { const f = (n) => { const k = (n + h / 30) % 12, a = sat * Math.min(l, 1 - l);
+  return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, '0'); }; return `#${f(0)}${f(8)}${f(4)}`; };
+function moreForms(names, startXp, looks) {
+  let xp = startXp;
+  return names.map((name, i) => { xp = Math.round(xp * 1.12 / 100) * 100; return [name, xp, { ...looks[i % looks.length], fill: hsl((i * 47) % 360, .75, .58) }]; });
 }
 const TOMOE = [['One Tomoe', 0, { tomoe: 1 }, 'The eye opens.'], ['Two Tomoe', 25, { tomoe: 2 }], ['Three Tomoe', 70, { tomoe: 3 }, 'The full Sharingan.']];
 const SHARINGAN = {
@@ -4393,6 +4407,12 @@ const SHARINGAN = {
     ['Infinite Tsukuyomi Eye', 10000, { rinnegan: true, rinTomoe: 9, mangekyo: 'sasuke', fill: '#e8506a' }],
     ['Moonlight Rinnegan', 12500, { rinnegan: true, rinTomoe: 6, fill: '#f4f0c8' }],
     ['Rift Eye', 15000, { rinnegan: true, rinTomoe: 9, mangekyo: 'sasuke', fill: '#ffd54a' }, 'The eye the rift itself opened.'],
+    ...moreForms(['Storm Release Eye', 'Blaze Release Eye', "Indra's Arrow", 'Susanoo: Kagutsuchi', 'Chibaku Eye', 'Truth-Seeker Rinnegan',
+      'Shinra Tensei Eye', "Banshō Ten'in Eye", 'Asura Path Eye', 'Deva Path Eye', 'Preta Path Eye', 'Human Path Eye', 'Animal Path Eye',
+      'Naraka Path Eye', 'Outer Path Eye', 'Gedō Rinnegan', 'Ten-Tails Eye', "Kaguya's Gaze", 'Moon Palace Eye', "Hagoromo's Blessing",
+      "Hamura's Light", "Avenger's Eye", 'Hawk Unbound', 'Wandering Eye', 'Shadow Hokage Eye', 'Eternal Storm', 'Lightning God Eye',
+      'Endless Kaleidoscope', 'Star of the Rift', "Rift King's Eye"], 15000,
+      [{ mangekyo: 'sasuke' }, { rinnegan: true, rinTomoe: 6 }, { mangekyo: 'eternal' }, { rinnegan: true, rinTomoe: 9 }, { rinnegan: true, rinTomoe: 9, mangekyo: 'sasuke' }]),
   ]),
   itachi: eyeForms('itachi', [...TOMOE,
     ['Mangekyō Sharingan', 150, { mangekyo: 'itachi' }, 'The kaleidoscope.'],
@@ -4412,10 +4432,16 @@ const SHARINGAN = {
     ["Brother's Gift", 8500, { mangekyo: 'eternal', fill: '#ff5470' }],
     ['Forgive Me, Sasuke', 10000, { mangekyo: 'itachi', fill: '#ffd5dc' }, 'Two fingers to the forehead.'],
     ['Rift Eye', 12500, { mangekyo: 'eternal', fill: '#ffd54a' }, 'The eye the rift itself opened.'],
+    ...moreForms(['Sakegari Eye', 'Crow Genjutsu Eye', 'Black Crow Eye', 'Akatsuki Ring Eye', 'Mirror Shield Eye', 'Yasaka Magatama Eye',
+      'Sealing Jar Eye', 'Sword of Totsuka', 'Ninth Tomoe', 'Moon Reader', 'Nightfall Eye', 'Red Moon Eye', 'Silent Crow', 'Gentle Lie',
+      'Mask of the Anbu', "Weasel's Eye", 'Fire Release Master', 'Water Prison Eye', 'Clan Head Eye', 'Uchiha Police Eye', 'Last Lesson',
+      'Rain Village Eye', "Shisui's Promise", 'Endless Night', 'Thousand Crows', 'Kaleidoscope of Dawn', 'Crimson Kaleidoscope',
+      'Dreaming Eye', 'Crow Lord Eye', "Rift Crow's Eye"], 12500,
+      [{ mangekyo: 'itachi' }, { mangekyo: 'shisui' }, { mangekyo: 'eternal' }, { mangekyo: 'itachi', edo: true }]),
   ]),
 };
 const EYE_XP = { dodge: 2, kill: 5, boss: 40 };
-const eye = { on: false, attackAt: 0, mode: 'base', bypass: false, style: null, readyAt: 0, scanAt: 0, list: [], marks: new Map(), graceAt: -99, holdTimer: null };
+const eye = { on: false, practice: false, exact: false, attackAt: 0, mode: 'base', bypass: false, style: null, readyAt: 0, scanAt: 0, list: [], marks: new Map(), graceAt: -99, holdTimer: null };
 const hasEye = (style = player.style) => !!SHARINGAN[style];
 /** The form the eye is in. E opens the form you picked in the sidebar (three
  *  tomoe until you pick one); B (and 'top') is the furthest it has grown.
@@ -4520,8 +4546,10 @@ function scanEnemies(announce = false) {
 }
 
 // With the eye open the enemies keep coming: one of them goes for you on a
-// steady beat, so the dodge bar comes up again and again.
-const EYE_ATTACK_EVERY = .9;
+// fast, steady beat, so the dodge bar comes up again and again. These hits
+// are practice: miss one and it costs you a single point of health.
+const EYE_ATTACK_EVERY = .35;
+const EYE_ATTACK_DMG = 1;
 function eyePressure() {
   if (!eye.on || qte || player.dead || cheatOn('freeze') || now < eye.attackAt) return;
   eye.attackAt = now + EYE_ATTACK_EVERY;
@@ -4536,7 +4564,8 @@ function eyePressure() {
   const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([from, to]), new THREE.LineBasicMaterial({ color: 0xff2040, transparent: true, blending: THREE.AdditiveBlending }));
   scene.add(line); bursts.push({ m: line, t: 0, line: true });
   const lunge = to.clone().sub(from).setY(0); if (lunge.lengthSq() > 1) foe.vel.addScaledVector(lunge.normalize(), 6);
-  hurtPlayer(foe.t.atk, foe.t.nature, foe);
+  eye.practice = true;
+  try { hurtPlayer(EYE_ATTACK_DMG, foe.t.nature, foe); } finally { eye.practice = false; }
 }
 function updateSharingan(real) {
   updateQte(real);
@@ -4578,9 +4607,10 @@ function updateSharingan(real) {
  *  while the bar is up rides on the same press. */
 function sharinganIntercept(atk, nature, from) {
   if (!eye.on || eye.bypass || player.dead) return false;
-  if (qte) { qte.hits.push({ atk, nature, from }); return true; }
+  const practice = eye.practice;
+  if (qte) { qte.hits.push({ atk, nature, from, practice }); return true; }
   if (now < eye.readyAt) return false;
-  startQte({ atk, nature, from });
+  startQte({ atk, nature, from, practice });
   return true;
 }
 
@@ -4589,7 +4619,7 @@ function sharinganIntercept(atk, nature, from) {
 // with the marker in the green. The world crawls while it is up, and the green
 // is wider the further the eye has grown.
 const qteGreen = (level) => Math.min(.5, .08 + .022 * level);
-const QTE_TIME = 1.1;   // seconds of real time for the marker to cross
+const QTE_TIME = .75;   // seconds of real time for the marker to cross
 let qte = null;
 function startQte(hit) {
   const T = eyeTier();
@@ -4629,7 +4659,7 @@ function resolveQte(ok) {
   // Missed it: everything that was waiting lands.
   log('Too early or too late. Hit the green with C.');
   eye.bypass = true;
-  try { for (const h of q.hits) hurtPlayer(h.atk, h.nature, h.from); } finally { eye.bypass = false; }
+  try { for (const h of q.hits) { eye.exact = !!h.practice; hurtPlayer(h.atk, h.nature, h.from); } } finally { eye.bypass = false; eye.exact = false; }
 }
 
 /** A read attack misses: the sidestep, the afterimage, and the eye itself. */
@@ -5990,6 +6020,7 @@ function hurtPlayer(atk, nature, from) {
   const eff = effectiveness(nature, player.nature);
   const sym = player.style ? STYLES[player.style].symbiote : null;
   let dmg = Math.round(atk * eff * (0.9 + Math.random() * .2));
+  if (eye.exact) dmg = EYE_ATTACK_DMG;   // a missed Sharingan practice hit is exactly one
   if (sym) {
     // The suit takes the hit before he does, and pays for it out of its own
     // health. What it cannot cover goes straight through to him.
@@ -7618,6 +7649,7 @@ addEventListener('keydown', (e) => {
   keys.add(e.code);
   if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) tryJump(); }
   if (e.code === 'KeyE' && !e.repeat) startEAction();
+  if (e.code === 'KeyH' && !e.repeat) { goToMenu(); return; }
   if ((e.code === 'BracketLeft' || e.code === 'BracketRight') && !e.repeat) cycleEye(e.code === 'BracketRight' ? 1 : -1);
   if ((e.code === 'ShiftLeft' || e.code === 'ShiftRight') && !e.repeat) toggleShiftLock();
   if (e.code === 'KeyC' && !e.repeat) dodge();
@@ -8143,8 +8175,17 @@ window.__rift = { pickEye, cycleEye, account, accountLevel, isUnlocked, openAdmi
   net, setMode, useGate, setSolo, setTier, TIERS, get tier() { return tierName; },
   get currentMap() { return currentMap; }, get nearPortal() { return nearPortal; }, eprojectiles, spawnEnemy, player, enemies, buildings, debris, cars, civilians, damageBuildings, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, startCharge, releaseCharge, hurtPlayer, castSkill, OUTPUT_TIERS, ARSENALS, cycleWeapon, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
 
+let runStarted = false;
 function start(styleId) {
   $('#start').hidden = true; running = true; lastT = performance.now();
+  $('#resume').hidden = true;
+  if (runStarted) {
+    // Back from the main menu: the run carries on where it was.
+    if (styleId !== player.style) applyStyle(styleId, false);
+    renderSlots(); canvas.requestPointerLock?.();
+    return;
+  }
+  runStarted = true;
   actx();   // the click that started the game is the gesture audio needs
   if (IS_TOUCH) {
     enableTouch();
@@ -8155,6 +8196,19 @@ function start(styleId) {
   log(`Playing as ${STYLES[styleId].name}. Press 1-5 to use techniques.`, true);
   log('Threadrunner: "Kid, catch!" You equipped the Web-Shooter. Hold Right Mouse or E and aim high to swing.', true);
   canvas.requestPointerLock?.();
+}
+/** The menu button: pause the run and go back to the title screen. */
+function goToMenu() {
+  if (!running) return;
+  if (qte) resolveQte(false);
+  closeSharingan(true);
+  releaseCharge(); endFlight();
+  running = false; keys.clear();
+  document.exitPointerLock?.();
+  for (const id of ['loadout', 'worldmap', 'admin']) $('#' + id).hidden = true;
+  renderSlots();
+  $('#resume').hidden = false;
+  $('#start').hidden = false;
 }
 // ---- Move set screen ----
 let msMode = 'start', msSelected = null;
@@ -8392,6 +8446,8 @@ $('#wm-close').onclick = () => { $('#worldmap').hidden = true; canvas.requestPoi
 for (const b of document.querySelectorAll('.mode-btn')) b.onclick = () => setMode(b.dataset.mode);
 for (const b of document.querySelectorAll('.solo-btn')) b.onclick = () => setSolo(!net.disabled);
 $('#admin-close').onclick = closeAdmin;
+$('#menu-btn').onclick = goToMenu;
+$('#resume').onclick = () => start(player.style);
 $('#qte').addEventListener('pointerdown', (ev) => { ev.preventDefault(); pressQte(); });
 $('#net-name').oninput = (e) => {
   net.name = e.target.value.slice(0, 14);
