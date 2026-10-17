@@ -4369,7 +4369,7 @@ function eyeForms(style, list) {
       reveal: Math.min(250, Math.round(24 + 13 * i + i * i * .3)),
       refund: i >= 2 ? Math.min(100, 6 + 2 * i) : 0,
       heal: i >= 4 ? Math.min(120, 3 * (i - 3)) : 0,
-      counter: i >= 3 ? Math.min(500, Math.round(15 * (i - 2) * (1 + (i - 2) * .12))) : 0,
+      counter: i >= 3 ? Math.min(1500, Math.round(30 * (i - 2) * (1 + (i - 2) * .12))) : 0,
       blast: i >= 9 ? Math.min(30, 8 + (i - 9) * 2) : 0,
       swap: style === 'sasuke' && i >= 5 };
     const does = [f.refund && `+${f.refund} energy`, f.heal && `heals ${f.heal}`, f.counter && `hits back for ${f.counter}`,
@@ -4382,9 +4382,9 @@ function eyeForms(style, list) {
 // the same patterns, a new colour every step, and a little further apart.
 const hsl = (h, sat, l) => { const f = (n) => { const k = (n + h / 30) % 12, a = sat * Math.min(l, 1 - l);
   return Math.round(255 * (l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)))).toString(16).padStart(2, '0'); }; return `#${f(0)}${f(8)}${f(4)}`; };
-function moreForms(names, startXp, looks) {
+function moreForms(names, startXp, looks, grow = 1.12) {
   let xp = startXp;
-  return names.map((name, i) => { xp = Math.round(xp * 1.12 / 100) * 100; return [name, xp, { ...looks[i % looks.length], fill: hsl((i * 47) % 360, .75, .58) }]; });
+  return names.map((name, i) => { xp = Math.round(xp * grow / 100) * 100; return [name, xp, { ...looks[i % looks.length], fill: hsl((i * 47) % 360, .75, .58) }]; });
 }
 const TOMOE = [['One Tomoe', 0, { tomoe: 1 }, 'The eye opens.'], ['Two Tomoe', 25, { tomoe: 2 }], ['Three Tomoe', 70, { tomoe: 3 }, 'The full Sharingan.']];
 const SHARINGAN = {
@@ -4413,6 +4413,10 @@ const SHARINGAN = {
       "Hamura's Light", "Avenger's Eye", 'Hawk Unbound', 'Wandering Eye', 'Shadow Hokage Eye', 'Eternal Storm', 'Lightning God Eye',
       'Endless Kaleidoscope', 'Star of the Rift', "Rift King's Eye"], 15000,
       [{ mangekyo: 'sasuke' }, { rinnegan: true, rinTomoe: 6 }, { mangekyo: 'eternal' }, { rinnegan: true, rinTomoe: 9 }, { rinnegan: true, rinTomoe: 9, mangekyo: 'sasuke' }]),
+    // And fifty past that, every one a name of its own.
+    ...moreForms(['Thunder', 'Void', 'Crimson', 'Abyssal', 'Celestial', 'Phantom', 'Obsidian', 'Radiant', 'Storm-Torn', 'Infinite']
+      .flatMap((a) => ['Kaleidoscope', 'Rinnegan', 'Gaze', 'Eye of Ruin', 'Mirror Eye'].map((n) => `${a} ${n}`)), 450000,
+      [{ rinnegan: true, rinTomoe: 9, mangekyo: 'sasuke' }, { mangekyo: 'eternal' }, { rinnegan: true, rinTomoe: 6 }, { mangekyo: 'sasuke' }, { rinnegan: true, rinTomoe: 9 }], 1.06),
   ]),
   itachi: eyeForms('itachi', [...TOMOE,
     ['Mangekyō Sharingan', 150, { mangekyo: 'itachi' }, 'The kaleidoscope.'],
@@ -4438,6 +4442,10 @@ const SHARINGAN = {
       'Rain Village Eye', "Shisui's Promise", 'Endless Night', 'Thousand Crows', 'Kaleidoscope of Dawn', 'Crimson Kaleidoscope',
       'Dreaming Eye', 'Crow Lord Eye', "Rift Crow's Eye"], 12500,
       [{ mangekyo: 'itachi' }, { mangekyo: 'shisui' }, { mangekyo: 'eternal' }, { mangekyo: 'itachi', edo: true }]),
+    // And fifty past that, every one a name of its own.
+    ...moreForms(['Silent', 'Midnight', 'Raven', 'Ashen', 'Moonlit', 'Hidden', 'Ember', 'Dusk', 'Hollow', 'Undying']
+      .flatMap((a) => ['Crow Eye', 'Tsukuyomi', 'Kaleidoscope', 'Dream Eye', 'Mirror Eye'].map((n) => `${a} ${n}`)), 375000,
+      [{ mangekyo: 'eternal' }, { mangekyo: 'shisui' }, { mangekyo: 'itachi' }, { mangekyo: 'itachi', edo: true }], 1.06),
   ]),
 };
 const EYE_XP = { dodge: 2, kill: 5, boss: 40 };
@@ -4547,9 +4555,9 @@ function scanEnemies(announce = false) {
 
 // With the eye open the enemies keep coming: one of them goes for you on a
 // fast, steady beat, so the dodge bar comes up again and again. These hits
-// are practice: miss one and it costs you a single point of health.
+// hurt: miss the bar and it costs you 25 health.
 const EYE_ATTACK_EVERY = .35;
-const EYE_ATTACK_DMG = 1;
+const EYE_ATTACK_DMG = 25;
 function eyePressure() {
   if (!eye.on || qte || player.dead || cheatOn('freeze') || now < eye.attackAt) return;
   eye.attackAt = now + EYE_ATTACK_EVERY;
@@ -4618,8 +4626,8 @@ function sharinganIntercept(atk, nature, from) {
 // Red, with a small green window; a marker runs across it once. Press C (or B)
 // with the marker in the green. The world crawls while it is up, and the green
 // is wider the further the eye has grown.
-const qteGreen = (level) => Math.min(.5, .08 + .022 * level);
-const QTE_TIME = .75;   // seconds of real time for the marker to cross
+const qteGreen = (level) => Math.min(.22, .045 + .0018 * level);   // a sliver at first, never more than a fifth
+const QTE_TIME = .55;   // seconds of real time for the marker to cross
 let qte = null;
 function startQte(hit) {
   const T = eyeTier();
@@ -6020,7 +6028,7 @@ function hurtPlayer(atk, nature, from) {
   const eff = effectiveness(nature, player.nature);
   const sym = player.style ? STYLES[player.style].symbiote : null;
   let dmg = Math.round(atk * eff * (0.9 + Math.random() * .2));
-  if (eye.exact) dmg = EYE_ATTACK_DMG;   // a missed Sharingan practice hit is exactly one
+  if (eye.exact) dmg = EYE_ATTACK_DMG;   // a missed Sharingan hit is always the same
   if (sym) {
     // The suit takes the hit before he does, and pays for it out of its own
     // health. What it cannot cover goes straight through to him.
