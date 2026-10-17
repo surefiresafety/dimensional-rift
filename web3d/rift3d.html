@@ -4417,6 +4417,10 @@ const SHARINGAN = {
     ...moreForms(['Thunder', 'Void', 'Crimson', 'Abyssal', 'Celestial', 'Phantom', 'Obsidian', 'Radiant', 'Storm-Torn', 'Infinite']
       .flatMap((a) => ['Kaleidoscope', 'Rinnegan', 'Gaze', 'Eye of Ruin', 'Mirror Eye'].map((n) => `${a} ${n}`)), 450000,
       [{ rinnegan: true, rinTomoe: 9, mangekyo: 'sasuke' }, { mangekyo: 'eternal' }, { rinnegan: true, rinTomoe: 6 }, { mangekyo: 'sasuke' }, { rinnegan: true, rinTomoe: 9 }], 1.06),
+    // A hundred more beyond those.
+    ...moreForms(['Dragon', 'Solar', 'Lunar', 'Shattered', 'Sovereign', 'Hollow', 'Blazing', 'Frozen', 'Eclipse', 'Ascended']
+      .flatMap((a) => ['Sharingan', 'Rinnegan', 'Tomoe', 'Kaleidoscope', 'Gaze', 'Storm Eye', 'Star Eye', 'Lightning Eye', 'Susanoo Eye', 'Rift Eye'].map((n) => `${a} ${n}`)), 8288800,
+      [{ mangekyo: 'sasuke' }, { rinnegan: true, rinTomoe: 9 }, { mangekyo: 'eternal' }, { rinnegan: true, rinTomoe: 6, mangekyo: 'sasuke' }, { rinnegan: true }], 1.03),
   ]),
   itachi: eyeForms('itachi', [...TOMOE,
     ['Mangekyō Sharingan', 150, { mangekyo: 'itachi' }, 'The kaleidoscope.'],
@@ -4446,6 +4450,10 @@ const SHARINGAN = {
     ...moreForms(['Silent', 'Midnight', 'Raven', 'Ashen', 'Moonlit', 'Hidden', 'Ember', 'Dusk', 'Hollow', 'Undying']
       .flatMap((a) => ['Crow Eye', 'Tsukuyomi', 'Kaleidoscope', 'Dream Eye', 'Mirror Eye'].map((n) => `${a} ${n}`)), 375000,
       [{ mangekyo: 'eternal' }, { mangekyo: 'shisui' }, { mangekyo: 'itachi' }, { mangekyo: 'itachi', edo: true }], 1.06),
+    // A hundred more beyond those.
+    ...moreForms(['Phantom', 'Twilight', 'Sorrowful', 'Burning', 'Veiled', 'Ancient', 'Starless', 'Scarlet', 'Wandering', 'Last']
+      .flatMap((a) => ['Sharingan', 'Crow Eye', 'Tomoe', 'Kaleidoscope', 'Tsukuyomi', 'Raven Eye', 'Moon Eye', 'Shadow Eye', 'Totsuka Eye', 'Rift Eye'].map((n) => `${a} ${n}`)), 6908300,
+      [{ mangekyo: 'itachi' }, { mangekyo: 'eternal' }, { mangekyo: 'shisui' }, { mangekyo: 'itachi', edo: true }], 1.03),
   ]),
 };
 const EYE_XP = { dodge: 2, kill: 5, boss: 40 };
@@ -4626,7 +4634,7 @@ function sharinganIntercept(atk, nature, from) {
 // Red, with a small green window; a marker runs across it once. Press C (or B)
 // with the marker in the green. The world crawls while it is up, and the green
 // is wider the further the eye has grown.
-const qteGreen = (level) => Math.min(.22, .045 + .0018 * level);   // a sliver at first, never more than a fifth
+const qteGreen = (level) => Math.min(.4, .14 + .0013 * level);   // a seventh of the bar at first, up to two fifths
 const QTE_TIME = .55;   // seconds of real time for the marker to cross
 let qte = null;
 function startQte(hit) {
