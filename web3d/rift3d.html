@@ -266,9 +266,9 @@
     border-radius: 14px; background: rgba(20, 4, 10, .72); border: 1px solid rgba(255, 36, 72, .35); backdrop-filter: blur(6px); }
   #eye-side .es-head { font: 400 18px/1 Bangers, sans-serif; letter-spacing: .06em; color: #ff5470; padding: 2px 4px 6px; }
   #eye-side .es-head small { font: 600 11px/1 Rubik, sans-serif; color: #ffd5dc; opacity: .7; margin-left: 4px; }
-  .es-form { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 9px; border: 1px solid transparent;
+  .es-form { display: flex; align-items: center; gap: 8px; padding: 3px 6px; flex: none; border-radius: 9px; border: 1px solid transparent;
     background: rgba(255, 255, 255, .03); color: #f2d6dc; text-align: left; font: 600 11.5px/1.15 Rubik, sans-serif; cursor: pointer; }
-  .es-form .eye-svg { width: 28px; height: 28px; flex: none; }
+  .es-form .eye-svg { width: 24px; height: 24px; flex: none; }
   .es-form small { display: block; font-weight: 400; opacity: .7; }
   .es-form:hover:not(.locked) { border-color: rgba(255, 36, 72, .6); background: rgba(255, 36, 72, .12); }
   .es-form.picked { border-color: #ff2448; background: rgba(255, 36, 72, .18); }
@@ -4353,52 +4353,69 @@ function closeAdmin() { $('#admin').hidden = true; if (running) canvas.requestPo
 // The eye grows with use. Dodges and kills made while it is open feed it, and
 // it climbs the forms from the show: one tomoe, two, three, the Mangekyō, and
 // past that each of them goes his own way.
-const EYE_BASE = [
-  { name: 'One Tomoe', xp: 0, reveal: 24, read: 2.2, eye: { tomoe: 1 },
-    perk: 'Shows enemies within 24m. Reads one attack every 2.2s.' },
-  { name: 'Two Tomoe', xp: 25, reveal: 32, read: 1.5, eye: { tomoe: 2 },
-    perk: 'Sees 32m. Reads an attack every 1.5s.' },
-  { name: 'Three Tomoe', xp: 70, reveal: 42, read: 1, refund: 8, eye: { tomoe: 3 },
-    perk: 'Sees 42m. Reads an attack every second, and every dodge gives back 8 Spirit Energy.' },
-];
+// Every form reads every attack; what grows is how wide the green is on the
+// dodge bar and what a dodge does for you: energy back, health back, a hit
+// straight back at whoever swung, a blast through everything near you, and
+// from the Rinnegan on, Kurobane lands behind them. Nothing here stuns.
+function eyeForms(style, list) {
+  return list.map(([name, xp, eye, lore], i) => {
+    const f = { name, xp, eye, read: 0,
+      reveal: Math.min(250, Math.round(24 + 13 * i + i * i * .3)),
+      refund: i >= 2 ? 6 + 2 * i : 0,
+      heal: i >= 4 ? 3 * (i - 3) : 0,
+      counter: i >= 3 ? Math.min(500, Math.round(15 * (i - 2) * (1 + (i - 2) * .12))) : 0,
+      blast: i >= 9 ? Math.min(30, 8 + (i - 9) * 2) : 0,
+      swap: style === 'sasuke' && i >= 5 };
+    const does = [f.refund && `+${f.refund} energy`, f.heal && `heals ${f.heal}`, f.counter && `hits back for ${f.counter}`,
+      f.blast && `blasts everything within ${f.blast}m`, f.swap && 'puts you behind them'].filter(Boolean);
+    f.perk = `${lore ? lore + ' ' : ''}Sees ${f.reveal}m.${does.length ? ' Each dodge: ' + does.join(', ') + '.' : ''}`;
+    return f;
+  });
+}
+const TOMOE = [['One Tomoe', 0, { tomoe: 1 }, 'The eye opens.'], ['Two Tomoe', 25, { tomoe: 2 }], ['Three Tomoe', 70, { tomoe: 3 }, 'The full Sharingan.']];
 const SHARINGAN = {
-  sasuke: [...EYE_BASE,
-    { name: 'Mangekyō Sharingan', xp: 150, reveal: 55, read: .5, refund: 10, genjutsu: 1.5, eye: { mangekyo: 'sasuke' },
-      perk: 'Sees 55m. Reads twice a second. Whoever you dodge is caught in a genjutsu and stunned.' },
-    { name: 'Eternal Mangekyō', xp: 280, reveal: 70, read: .15, refund: 15, genjutsu: 2, eye: { mangekyo: 'eternal' },
-      perk: 'Sees 70m. The eye no longer dims: almost nothing gets through.' },
-    { name: 'Rinnegan', xp: 450, reveal: 95, read: 0, refund: 15, genjutsu: 2, swap: true, eye: { rinnegan: true },
-      perk: 'Sees 95m and reads every attack. Each dodge swaps you behind whoever threw it.' },
-    { name: 'Tomoe Rinnegan', xp: 650, reveal: 110, read: 0, refund: 18, genjutsu: 2, swap: true, heal: 10, eye: { rinnegan: true, rinTomoe: 6 },
-      perk: 'Six tomoe on the ripples. Every dodge also heals you 10.' },
-    { name: 'Amenotejikara Eye', xp: 900, reveal: 120, read: 0, refund: 20, genjutsu: 2.2, swap: true, heal: 12, counter: 60, eye: { rinnegan: true, rinTomoe: 6, fill: '#a98ee6' },
-      perk: 'You swap in and strike first: every dodge hits the attacker back for 60.' },
-    { name: 'Six Paths Rinnegan', xp: 1200, reveal: 135, read: 0, refund: 22, genjutsu: 2.5, swap: true, heal: 15, counter: 90, eye: { rinnegan: true, rinTomoe: 9 },
-      perk: 'Nine tomoe. Dodges heal 15 and strike back for 90.' },
-    { name: "Indra's Awakening", xp: 1550, reveal: 150, read: 0, refund: 25, genjutsu: 3, swap: true, heal: 20, counter: 140, quake: 12, eye: { rinnegan: true, rinTomoe: 9, fill: '#c86ad8' },
-      perk: 'The first son wakes in you: every dodge also stuns everything within 12m.' },
-    { name: 'Eternal Rinnegan', xp: 2000, reveal: 170, read: 0, refund: 30, genjutsu: 3.5, swap: true, heal: 25, counter: 200, quake: 18, eye: { rinnegan: true, rinTomoe: 9, mangekyo: 'sasuke' },
-      perk: 'Everything at once. Dodges heal 25, strike back for 200 and stun everything within 18m.' },
-  ],
-  itachi: [...EYE_BASE,
-    { name: 'Mangekyō Sharingan', xp: 150, reveal: 55, read: .5, refund: 10, genjutsu: 1.5, eye: { mangekyo: 'itachi' },
-      perk: 'Sees 55m. Reads twice a second. Whoever you dodge is caught in Tsukuyomi and stunned.' },
-    { name: 'Izanami', xp: 300, reveal: 85, read: 0, refund: 15, genjutsu: 2.5, eye: { mangekyo: 'itachi', closed: true },
-      perk: 'Sees 85m and reads every attack. Whoever you dodge is trapped in the loop for 2.5s.' },
-    { name: 'Kotoamatsukami', xp: 450, reveal: 95, read: 0, refund: 18, genjutsu: 3, eye: { mangekyo: 'shisui' },
-      perk: "His friend's eye. Whoever you dodge forgets what they were doing for 3s." },
-    { name: 'Susanoo: Yata Mirror', xp: 650, reveal: 110, read: 0, refund: 20, genjutsu: 3, heal: 12, counter: 50, eye: { mangekyo: 'itachi', fill: '#ff7a2a' },
-      perk: 'The mirror sends it back: every dodge reflects 50 and heals you 12.' },
-    { name: 'Izanagi', xp: 900, reveal: 120, read: 0, refund: 22, genjutsu: 3, heal: 30, counter: 60, eye: { mangekyo: 'eternal', fill: '#8a0016' },
-      perk: 'What happened to you did not happen: every dodge heals 30.' },
-    { name: 'Edo Tensei', xp: 1200, reveal: 140, read: 0, refund: 25, genjutsu: 3.5, heal: 20, counter: 100, quake: 12, eye: { mangekyo: 'itachi', edo: true },
-      perk: 'Back from the dead and never tired. Dodges stun everything within 12m and strike back for 100.' },
-    { name: 'Crow of Shisui', xp: 1550, reveal: 170, read: 0, refund: 30, genjutsu: 4, heal: 30, counter: 160, quake: 20, eye: { mangekyo: 'shisui', fill: '#ff3355' },
-      perk: 'The crow carries the last eye. Dodges heal 30, strike back for 160 and stun everything within 20m.' },
-  ],
+  sasuke: eyeForms('sasuke', [...TOMOE,
+    ['Mangekyō Sharingan', 150, { mangekyo: 'sasuke' }, 'The kaleidoscope.'],
+    ['Eternal Mangekyō', 280, { mangekyo: 'eternal' }, 'It no longer dims.'],
+    ['Rinnegan', 450, { rinnegan: true }],
+    ['Tomoe Rinnegan', 650, { rinnegan: true, rinTomoe: 6 }, 'Six tomoe on the ripples.'],
+    ['Amenotejikara Eye', 900, { rinnegan: true, rinTomoe: 6, fill: '#a98ee6' }],
+    ['Six Paths Rinnegan', 1200, { rinnegan: true, rinTomoe: 9 }, 'Nine tomoe.'],
+    ["Indra's Awakening", 1550, { rinnegan: true, rinTomoe: 9, fill: '#c86ad8' }, 'The first son wakes in you.'],
+    ['Eternal Rinnegan', 2000, { rinnegan: true, rinTomoe: 9, mangekyo: 'sasuke' }],
+    ["Kirin's Eye", 2600, { mangekyo: 'sasuke', fill: '#5aa9ff' }, 'Lightning from the sky answers it.'],
+    ["Hawk's Eye", 3300, { mangekyo: 'eternal', fill: '#e8a33a' }],
+    ['Susanoo Armour Eye', 4100, { mangekyo: 'sasuke', fill: '#8a4dff' }],
+    ['Thousand Birds Eye', 5000, { rinnegan: true, rinTomoe: 6, fill: '#9fe0ff' }],
+    ["Ashura's Rival", 6000, { mangekyo: 'eternal', fill: '#ff8a2a' }],
+    ['Limbo Eye', 7200, { rinnegan: true, rinTomoe: 9, fill: '#7a5aa8' }, 'An invisible shadow fights beside you.'],
+    ['Ōtsutsuki Rinnegan', 8500, { rinnegan: true, rinTomoe: 9, fill: '#e8e4f4' }],
+    ['Infinite Tsukuyomi Eye', 10000, { rinnegan: true, rinTomoe: 9, mangekyo: 'sasuke', fill: '#e8506a' }],
+    ['Moonlight Rinnegan', 12500, { rinnegan: true, rinTomoe: 6, fill: '#f4f0c8' }],
+    ['Rift Eye', 15000, { rinnegan: true, rinTomoe: 9, mangekyo: 'sasuke', fill: '#ffd54a' }, 'The eye the rift itself opened.'],
+  ]),
+  itachi: eyeForms('itachi', [...TOMOE,
+    ['Mangekyō Sharingan', 150, { mangekyo: 'itachi' }, 'The kaleidoscope.'],
+    ['Izanami', 300, { mangekyo: 'itachi', closed: true }],
+    ['Kotoamatsukami', 450, { mangekyo: 'shisui' }, "His friend's eye."],
+    ['Susanoo: Yata Mirror', 650, { mangekyo: 'itachi', fill: '#ff7a2a' }, 'The mirror sends it back.'],
+    ['Izanagi', 900, { mangekyo: 'eternal', fill: '#a0102a' }],
+    ['Edo Tensei', 1200, { mangekyo: 'itachi', edo: true }, 'Back from the dead, and never tired.'],
+    ['Crow of Shisui', 1550, { mangekyo: 'shisui', fill: '#ff3355' }],
+    ['Totsuka Blade Eye', 2000, { mangekyo: 'itachi', fill: '#f2c94c' }],
+    ['Crow Clone Eye', 2600, { mangekyo: 'shisui', fill: '#8a80a8' }],
+    ['Tsukuyomi: 72 Hours', 3300, { mangekyo: 'itachi', fill: '#c0203a' }],
+    ['Amaterasu Eye', 4100, { mangekyo: 'eternal', fill: '#8a3a7a' }],
+    ['Akatsuki Cloud Eye', 5000, { mangekyo: 'itachi', fill: '#ff4a5a' }],
+    ["Leaf's Shadow", 6000, { mangekyo: 'shisui', fill: '#3aa86a' }, 'He protected the village from the dark.'],
+    ['Uchiha Reversal', 7200, { mangekyo: 'eternal', fill: '#c0c0d0' }],
+    ["Brother's Gift", 8500, { mangekyo: 'eternal', fill: '#ff5470' }],
+    ['Forgive Me, Sasuke', 10000, { mangekyo: 'itachi', fill: '#ffd5dc' }, 'Two fingers to the forehead.'],
+    ['Rift Eye', 12500, { mangekyo: 'eternal', fill: '#ffd54a' }, 'The eye the rift itself opened.'],
+  ]),
 };
 const EYE_XP = { dodge: 2, kill: 5, boss: 40 };
-const eye = { on: false, mode: 'base', bypass: false, style: null, readyAt: 0, scanAt: 0, list: [], marks: new Map(), graceAt: -99, holdTimer: null };
+const eye = { on: false, attackAt: 0, mode: 'base', bypass: false, style: null, readyAt: 0, scanAt: 0, list: [], marks: new Map(), graceAt: -99, holdTimer: null };
 const hasEye = (style = player.style) => !!SHARINGAN[style];
 /** The form the eye is in. E opens the form you picked in the sidebar (three
  *  tomoe until you pick one); B (and 'top') is the furthest it has grown.
@@ -4461,7 +4478,7 @@ function openSharingan(mode = 'base') {
   const wasOn = eye.on;
   eye.on = true; eye.mode = mode; eye.style = player.style; eye.scanAt = 0;
   // The first look slips everything that is already on its way in.
-  if (!wasOn) { eye.readyAt = 0; if (now - eye.graceAt > 4) { eye.graceAt = now; player.invulnUntil = Math.max(player.invulnUntil ?? 0, now + 1.2); } }
+  if (!wasOn) { eye.readyAt = 0; eye.attackAt = now + 1.5; if (now - eye.graceAt > 4) { eye.graceAt = now; player.invulnUntil = Math.max(player.invulnUntil ?? 0, now + 1.2); } }
   const T = eyeTier();
   setLook(player.style); renderSlots();
   $('#eye-view').hidden = false;
@@ -4502,8 +4519,28 @@ function scanEnemies(announce = false) {
   }
 }
 
+// With the eye open the enemies keep coming: one of them goes for you on a
+// steady beat, so the dodge bar comes up again and again.
+const EYE_ATTACK_EVERY = .9;
+function eyePressure() {
+  if (!eye.on || qte || player.dead || cheatOn('freeze') || now < eye.attackAt) return;
+  eye.attackAt = now + EYE_ATTACK_EVERY;
+  let foe = null, best = 40;
+  for (const e of enemies) {
+    if (e.dead || e.pvp || e.t.shape === 'ufo' || e.status.stun || e.status.paralyze) continue;
+    const d = e.pos.distanceTo(player.pos); if (d < best) { best = d; foe = e; }
+  }
+  if (!foe) return;
+  // The tell: a red line from them to you as they come in.
+  const from = foe.pos.clone().add(new THREE.Vector3(0, 1.2, 0)), to = player.pos.clone().add(new THREE.Vector3(0, 1.2, 0));
+  const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([from, to]), new THREE.LineBasicMaterial({ color: 0xff2040, transparent: true, blending: THREE.AdditiveBlending }));
+  scene.add(line); bursts.push({ m: line, t: 0, line: true });
+  const lunge = to.clone().sub(from).setY(0); if (lunge.lengthSq() > 1) foe.vel.addScaledVector(lunge.normalize(), 6);
+  hurtPlayer(foe.t.atk, foe.t.nature, foe);
+}
 function updateSharingan(real) {
   updateQte(real);
+  eyePressure();
   for (const slot of $('#slots').querySelectorAll('.slot.eye')) {
     const T = eyeTier(player.style, 'top');
     slot.classList.toggle('reading', eye.on && now >= eye.readyAt);
@@ -4551,12 +4588,12 @@ function sharinganIntercept(atk, nature, from) {
 // Red, with a small green window; a marker runs across it once. Press C (or B)
 // with the marker in the green. The world crawls while it is up, and the green
 // is wider the further the eye has grown.
-const QTE_GREEN = [.1, .13, .16, .2, .24, .28, .31, .34, .37, .4, .44];
+const qteGreen = (level) => Math.min(.5, .08 + .022 * level);
 const QTE_TIME = 1.1;   // seconds of real time for the marker to cross
 let qte = null;
 function startQte(hit) {
   const T = eyeTier();
-  const w = QTE_GREEN[Math.min(T.level, QTE_GREEN.length) - 1];
+  const w = qteGreen(T.level);
   const a = .28 + Math.random() * (.64 - w);
   qte = { t: 0, a, b: a + w, hits: [hit], T };
   if (!player.sense.active) timeScale = .12;
@@ -4585,6 +4622,7 @@ function resolveQte(ok) {
   qte = null;
   timeScale = player.sense.active ? .35 : 1;
   eye.readyAt = now + q.T.read;
+  eye.attackAt = now + EYE_ATTACK_EVERY;   // the next one comes a beat after this
   const el = $('#qte'); el.className = ok ? 'ok' : 'miss';
   clearTimeout(resolveQte.t); resolveQte.t = setTimeout(() => { if (!qte) el.hidden = true; }, 420);
   if (ok) return eyeDodge(q.hits[q.hits.length - 1].from, q.T);
@@ -4611,17 +4649,13 @@ function eyeDodge(from, T) {
     const side = from.pos.clone().sub(player.pos).setY(0).cross(new THREE.Vector3(0, Math.random() < .5 ? 1 : -1, 0));
     if (side.lengthSq() > 1e-4) player.vel.addScaledVector(side.normalize(), 9);
   }
-  if (T.genjutsu && attacker) {
-    attacker.status.stun = Math.max(attacker.status.stun ?? 0, T.genjutsu);
-    floatText(attacker.pos, T.name === 'Izanami' ? 'IZANAMI' : 'GENJUTSU', 'se');
-  }
   if (T.refund) player.se = Math.min(player.maxSe, player.se + T.refund);
   if (T.heal) { player.hp = Math.min(player.maxHp, player.hp + T.heal); floatText(player.pos.clone().add(new THREE.Vector3(.6, .3, 0)), '+' + T.heal, 'heal'); }
   if (T.counter && attacker && !attacker.dead) enemyTakeHit(attacker, T.counter, T.eye.rinnegan ? 'lightning' : 'fire', player.pos, { knock: 6 });
-  if (T.quake) {
-    // The later forms catch everything near you, not just the one who swung.
-    for (const o of enemies) if (!o.dead && !o.pvp && o.pos.distanceTo(player.pos) < T.quake) o.status.stun = Math.max(o.status.stun ?? 0, T.genjutsu ?? 1.5);
-    shockwave(player.pos.clone(), T.eye.rinnegan ? 0x9b6cff : 0xff2040, 1, T.quake, .5, 1);
+  if (T.blast) {
+    // The later forms hit everything near you, not just the one who swung.
+    for (const o of enemies) if (!o.dead && !o.pvp && o !== attacker && o.pos.distanceTo(player.pos) < T.blast) enemyTakeHit(o, Math.round(T.counter * .5), T.eye.rinnegan ? 'lightning' : 'fire', player.pos, { knock: 5 });
+    shockwave(player.pos.clone(), T.eye.rinnegan ? 0x9b6cff : 0xff2040, 1, T.blast, .5, 1);
   }
   floatText(player.pos, 'READ', 'heal');
   hitStop = Math.max(hitStop, .04);
@@ -4643,6 +4677,7 @@ function renderEyeSide() {
       title="${t.name}${have ? ' — ' + t.perk : ` — unlocks at ${t.xp} Sharingan XP (you have ${top.xpNow})`}">${eyeSvg(have ? t.eye : { ...t.eye, closed: true })}<span>${t.name}${have ? '' : `<small>${t.xp} XP</small>`}</span></button>`;
   }).join('') + '<div class="es-foot">Esc frees the mouse · <kbd>[</kbd> <kbd>]</kbd> to switch</div>';
   for (const b of el.querySelectorAll('.es-form:not(.locked)')) b.onclick = (ev) => { ev.stopPropagation(); pickEye(Number(b.dataset.i)); };
+  el.querySelector('.es-form.picked')?.scrollIntoView({ block: 'nearest' });
 }
 function pickEye(i) {
   if (!hasEye()) return;
