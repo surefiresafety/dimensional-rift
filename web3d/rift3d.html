@@ -260,6 +260,26 @@
   #eye-pop.show { animation: eye-pop .9s ease-out forwards; }
   @keyframes eye-pop { 0% { opacity: .95; transform: scale(.55) rotate(0); } 20% { opacity: .9; transform: scale(1.05) rotate(-90deg); } 100% { opacity: 0; transform: scale(1.25) rotate(-300deg); } }
   .slot.eye.locked { opacity: .5; }
+  /* The Sharingan sidebar, down the right-hand edge. */
+  #eye-side { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); z-index: 7; pointer-events: auto;
+    display: flex; flex-direction: column; gap: 4px; width: 168px; max-height: calc(100vh - 230px); overflow-y: auto; padding: 8px;
+    border-radius: 14px; background: rgba(20, 4, 10, .72); border: 1px solid rgba(255, 36, 72, .35); backdrop-filter: blur(6px); }
+  #eye-side .es-head { font: 400 18px/1 Bangers, sans-serif; letter-spacing: .06em; color: #ff5470; padding: 2px 4px 6px; }
+  #eye-side .es-head small { font: 600 11px/1 Rubik, sans-serif; color: #ffd5dc; opacity: .7; margin-left: 4px; }
+  .es-form { display: flex; align-items: center; gap: 8px; padding: 4px 6px; border-radius: 9px; border: 1px solid transparent;
+    background: rgba(255, 255, 255, .03); color: #f2d6dc; text-align: left; font: 600 11.5px/1.15 Rubik, sans-serif; cursor: pointer; }
+  .es-form .eye-svg { width: 28px; height: 28px; flex: none; }
+  .es-form small { display: block; font-weight: 400; opacity: .7; }
+  .es-form:hover:not(.locked) { border-color: rgba(255, 36, 72, .6); background: rgba(255, 36, 72, .12); }
+  .es-form.picked { border-color: #ff2448; background: rgba(255, 36, 72, .18); }
+  .es-form.active .eye-svg { animation: eye-spin 2.4s linear infinite; }
+  .es-form.locked { opacity: .38; cursor: default; }
+  .es-foot { font: 400 10px/1.3 Rubik, sans-serif; color: #ffd5dc; opacity: .6; padding: 6px 4px 0; }
+  .es-foot kbd { padding: 0 4px; border-radius: 4px; background: rgba(255, 255, 255, .15); }
+  @media (max-height: 520px) { #eye-side { width: auto; top: 70px; transform: none; max-height: calc(100vh - 150px); }
+    #eye-side .es-form span, #eye-side .es-foot, #eye-side .es-head small { display: none; } }
+  #admin-body h3 { margin: 14px 0 8px; font: 700 11px/1 Rubik, sans-serif; letter-spacing: .16em; text-transform: uppercase; opacity: .6; }
+  #admin-body input[type=number] { width: 64px; margin: 0 4px; background: #140f22; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px; }
   /* Account chip on the title card, and the locks on the select screen. */
   .acct { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding: 8px 10px; border-radius: 14px;
     background: rgba(255, 255, 255, .04); border: 1px solid var(--line); max-width: 460px; }
@@ -573,6 +593,7 @@
     <div id="eye-view" hidden><div id="eye-marks"></div><div id="eye-read"></div></div>
     <div id="eye-up" hidden></div>
     <div id="eye-pop" hidden></div>
+    <div id="eye-side" hidden></div>
     <div id="qte" hidden><div class="qte-eye"></div><div class="qte-label">PRESS <kbd>C</kbd></div><div class="qte-bar"><div class="qte-green"></div><div class="qte-cursor"></div></div></div>
     <div id="speedlines"></div>
     <div id="output" class="display" hidden></div>
@@ -3171,7 +3192,7 @@ function buildCharacter(L) {
 
   if (!L.mask && !L.blindfold) {
     // Anime eyes are large and layered: white, iris, pupil, highlight.
-    const white = new THREE.MeshBasicMaterial({ color: 0xfdfdff });
+    const white = new THREE.MeshBasicMaterial({ color: L.sclera ?? 0xfdfdff });
     const irisMat = new THREE.MeshBasicMaterial({ color: L.eye });
     const hi = new THREE.MeshBasicMaterial({ color: 0xffffff });
     for (const sx of [-1, 1]) {
@@ -3189,12 +3210,19 @@ function buildCharacter(L) {
         const ring = new THREE.Mesh(new THREE.TorusGeometry(.018 * r + .012, .006, 6, 18), new THREE.MeshBasicMaterial({ color: 0x9b6cff }));
         ring.position.set(sx * .1, .012, .245); neck.add(ring);
       }
+      if (L.rinnegan && L.rinTomoe) for (let t = 0; t < Math.min(6, L.rinTomoe); t++) {
+        const tm = new THREE.Mesh(new THREE.SphereGeometry(.008, 6, 5), ink); const a = t / 6 * Math.PI * 2;
+        tm.position.set(sx * .1 + Math.cos(a) * .036, .012 + Math.sin(a) * .04, .248); neck.add(tm);
+      }
       if (L.sharingan && L.mangekyo) {
         // Mangekyō: Karasu's three curved blades, Kurobane's six-point star, or
         // both laid over each other once it is Eternal.
         const shape = (rx, ry, a, r) => { const m = new THREE.Mesh(new THREE.SphereGeometry(.02, 10, 6), ink); m.scale.set(rx, ry, .3); m.rotation.z = a; m.position.set(sx * .1 + Math.cos(a) * r, .012 + Math.sin(a) * r, .246); neck.add(m); };
-        if (L.mangekyo !== 'itachi') for (let k = 0; k < 3; k++) shape(2.2, .32, k * Math.PI / 3, 0);
-        if (L.mangekyo !== 'sasuke') for (let k = 0; k < 3; k++) shape(1.3, .55, k / 3 * Math.PI * 2 + .5, .02);
+        if (L.mangekyo === 'shisui') for (let k = 0; k < 4; k++) shape(1.3, .45, k / 4 * Math.PI * 2 + .4, .02);
+        else {
+          if (L.mangekyo !== 'itachi') for (let k = 0; k < 3; k++) shape(2.2, .32, k * Math.PI / 3, 0);
+          if (L.mangekyo !== 'sasuke') for (let k = 0; k < 3; k++) shape(1.3, .55, k / 3 * Math.PI * 2 + .5, .02);
+        }
       } else if (L.sharingan) for (let t = 0; t < (L.tomoe ?? 3); t++) {
         const tomoe = new THREE.Mesh(new THREE.SphereGeometry(.011, 6, 5), ink);
         const a = t / (L.tomoe ?? 3) * Math.PI * 2 + Math.PI / 2;
@@ -4154,8 +4182,8 @@ function releaseChidori() {
 // =============================================================================
 const ACCOUNT_XP = { kill: 5, boss: 60, wave: 25 };
 const STARTERS = ['naruto', 'yuji', 'spiderman', 'megumi', 'miles', 'eleven'];
-const account = { ready: false, cloud: false, id: null, name: '', avatar: '', admin: false, xp: 0, eye: {},
-  cheats: { god: false, energy: false, nocd: false, onehit: false } };
+const account = { ready: false, cloud: false, id: null, name: '', avatar: '', admin: false, xp: 0, eye: {}, eyePick: {},
+  cheats: { god: false, energy: false, nocd: false, onehit: false, speed: false, jump: false, freeze: false, slowmo: false } };
 let accountDb = null, accountSaveT = null;
 const cheatOn = (k) => account.admin && !!account.cheats[k];
 const levelXp = (L) => 40 * L * (L - 1) / 2;          // total XP to reach level L
@@ -4167,7 +4195,7 @@ const isUnlocked = (id) => account.admin || accountLevel() >= unlockLevel(id);
 async function initAccount() {
   // An earlier build kept the Sharingan on this device only; bring it along.
   try { const old = JSON.parse(localStorage.getItem('rift.sharingan') ?? 'null'); if (old) account.eye = { ...old }; } catch { /* storage off */ }
-  try { const g = JSON.parse(localStorage.getItem('rift.account') ?? 'null'); if (g) { account.xp = g.xp ?? 0; account.eye = { ...account.eye, ...(g.eye ?? {}) }; } } catch { /* storage off */ }
+  try { const g = JSON.parse(localStorage.getItem('rift.account') ?? 'null'); if (g) { account.xp = g.xp ?? 0; account.eye = { ...account.eye, ...(g.eye ?? {}) }; account.eyePick = { ...(g.eyePick ?? {}) }; } } catch { /* storage off */ }
   if (typeof claude !== 'undefined' && claude && typeof claude.use === 'function') {
     const user = await claude.use('user').catch(() => null);
     if (user) {
@@ -4184,6 +4212,7 @@ async function initAccount() {
         if (d) {
           account.xp = Number(d.xp) || 0;
           account.eye = {}; for (const [k, v] of Object.entries(d.eye ?? {})) account.eye[k] = Number(v) || 0;
+          account.eyePick = { ...(d.eyePick ?? {}) };
           account.cheats = { ...account.cheats, ...(d.cheats ?? {}) };
         }
         account.cloud = true;
@@ -4196,11 +4225,11 @@ async function initAccount() {
   if (!$('#movesets').hidden) openMoveSets(msMode);   // redraw the locks
 }
 function saveAccount() {
-  try { localStorage.setItem('rift.account', JSON.stringify({ xp: account.xp, eye: account.eye })); } catch { /* storage off */ }
+  try { localStorage.setItem('rift.account', JSON.stringify({ xp: account.xp, eye: account.eye, eyePick: account.eyePick })); } catch { /* storage off */ }
   if (!account.cloud) return;
   clearTimeout(accountSaveT);
   accountSaveT = setTimeout(() => {
-    accountDb.doc(`data/users/${account.id}/profile`).set({ xp: account.xp, eye: account.eye, cheats: account.cheats, at: Date.now() })
+    accountDb.doc(`data/users/${account.id}/profile`).set({ xp: account.xp, eye: account.eye, eyePick: account.eyePick, cheats: account.cheats, at: Date.now() })
       .catch(() => { /* the next save will carry it */ });
   }, 1500);
 }
@@ -4238,35 +4267,74 @@ function openAdmin() {
 }
 function renderAdmin() {
   const T = hasEye() ? eyeTier(player.style, 'top') : null;
-  const bosses = Object.keys(ENEMIES).filter((k) => ENEMIES[k].boss).sort((a, b) => ENEMIES[a].name.localeCompare(ENEMIES[b].name));
+  const byName = (ks) => ks.sort((a, b) => ENEMIES[a].name.localeCompare(ENEMIES[b].name));
+  const bosses = byName(Object.keys(ENEMIES).filter((k) => ENEMIES[k].boss));
+  const foes = byName(Object.keys(ENEMIES).filter((k) => !ENEMIES[k].boss && ENEMIES[k].shape !== 'ufo'));
+  const toggles = [['god', 'God mode', 'nothing hurts you'], ['energy', 'Infinite energy', 'Spirit Energy never drops'],
+    ['nocd', 'No cooldowns', 'every move, every time'], ['onehit', 'One-hit kills', 'anything you hit dies'],
+    ['speed', 'Super speed', 'run twice as fast'], ['jump', 'Moon jump', 'jump three times as high'],
+    ['freeze', 'Freeze enemies', 'nobody else moves'], ['slowmo', 'Slow motion', 'the world at a third speed']];
   $('#admin-body').innerHTML = `
-    <div class="adm-row">${[['god', 'God mode', 'nothing hurts you'], ['energy', 'Infinite energy', 'Spirit Energy never drops'], ['nocd', 'No cooldowns', 'every move, every time'], ['onehit', 'One-hit kills', 'anything you hit dies']]
-      .map(([k, n, d]) => `<button class="adm-toggle${account.cheats[k] ? ' on' : ''}" data-cheat="${k}"><b>${n}</b><small>${d}</small></button>`).join('')}</div>
+    <h3>Toggles</h3>
+    <div class="adm-row">${toggles.map(([k, n, d]) => `<button class="adm-toggle${account.cheats[k] ? ' on' : ''}" data-cheat="${k}"><b>${n}</b><small>${d}</small></button>`).join('')}</div>
+    <h3>You</h3>
     <div class="adm-row">
-      <button class="ghost" data-act="kill">Clear the wave</button>
       <button class="ghost" data-act="heal">Full health & energy</button>
+      <button class="ghost" data-act="fly">Fly</button>
+      <button class="ghost" data-act="learn">Learn every technique</button>
       <button class="ghost" data-act="xp">+1000 account XP</button>
     </div>
+    <h3>The fight</h3>
+    <div class="adm-row">
+      <button class="ghost" data-act="kill">Clear the wave</button>
+      <button class="ghost" data-act="nuke">Rift nuke</button>
+      <button class="ghost" data-act="ufo">Call the visitors (UFO)</button>
+    </div>
+    <div class="adm-row"><label>Jump to wave <input id="adm-wave" type="number" min="1" max="999" value="${wave + 1}"></label><button class="ghost" data-act="wave">Go</button></div>
+    <div class="adm-row"><label>Spawn <input id="adm-n" type="number" min="1" max="30" value="3"> × <select id="adm-foe">${foes.map((k) => `<option value="${k}">${ENEMIES[k].name}</option>`).join('')}</select></label><button class="ghost" data-act="foe">Spawn</button></div>
     <div class="adm-row"><label>Spawn a boss <select id="adm-boss">${bosses.map((k) => `<option value="${k}">${ENEMIES[k].name}</option>`).join('')}</select></label><button class="ghost" data-act="boss">Spawn</button></div>
-    <div class="adm-row">${T ? `<span>Sharingan (${STYLES[player.style].name}): <b>${T.name}</b></span>
-      <button class="ghost" data-act="eye-">Level −</button><button class="ghost" data-act="eye+">Level +</button><button class="ghost" data-act="eyemax">Max it</button>` : '<span style="opacity:.6">Pick Kurobane or Karasu to set Sharingan levels.</span>'}</div>
+    <div class="adm-row"><label>Travel to <select id="adm-map">${MAP_IDS.map((id) => `<option value="${id}"${id === currentMap ? ' selected' : ''}>${MAPS[id].name}</option>`).join('')}</select></label><button class="ghost" data-act="travel">Go</button></div>
+    <h3>Sharingan</h3>
+    <div class="adm-row">${T ? `<span>${STYLES[player.style].name}: <b>${T.name}</b> (${T.top}/${T.max})</span>
+      <button class="ghost" data-act="eye-">Level −</button><button class="ghost" data-act="eye+">Level +</button><button class="ghost" data-act="eyemax">Max it</button>` : '<span style="opacity:.6">Pick Kurobane or Karasu for these.</span>'}
+      <button class="ghost" data-act="eyeall">Max both Sharingans</button></div>
     <p class="note">You are the admin because you own this page. Everyone else levels up to unlock characters. Close with Esc or \`.</p>`;
   for (const b of $('#admin-body').querySelectorAll('[data-cheat]')) b.onclick = () => { account.cheats[b.dataset.cheat] = !account.cheats[b.dataset.cheat]; saveAccount(); renderAdmin(); };
   for (const b of $('#admin-body').querySelectorAll('[data-act]')) b.onclick = () => adminAct(b.dataset.act);
 }
 function adminAct(a) {
   if (!account.admin) return;
-  if (a === 'kill') { for (const e of enemies) if (!e.dead && !e.pvp) { e.hp = 0; killEnemy(e); } }
-  if (a === 'heal') { player.hp = player.maxHp; if (isFinite(player.maxSe)) player.se = player.maxSe; }
-  if (a === 'xp') gainAccountXp(1000);
-  if (a === 'boss' && running) {
-    const at = player.pos.clone().add(new THREE.Vector3(Math.sin(player.yaw) * 12, 0, Math.cos(player.yaw) * 12));
-    spawnEnemy($('#adm-boss').value, at);
+  const ahead = (d) => player.pos.clone().add(new THREE.Vector3(Math.sin(player.yaw) * d, 0, Math.cos(player.yaw) * d));
+  const killAll = () => { for (const e of enemies) if (!e.dead && !e.pvp && e.t.shape !== 'ufo') { e.hp = 0; killEnemy(e); } };
+  if (a === 'kill') killAll();
+  if (a === 'nuke') {
+    const c = player.pos.clone().add(new THREE.Vector3(0, 2, 0));
+    burst(c, 0xffffff, 40); shockwave(player.pos.clone(), 0xb06cff, 1, 60, .9, 1); shockwave(c, 0xffe45c, 1, 40, .7, 0);
+    flashLight(c, 0xffffff, 200, .6, 120); screenFlash(.8); shake = Math.max(shake, 2.5); hitStop = Math.max(hitStop, .2);
+    center('RIFT NUKE', 1400); killAll();
   }
-  if (hasEye() && a.startsWith('eye')) {
+  if (a === 'heal') { player.hp = player.maxHp; if (isFinite(player.maxSe)) player.se = player.maxSe; }
+  if (a === 'fly' && running) { closeAdmin(); startFlight(); return; }
+  if (a === 'learn') { player.learned = [...new Set([...player.learned, ...Object.keys(SKILLS)])]; log(`You know all ${player.learned.length} techniques. Tab to equip them.`, true); }
+  if (a === 'xp') gainAccountXp(1000);
+  if (a === 'ufo' && running) { closeAdmin(); startAbduction(); return; }
+  if (a === 'wave' && running) {
+    const n = Math.max(1, Math.min(999, Math.round(Number($('#adm-wave').value) || 1)));
+    killAll(); wave = n - 2;   // the loop sees an empty arena and steps to wave n
+  }
+  if (a === 'foe' && running) {
+    const n = Math.max(1, Math.min(30, Math.round(Number($('#adm-n').value) || 1)));
+    for (let i = 0; i < n; i++) { const at = ahead(8 + Math.random() * 8); at.x += (Math.random() - .5) * 10; at.z += (Math.random() - .5) * 10; spawnEnemy($('#adm-foe').value, at); }
+  }
+  if (a === 'boss' && running) spawnEnemy($('#adm-boss').value, ahead(12));
+  if (a === 'travel' && running) { const to = $('#adm-map').value; closeAdmin(); travelTo(to); return; }
+  if (a === 'eyeall') { for (const k of Object.keys(SHARINGAN)) account.eye[k] = SHARINGAN[k].at(-1).xp; saveAccount(); if (eye.on) setLook(player.style); renderSlots(); }
+  if (hasEye() && a.startsWith('eye') && a !== 'eyeall') {
     const tiers = SHARINGAN[player.style], i = eyeTier(player.style, 'top').level - 1;
     const to = a === 'eyemax' ? tiers.length - 1 : Math.max(0, Math.min(tiers.length - 1, i + (a === 'eye+' ? 1 : -1)));
-    account.eye[player.style] = tiers[to].xp; saveAccount();
+    account.eye[player.style] = tiers[to].xp;
+    if ((account.eyePick[player.style] ?? 0) > to) delete account.eyePick[player.style];
+    saveAccount();
     if (eye.on) setLook(player.style);
     renderSlots();
   }
@@ -4301,24 +4369,46 @@ const SHARINGAN = {
       perk: 'Sees 70m. The eye no longer dims: almost nothing gets through.' },
     { name: 'Rinnegan', xp: 450, reveal: 95, read: 0, refund: 15, genjutsu: 2, swap: true, eye: { rinnegan: true },
       perk: 'Sees 95m and reads every attack. Each dodge swaps you behind whoever threw it.' },
+    { name: 'Tomoe Rinnegan', xp: 650, reveal: 110, read: 0, refund: 18, genjutsu: 2, swap: true, heal: 10, eye: { rinnegan: true, rinTomoe: 6 },
+      perk: 'Six tomoe on the ripples. Every dodge also heals you 10.' },
+    { name: 'Amenotejikara Eye', xp: 900, reveal: 120, read: 0, refund: 20, genjutsu: 2.2, swap: true, heal: 12, counter: 60, eye: { rinnegan: true, rinTomoe: 6, fill: '#a98ee6' },
+      perk: 'You swap in and strike first: every dodge hits the attacker back for 60.' },
+    { name: 'Six Paths Rinnegan', xp: 1200, reveal: 135, read: 0, refund: 22, genjutsu: 2.5, swap: true, heal: 15, counter: 90, eye: { rinnegan: true, rinTomoe: 9 },
+      perk: 'Nine tomoe. Dodges heal 15 and strike back for 90.' },
+    { name: "Indra's Awakening", xp: 1550, reveal: 150, read: 0, refund: 25, genjutsu: 3, swap: true, heal: 20, counter: 140, quake: 12, eye: { rinnegan: true, rinTomoe: 9, fill: '#c86ad8' },
+      perk: 'The first son wakes in you: every dodge also stuns everything within 12m.' },
+    { name: 'Eternal Rinnegan', xp: 2000, reveal: 170, read: 0, refund: 30, genjutsu: 3.5, swap: true, heal: 25, counter: 200, quake: 18, eye: { rinnegan: true, rinTomoe: 9, mangekyo: 'sasuke' },
+      perk: 'Everything at once. Dodges heal 25, strike back for 200 and stun everything within 18m.' },
   ],
   itachi: [...EYE_BASE,
     { name: 'Mangekyō Sharingan', xp: 150, reveal: 55, read: .5, refund: 10, genjutsu: 1.5, eye: { mangekyo: 'itachi' },
       perk: 'Sees 55m. Reads twice a second. Whoever you dodge is caught in Tsukuyomi and stunned.' },
     { name: 'Izanami', xp: 300, reveal: 85, read: 0, refund: 15, genjutsu: 2.5, eye: { mangekyo: 'itachi', closed: true },
       perk: 'Sees 85m and reads every attack. Whoever you dodge is trapped in the loop for 2.5s.' },
+    { name: 'Kotoamatsukami', xp: 450, reveal: 95, read: 0, refund: 18, genjutsu: 3, eye: { mangekyo: 'shisui' },
+      perk: "His friend's eye. Whoever you dodge forgets what they were doing for 3s." },
+    { name: 'Susanoo: Yata Mirror', xp: 650, reveal: 110, read: 0, refund: 20, genjutsu: 3, heal: 12, counter: 50, eye: { mangekyo: 'itachi', fill: '#ff7a2a' },
+      perk: 'The mirror sends it back: every dodge reflects 50 and heals you 12.' },
+    { name: 'Izanagi', xp: 900, reveal: 120, read: 0, refund: 22, genjutsu: 3, heal: 30, counter: 60, eye: { mangekyo: 'eternal', fill: '#8a0016' },
+      perk: 'What happened to you did not happen: every dodge heals 30.' },
+    { name: 'Edo Tensei', xp: 1200, reveal: 140, read: 0, refund: 25, genjutsu: 3.5, heal: 20, counter: 100, quake: 12, eye: { mangekyo: 'itachi', edo: true },
+      perk: 'Back from the dead and never tired. Dodges stun everything within 12m and strike back for 100.' },
+    { name: 'Crow of Shisui', xp: 1550, reveal: 170, read: 0, refund: 30, genjutsu: 4, heal: 30, counter: 160, quake: 20, eye: { mangekyo: 'shisui', fill: '#ff3355' },
+      perk: 'The crow carries the last eye. Dodges heal 30, strike back for 160 and stun everything within 20m.' },
   ],
 };
 const EYE_XP = { dodge: 2, kill: 5, boss: 40 };
 const eye = { on: false, mode: 'base', bypass: false, style: null, readyAt: 0, scanAt: 0, list: [], marks: new Map(), graceAt: -99, holdTimer: null };
 const hasEye = (style = player.style) => !!SHARINGAN[style];
-/** The form the eye is in. E caps it at three tomoe; B (and 'top') is the
- *  furthest it has grown. `top` is that furthest level whichever is open. */
+/** The form the eye is in. E opens the form you picked in the sidebar (three
+ *  tomoe until you pick one); B (and 'top') is the furthest it has grown.
+ *  `top` is that furthest level whichever is open. */
 function eyeTier(style = player.style, mode = eye.on && eye.style === style ? eye.mode : 'base') {
   const tiers = SHARINGAN[style]; if (!tiers) return null;
   const xp = account.eye[style] ?? 0;
   let top = 0; while (top + 1 < tiers.length && xp >= tiers[top + 1].xp) top++;
-  const i = mode === 'base' ? Math.min(top, 2) : top;
+  const pick = account.eyePick?.[style];
+  const i = mode === 'base' ? Math.min(top, pick ?? 2) : top;
   return { ...tiers[i], level: i + 1, top: top + 1, max: tiers.length, next: tiers[top + 1] ?? null, xpNow: xp, xpBase: tiers[top].xp };
 }
 /** The look for the rig: his own dark eyes when it is shut, the current form open. */
@@ -4326,14 +4416,24 @@ function eyeLookFor(style, L) {
   if (!hasEye(style)) return L;
   if (!(eye.on && eye.style === style)) return { ...L, sharingan: false, rinnegan: false, eye: 0x23202a };
   const e = eyeTier(style).eye;
-  return { ...L, sharingan: !e.rinnegan, rinnegan: !!e.rinnegan, tomoe: e.tomoe, mangekyo: e.mangekyo, eye: e.rinnegan ? 0xb9a6e8 : 0xd8182c };
+  const fill = e.fill ? parseInt(e.fill.slice(1), 16) : e.rinnegan ? 0xb9a6e8 : 0xd8182c;
+  return { ...L, sharingan: !e.rinnegan, rinnegan: !!e.rinnegan, rinTomoe: e.rinTomoe, tomoe: e.tomoe, mangekyo: e.rinnegan ? null : e.mangekyo, eye: fill, sclera: e.edo ? 0x34303a : null };
 }
 /** The eye as a little picture, for the sixth slot and the level-up card. */
 function eyeSvg(e) {
   const blades = '<path d="M0-40C22-40 30-12 14-4C4 1-8-8 0-40ZM34.6 20C23.6 39-5.5 32-3.5 14.5C-2.3 3.7 12.2 1.5 34.6 20ZM-34.6 20C-45.6 1-26.3-21-10.5-13.7C-.4-9.2-2.5 5.4-34.6 20Z" fill="#0b0003"/>';
   const star = [0, 60, 120].map((a) => `<ellipse rx="40" ry="7" transform="rotate(${a})" fill="#0b0003"/>`).join('');
+  const pinwheel = [0, 90, 180, 270].map((a) => `<path transform="rotate(${a})" d="M4-6C14-30 34-30 38-14C26-20 14-14 6 4Z" fill="#0b0003"/>`).join('');
   let inner = '';
-  if (e.rinnegan) inner = [12, 22, 32, 42].map((r) => `<circle r="${r}" fill="none" stroke="#3a2a5e" stroke-width="3"/>`).join('') + '<circle r="5" fill="#3a2a5e"/>';
+  if (e.rinnegan) {
+    inner = [12, 22, 32, 42].map((r) => `<circle r="${r}" fill="none" stroke="#3a2a5e" stroke-width="3"/>`).join('') + '<circle r="5" fill="#3a2a5e"/>';
+    // Tomoe on the ripples: six on one ring, nine across two.
+    const n = e.rinTomoe ?? 0;
+    for (let t = 0; t < n; t++) { const r = n > 6 && t >= 6 ? 17 : 27, k = n > 6 && t >= 6 ? 3 : Math.min(n, 6), a = (t % k) / k * 360 - 90 + (r === 17 ? 60 : 0);
+      inner += `<g transform="rotate(${a}) translate(${r} 0)"><circle r="4.5" fill="#1a0d2e"/></g>`; }
+    if (e.mangekyo === 'sasuke') inner += star.replaceAll('#0b0003', 'rgba(26,13,46,.55)');
+  }
+  else if (e.mangekyo === 'shisui') inner = pinwheel + '<circle r="8" fill="#0b0003"/>';
   else if (e.mangekyo === 'itachi') inner = blades + '<circle r="8" fill="#0b0003"/>';
   else if (e.mangekyo === 'sasuke') inner = star + '<circle r="20" fill="none" stroke="#0b0003" stroke-width="4"/><circle r="7" fill="#0b0003"/>';
   else if (e.mangekyo === 'eternal') inner = star + blades.replace('#0b0003', '#3a0008') + '<circle r="20" fill="none" stroke="#0b0003" stroke-width="4"/><circle r="7" fill="#0b0003"/>';
@@ -4344,8 +4444,9 @@ function eyeSvg(e) {
       inner += `<g transform="rotate(${a}) translate(27 0)"><circle r="7" fill="#0b0003"/><path d="M0 -7Q10 -10 9 4" stroke="#0b0003" stroke-width="3" fill="none"/></g>`;
     }
   }
-  const fill = e.rinnegan ? '#c9b8f0' : '#d8182c';
-  return `<svg viewBox="-50 -50 100 100" class="eye-svg${e.closed ? ' closed' : ''}"><circle r="46" fill="${fill}" stroke="#0b0003" stroke-width="4"/>${inner}</svg>`;
+  const fill = e.fill ?? (e.rinnegan ? '#c9b8f0' : '#d8182c');
+  const edo = e.edo ? '<circle r="49" fill="none" stroke="#3a3540" stroke-width="7"/><path d="M-30-38L-18-22M34 30L20 18M-40 22L-26 14" stroke="#1a1520" stroke-width="2.5"/>' : '';
+  return `<svg viewBox="-50 -50 100 100" class="eye-svg${e.closed ? ' closed' : ''}"><circle r="46" fill="${fill}" stroke="#0b0003" stroke-width="4"/>${inner}${edo}</svg>`;
 }
 
 const toggleSharingan = () => openSharingan('base');
@@ -4450,7 +4551,7 @@ function sharinganIntercept(atk, nature, from) {
 // Red, with a small green window; a marker runs across it once. Press C (or B)
 // with the marker in the green. The world crawls while it is up, and the green
 // is wider the further the eye has grown.
-const QTE_GREEN = [.1, .13, .16, .2, .24, .28];
+const QTE_GREEN = [.1, .13, .16, .2, .24, .28, .31, .34, .37, .4, .44];
 const QTE_TIME = 1.1;   // seconds of real time for the marker to cross
 let qte = null;
 function startQte(hit) {
@@ -4515,11 +4616,47 @@ function eyeDodge(from, T) {
     floatText(attacker.pos, T.name === 'Izanami' ? 'IZANAMI' : 'GENJUTSU', 'se');
   }
   if (T.refund) player.se = Math.min(player.maxSe, player.se + T.refund);
+  if (T.heal) { player.hp = Math.min(player.maxHp, player.hp + T.heal); floatText(player.pos.clone().add(new THREE.Vector3(.6, .3, 0)), '+' + T.heal, 'heal'); }
+  if (T.counter && attacker && !attacker.dead) enemyTakeHit(attacker, T.counter, T.eye.rinnegan ? 'lightning' : 'fire', player.pos, { knock: 6 });
+  if (T.quake) {
+    // The later forms catch everything near you, not just the one who swung.
+    for (const o of enemies) if (!o.dead && !o.pvp && o.pos.distanceTo(player.pos) < T.quake) o.status.stun = Math.max(o.status.stun ?? 0, T.genjutsu ?? 1.5);
+    shockwave(player.pos.clone(), T.eye.rinnegan ? 0x9b6cff : 0xff2040, 1, T.quake, .5, 1);
+  }
   floatText(player.pos, 'READ', 'heal');
   hitStop = Math.max(hitStop, .04);
   sfx.lock(T.level);
   gainEyeXp(EYE_XP.dodge);
   return true;
+}
+/** The sidebar: every form this eye can take, in order. The ones you have are
+ *  lit and clickable; clicking one makes it the form E opens. */
+function renderEyeSide() {
+  const el = $('#eye-side');
+  if (!hasEye() || !running) { el.hidden = true; return; }
+  const tiers = SHARINGAN[player.style], top = eyeTier(player.style, 'top'), cur = eyeTier();
+  const picked = Math.min(top.top - 1, account.eyePick[player.style] ?? 2);
+  el.hidden = false;
+  el.innerHTML = `<div class="es-head">Sharingan <small>${top.top}/${tiers.length}</small></div>` + tiers.map((t, i) => {
+    const have = i < top.top, active = eye.on && cur.level === i + 1;
+    return `<button class="es-form${have ? '' : ' locked'}${i === picked ? ' picked' : ''}${active ? ' active' : ''}" data-i="${i}" ${have ? '' : 'disabled'}
+      title="${t.name}${have ? ' — ' + t.perk : ` — unlocks at ${t.xp} Sharingan XP (you have ${top.xpNow})`}">${eyeSvg(have ? t.eye : { ...t.eye, closed: true })}<span>${t.name}${have ? '' : `<small>${t.xp} XP</small>`}</span></button>`;
+  }).join('') + '<div class="es-foot">Esc frees the mouse · <kbd>[</kbd> <kbd>]</kbd> to switch</div>';
+  for (const b of el.querySelectorAll('.es-form:not(.locked)')) b.onclick = (ev) => { ev.stopPropagation(); pickEye(Number(b.dataset.i)); };
+}
+function pickEye(i) {
+  if (!hasEye()) return;
+  const top = eyeTier(player.style, 'top');
+  if (i < 0 || i >= top.top) return;
+  account.eyePick[player.style] = i; saveAccount();
+  const T = SHARINGAN[player.style][i];
+  if (eye.on && eye.mode === 'base') { setLook(player.style); renderSlots(); center(T.name.toUpperCase(), 800); }
+  else openSharingan('base');
+}
+function cycleEye(d) {
+  if (!hasEye()) return;
+  const top = eyeTier(player.style, 'top'), cur = Math.min(top.top - 1, account.eyePick[player.style] ?? 2);
+  pickEye((cur + d + top.top) % top.top);
 }
 /** The eye, big, in the middle of the screen: whichever form you dodged with. */
 function popEye(T) {
@@ -4759,7 +4896,7 @@ function moveInput() {
 }
 function physWalk(dt) {
   const input = moveInput();
-  const buffed = player.buff && now < player.buff.until ? player.buff.speedMul : 1;
+  const buffed = (player.buff && now < player.buff.until ? player.buff.speedMul : 1) * (cheatOn('speed') ? 2.2 : 1);
   const target = input.clone().multiplyScalar((player.onGround ? PHYS.walk : PHYS.air) * buffed);
   const k = player.onGround ? 15 : 5.5;               // real air control, not a nudge
   player.vel.x += (target.x - player.vel.x) * Math.min(1, k * dt);
@@ -4794,6 +4931,7 @@ function physWalk(dt) {
 }
 /** One jump path: ground jump, coyote jump, buffered jump and air jump. */
 function doJump(power) {
+  if (cheatOn('jump')) power *= 1.75;   // three times the height
   player.vel.y = power; player.onGround = false; player.jumpHeld = true;
   shockwave(player.pos.clone().setY(.1), 0xffffff, .6, 3.4, .32, .35);
 }
@@ -5547,6 +5685,7 @@ function updateEnemies(dt) {
   }
   for (const e of enemies) {
     if (e.dead) continue;
+    if (cheatOn('freeze') && !e.pvp) e.status.stun = Math.max(e.status.stun ?? 0, .3);
     // Status ticks
     for (const k of Object.keys(e.status)) { e.status[k] -= dt; if (e.status[k] <= 0) delete e.status[k]; }
     if (e.status.burn) { e.dotAcc = (e.dotAcc ?? 0) + dt; if (e.dotAcc > .5) { e.dotAcc = 0; e.hp -= 6; floatText(e.pos, 6, 'nve'); if (e.hp <= 0) { killEnemy(e); continue; } } }
@@ -7088,6 +7227,7 @@ function spawnWave() {
 // HUD
 // =============================================================================
 function renderSlots() {
+  renderEyeSide();
   const el = $('#slots'); el.innerHTML = '';
   player.slots.forEach((id, i) => {
     const d = document.createElement('div'); d.className = 'slot' + (id ? '' : ' empty');
@@ -7443,6 +7583,7 @@ addEventListener('keydown', (e) => {
   keys.add(e.code);
   if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) tryJump(); }
   if (e.code === 'KeyE' && !e.repeat) startEAction();
+  if ((e.code === 'BracketLeft' || e.code === 'BracketRight') && !e.repeat) cycleEye(e.code === 'BracketRight' ? 1 : -1);
   if ((e.code === 'ShiftLeft' || e.code === 'ShiftRight') && !e.repeat) toggleShiftLock();
   if (e.code === 'KeyC' && !e.repeat) dodge();
   if (e.code === 'KeyF') strike();
@@ -7501,7 +7642,7 @@ function frame(t) {
   now += real;
   // Sasuke's Time Freeze stops the world outright; Spider-Sense merely slows it.
   const frozen = wallNow() < player.freezeUntil;
-  const worldDt = frozen ? 0 : real * timeScale;
+  const worldDt = frozen ? 0 : real * timeScale * (cheatOn('slowmo') ? 1 / 3 : 1);
   const playerDt = real;                  // the player is exempt from both
   $('#freeze').hidden = !frozen;
   if (player.sense.active && now > player.sense.until) closeSense();
@@ -7962,7 +8103,7 @@ function useGate(to) {
 }
 buildMap('times_square');
 requestAnimationFrame(frame);
-window.__rift = { account, accountLevel, isUnlocked, openAdmin, adminAct, pressQte, get qte() { return qte; }, eye, eyeTier, gainEyeXp, toggleSharingan, hurtPlayer, condition, CONDITIONS, rollCondition, startAbduction, get now() { return now; }, get waveStartedAt() { return waveStartedAt; }, army, camera, scene, buildCharacter, CHARACTERS, GRADES, enemyTakeHit, strike, startEAction, endEAction, webLine, WEB_SLINGERS, startSwing, releaseSwing, killEnemy, get playerRig() { return playerRig; }, get firstPerson() { return firstPerson; }, get rasengan() { return rasengan; }, get chidori() { return chidori; }, spawnArmy, damageArmy, arcBolt, slashArc,
+window.__rift = { pickEye, cycleEye, account, accountLevel, isUnlocked, openAdmin, adminAct, pressQte, get qte() { return qte; }, eye, eyeTier, gainEyeXp, toggleSharingan, hurtPlayer, condition, CONDITIONS, rollCondition, startAbduction, get now() { return now; }, get waveStartedAt() { return waveStartedAt; }, army, camera, scene, buildCharacter, CHARACTERS, GRADES, enemyTakeHit, strike, startEAction, endEAction, webLine, WEB_SLINGERS, startSwing, releaseSwing, killEnemy, get playerRig() { return playerRig; }, get firstPerson() { return firstPerson; }, get rasengan() { return rasengan; }, get chidori() { return chidori; }, spawnArmy, damageArmy, arcBolt, slashArc,
   SKILLS, STYLES, ENEMIES, MAPS, MAP_IDS, NATURE, travelTo, buildMap, portals,
   net, setMode, useGate, setSolo, setTier, TIERS, get tier() { return tierName; },
   get currentMap() { return currentMap; }, get nearPortal() { return nearPortal; }, eprojectiles, spawnEnemy, player, enemies, buildings, debris, cars, civilians, damageBuildings, findAnchor, applyStyle, activateSlot, useUltimate, openMoveSets, startCharge, releaseCharge, hurtPlayer, castSkill, OUTPUT_TIERS, ARSENALS, cycleWeapon, get mahoraga() { return mahoraga; }, get wave() { return wave; } };
