@@ -8,5 +8,4 @@ return {
 	sasuke = "chidori",
 	yuji = "dismantle_s",
 	megumi = "chimera_garden",
-	itachi = "amaterasu_i",
 } :: { [string]: string }
