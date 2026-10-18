@@ -4421,6 +4421,10 @@ const SHARINGAN = {
     ...moreForms(['Dragon', 'Solar', 'Lunar', 'Shattered', 'Sovereign', 'Hollow', 'Blazing', 'Frozen', 'Eclipse', 'Ascended']
       .flatMap((a) => ['Sharingan', 'Rinnegan', 'Tomoe', 'Kaleidoscope', 'Gaze', 'Storm Eye', 'Star Eye', 'Lightning Eye', 'Susanoo Eye', 'Rift Eye'].map((n) => `${a} ${n}`)), 8288800,
       [{ mangekyo: 'sasuke' }, { rinnegan: true, rinTomoe: 9 }, { mangekyo: 'eternal' }, { rinnegan: true, rinTomoe: 6, mangekyo: 'sasuke' }, { rinnegan: true }], 1.03),
+    // Five hundred more after that.
+    ...moreForms(['Primal', 'Thundering', 'Galactic', 'Divine', 'Cursed', 'Molten', 'Glacial', 'Tempest', 'Nova', 'Quantum', 'Spectral', 'Titan', 'Warlord', 'Seraph', 'Oblivion', 'Cosmic', 'Heavenly', 'Doom', 'Hyper', 'Omega']
+      .flatMap((a) => ['Sharingan', 'Rinnegan', 'Mangekyō', 'Tomoe', 'Kaleidoscope', 'Gaze', 'Iris', 'Pupil', 'Storm Eye', 'Star Eye', 'Lightning Eye', 'Susanoo Eye', 'Chidori Eye', 'Kirin Eye', 'Hawk Eye', 'Void Eye', 'Path Eye', 'Moon Eye', 'Sun Eye', 'Ruin Eye', 'Crown Eye', 'Blade Eye', 'Comet Eye', 'Thunder Eye', 'Rift Eye'].map((n) => `${a} ${n}`)), 159298600,
+      [{ rinnegan: true, rinTomoe: 9, mangekyo: 'sasuke' }, { mangekyo: 'eternal' }, { rinnegan: true, rinTomoe: 6 }, { mangekyo: 'sasuke' }, { rinnegan: true, rinTomoe: 9 }, { rinnegan: true }], 1.01),
   ]),
   itachi: eyeForms('itachi', [...TOMOE,
     ['Mangekyō Sharingan', 150, { mangekyo: 'itachi' }, 'The kaleidoscope.'],
@@ -4454,6 +4458,10 @@ const SHARINGAN = {
     ...moreForms(['Phantom', 'Twilight', 'Sorrowful', 'Burning', 'Veiled', 'Ancient', 'Starless', 'Scarlet', 'Wandering', 'Last']
       .flatMap((a) => ['Sharingan', 'Crow Eye', 'Tomoe', 'Kaleidoscope', 'Tsukuyomi', 'Raven Eye', 'Moon Eye', 'Shadow Eye', 'Totsuka Eye', 'Rift Eye'].map((n) => `${a} ${n}`)), 6908300,
       [{ mangekyo: 'itachi' }, { mangekyo: 'eternal' }, { mangekyo: 'shisui' }, { mangekyo: 'itachi', edo: true }], 1.03),
+    // Five hundred more after that.
+    ...moreForms(['Mournful', 'Forgotten', 'Obsidian', 'Wraith', 'Ghostly', 'Bloodmoon', 'Inkblack', 'Crowned', 'Smoldering', 'Mistborn', 'Grim', 'Nameless', 'Shrouded', 'Lonely', 'Silver', 'Ivory', 'Ruby', 'Ashborn', 'Dreamwalker', 'Final']
+      .flatMap((a) => ['Sharingan', 'Mangekyō', 'Tomoe', 'Kaleidoscope', 'Tsukuyomi', 'Crow Eye', 'Raven Eye', 'Moon Eye', 'Shadow Eye', 'Totsuka Eye', 'Yata Eye', 'Izanami Eye', 'Izanagi Eye', 'Genjutsu Eye', 'Ember Eye', 'Mist Eye', 'Feather Eye', 'Night Eye', 'Dawn Eye', 'Mirror Eye', 'Veil Eye', 'Dream Eye', 'Lantern Eye', 'Requiem Eye', 'Rift Eye'].map((n) => `${a} ${n}`)), 132771400,
+      [{ mangekyo: 'eternal' }, { mangekyo: 'shisui' }, { mangekyo: 'itachi' }, { mangekyo: 'itachi', edo: true }, { mangekyo: 'shisui', edo: true }], 1.01),
   ]),
 };
 const EYE_XP = { dodge: 2, kill: 5, boss: 40 };
@@ -4634,7 +4642,7 @@ function sharinganIntercept(atk, nature, from) {
 // Red, with a small green window; a marker runs across it once. Press C (or B)
 // with the marker in the green. The world crawls while it is up, and the green
 // is wider the further the eye has grown.
-const qteGreen = (level) => Math.min(.4, .14 + .0013 * level);   // a seventh of the bar at first, up to two fifths
+const qteGreen = (level) => Math.min(.4, .14 + .26 * Math.min(1, (level - 1) / 700));   // a seventh of the bar at first, up to two fifths at the very top
 const QTE_TIME = .55;   // seconds of real time for the marker to cross
 let qte = null;
 function startQte(hit) {
@@ -4717,6 +4725,10 @@ function renderEyeSide() {
   const tiers = SHARINGAN[player.style], top = eyeTier(player.style, 'top'), cur = eyeTier();
   const picked = Math.min(top.top - 1, account.eyePick[player.style] ?? 2);
   el.hidden = false;
+  // Hundreds of forms: only redraw when something on the list has changed.
+  const sig = `${player.style}|${top.top}|${picked}|${eye.on ? cur.level : 0}`;
+  if (el.dataset.sig === sig) return;
+  el.dataset.sig = sig;
   el.innerHTML = `<div class="es-head">Sharingan <small>${top.top}/${tiers.length}</small></div>` + tiers.map((t, i) => {
     const have = i < top.top, active = eye.on && cur.level === i + 1;
     return `<button class="es-form${have ? '' : ' locked'}${i === picked ? ' picked' : ''}${active ? ' active' : ''}" data-i="${i}" ${have ? '' : 'disabled'}
