@@ -273,6 +273,7 @@
   .es-form { display: flex; align-items: center; gap: 8px; padding: 3px 6px; flex: none; border-radius: 9px; border: 1px solid transparent;
     background: rgba(255, 255, 255, .03); color: #f2d6dc; text-align: left; font: 600 11.5px/1.15 Rubik, sans-serif; cursor: pointer; }
   .es-form .eye-svg { width: 24px; height: 24px; flex: none; }
+  .es-dot { width: 18px; height: 18px; margin: 3px; flex: none; border-radius: 50%; border: 2px solid #0b0003; }
   .es-form small { display: block; font-weight: 400; opacity: .7; }
   .es-form:hover:not(.locked) { border-color: rgba(255, 36, 72, .6); background: rgba(255, 36, 72, .12); }
   .es-form.picked { border-color: #ff2448; background: rgba(255, 36, 72, .18); }
@@ -4425,6 +4426,10 @@ const SHARINGAN = {
     ...moreForms(['Primal', 'Thundering', 'Galactic', 'Divine', 'Cursed', 'Molten', 'Glacial', 'Tempest', 'Nova', 'Quantum', 'Spectral', 'Titan', 'Warlord', 'Seraph', 'Oblivion', 'Cosmic', 'Heavenly', 'Doom', 'Hyper', 'Omega']
       .flatMap((a) => ['Sharingan', 'Rinnegan', 'Mangekyō', 'Tomoe', 'Kaleidoscope', 'Gaze', 'Iris', 'Pupil', 'Storm Eye', 'Star Eye', 'Lightning Eye', 'Susanoo Eye', 'Chidori Eye', 'Kirin Eye', 'Hawk Eye', 'Void Eye', 'Path Eye', 'Moon Eye', 'Sun Eye', 'Ruin Eye', 'Crown Eye', 'Blade Eye', 'Comet Eye', 'Thunder Eye', 'Rift Eye'].map((n) => `${a} ${n}`)), 159298600,
       [{ rinnegan: true, rinTomoe: 9, mangekyo: 'sasuke' }, { mangekyo: 'eternal' }, { rinnegan: true, rinTomoe: 6 }, { mangekyo: 'sasuke' }, { rinnegan: true, rinTomoe: 9 }, { rinnegan: true }], 1.01),
+    // And a thousand more.
+    ...moreForms(['Ruinous', 'Celestine', 'Empyrean', 'Infernal', 'Arcane', 'Ironclad', 'Gilded', 'Feral', 'Majestic', 'Ethereal', 'Sunforged', 'Starborn', 'Wrathful', 'Unbound', 'Exalted', 'Fallen', 'Risen', 'Mythic', 'Legendary', 'Prime', 'Shocking', 'Roaring', 'Unending', 'Timeless', 'Boundless', 'Fearless', 'Relentless', 'Supreme', 'Ultimate', 'Apex', 'Zenith', 'Vortex', 'Blitz', 'Inferno', 'Avalanche', 'Typhoon', 'Meteor', 'Lightspeed', 'Kingslayer', 'Godlike']
+      .flatMap((a) => ['Sharingan', 'Rinnegan', 'Mangekyō', 'Tomoe', 'Kaleidoscope', 'Gaze', 'Iris', 'Pupil', 'Storm Eye', 'Star Eye', 'Lightning Eye', 'Susanoo Eye', 'Chidori Eye', 'Kirin Eye', 'Hawk Eye', 'Void Eye', 'Path Eye', 'Moon Eye', 'Sun Eye', 'Ruin Eye', 'Crown Eye', 'Blade Eye', 'Comet Eye', 'Thunder Eye', 'Rift Eye'].map((n) => `${a} ${n}`)), 23062065900,
+      [{ mangekyo: 'sasuke' }, { rinnegan: true, rinTomoe: 9 }, { mangekyo: 'eternal' }, { rinnegan: true, rinTomoe: 6, mangekyo: 'sasuke' }, { rinnegan: true }, { rinnegan: true, rinTomoe: 6 }], 1.005),
   ]),
   itachi: eyeForms('itachi', [...TOMOE,
     ['Mangekyō Sharingan', 150, { mangekyo: 'itachi' }, 'The kaleidoscope.'],
@@ -4462,6 +4467,10 @@ const SHARINGAN = {
     ...moreForms(['Mournful', 'Forgotten', 'Obsidian', 'Wraith', 'Ghostly', 'Bloodmoon', 'Inkblack', 'Crowned', 'Smoldering', 'Mistborn', 'Grim', 'Nameless', 'Shrouded', 'Lonely', 'Silver', 'Ivory', 'Ruby', 'Ashborn', 'Dreamwalker', 'Final']
       .flatMap((a) => ['Sharingan', 'Mangekyō', 'Tomoe', 'Kaleidoscope', 'Tsukuyomi', 'Crow Eye', 'Raven Eye', 'Moon Eye', 'Shadow Eye', 'Totsuka Eye', 'Yata Eye', 'Izanami Eye', 'Izanagi Eye', 'Genjutsu Eye', 'Ember Eye', 'Mist Eye', 'Feather Eye', 'Night Eye', 'Dawn Eye', 'Mirror Eye', 'Veil Eye', 'Dream Eye', 'Lantern Eye', 'Requiem Eye', 'Rift Eye'].map((n) => `${a} ${n}`)), 132771400,
       [{ mangekyo: 'eternal' }, { mangekyo: 'shisui' }, { mangekyo: 'itachi' }, { mangekyo: 'itachi', edo: true }, { mangekyo: 'shisui', edo: true }], 1.01),
+    // And a thousand more.
+    ...moreForms(['Weeping', 'Lost', 'Quiet', 'Gloaming', 'Crowsong', 'Pale', 'Deep', 'Velvet', 'Withered', 'Faded', 'Hushed', 'Stormcrow', 'Graven', 'Somber', 'Eclipsed', 'Haunted', 'Mirrored', 'Woven', 'Bound', 'Fated', 'Cinder', 'Frostbitten', 'Bleeding', 'Sleepless', 'Duskborn', 'Nightwing', 'Starlit', 'Sunken', 'Ashen-Crowned', 'Moonborn', 'Masked', 'Exiled', 'Loyal', 'Sacrificial', 'Hidden-Leaf', 'Akatsuki', 'Brotherly', 'Gentle', 'Unspoken', 'Eternal-Night']
+      .flatMap((a) => ['Sharingan', 'Mangekyō', 'Tomoe', 'Kaleidoscope', 'Tsukuyomi', 'Crow Eye', 'Raven Eye', 'Moon Eye', 'Shadow Eye', 'Totsuka Eye', 'Yata Eye', 'Izanami Eye', 'Izanagi Eye', 'Genjutsu Eye', 'Ember Eye', 'Mist Eye', 'Feather Eye', 'Night Eye', 'Dawn Eye', 'Mirror Eye', 'Veil Eye', 'Dream Eye', 'Lantern Eye', 'Requiem Eye', 'Rift Eye'].map((n) => `${a} ${n}`)), 19221641600,
+      [{ mangekyo: 'itachi' }, { mangekyo: 'shisui' }, { mangekyo: 'eternal' }, { mangekyo: 'itachi', edo: true }, { mangekyo: 'eternal', edo: true }], 1.005),
   ]),
 };
 const EYE_XP = { dodge: 2, kill: 5, boss: 40 };
@@ -4642,7 +4651,7 @@ function sharinganIntercept(atk, nature, from) {
 // Red, with a small green window; a marker runs across it once. Press C (or B)
 // with the marker in the green. The world crawls while it is up, and the green
 // is wider the further the eye has grown.
-const qteGreen = (level) => Math.min(.4, .14 + .26 * Math.min(1, (level - 1) / 700));   // a seventh of the bar at first, up to two fifths at the very top
+const qteGreen = (level) => Math.min(.4, .14 + .26 * Math.min(1, (level - 1) / 1700));   // a seventh of the bar at first, up to two fifths at the very top
 const QTE_TIME = .55;   // seconds of real time for the marker to cross
 let qte = null;
 function startQte(hit) {
@@ -4729,11 +4738,17 @@ function renderEyeSide() {
   const sig = `${player.style}|${top.top}|${picked}|${eye.on ? cur.level : 0}`;
   if (el.dataset.sig === sig) return;
   el.dataset.sig = sig;
-  el.innerHTML = `<div class="es-head">Sharingan <small>${top.top}/${tiers.length}</small></div>` + tiers.map((t, i) => {
+  // Over a thousand forms: full eye art only near the one you picked, a dot in
+  // its colour everywhere else, and only the next few locked ones listed.
+  const shown = Math.min(tiers.length, top.top + 5);
+  el.innerHTML = `<div class="es-head">Sharingan <small>${top.top}/${tiers.length}</small></div>` + tiers.slice(0, shown).map((t, i) => {
     const have = i < top.top, active = eye.on && cur.level === i + 1;
+    const art = Math.abs(i - picked) <= 30 || i < 12 || !have ? eyeSvg(have ? t.eye : { ...t.eye, closed: true })
+      : `<i class="es-dot" style="background:${t.eye.fill ?? (t.eye.rinnegan ? '#c9b8f0' : '#d8182c')}"></i>`;
     return `<button class="es-form${have ? '' : ' locked'}${i === picked ? ' picked' : ''}${active ? ' active' : ''}" data-i="${i}" ${have ? '' : 'disabled'}
-      title="${t.name}${have ? ' — ' + t.perk : ` — unlocks at ${t.xp} Sharingan XP (you have ${top.xpNow})`}">${eyeSvg(have ? t.eye : { ...t.eye, closed: true })}<span>${t.name}${have ? '' : `<small>${t.xp} XP</small>`}</span></button>`;
-  }).join('') + '<div class="es-foot">Esc frees the mouse · <kbd>[</kbd> <kbd>]</kbd> to switch</div>';
+      title="${t.name}${have ? ' — ' + t.perk : ` — unlocks at ${t.xp} Sharingan XP (you have ${top.xpNow})`}">${art}<span>${t.name}${have ? '' : `<small>${t.xp} XP</small>`}</span></button>`;
+  }).join('') + (shown < tiers.length ? `<div class="es-foot">…and ${tiers.length - shown} more to awaken</div>` : '')
+    + '<div class="es-foot">Esc frees the mouse · <kbd>[</kbd> <kbd>]</kbd> to switch</div>';
   for (const b of el.querySelectorAll('.es-form:not(.locked)')) b.onclick = (ev) => { ev.stopPropagation(); pickEye(Number(b.dataset.i)); };
   el.querySelector('.es-form.picked')?.scrollIntoView({ block: 'nearest' });
 }
