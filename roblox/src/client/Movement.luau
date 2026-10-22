@@ -48,7 +48,7 @@ local function findAnchor(root: BasePart): Vector3?
 	local params = RaycastParams.new()
 	params.FilterType = Enum.RaycastFilterType.Exclude
 	local ignore: { Instance } = { player.Character :: Instance }
-	for _, name in { "Enemies", "Fx" } do
+	for _, name in { "Enemies", "Worn", "Fx", "Pickups" } do
 		local f = workspace:FindFirstChild(name)
 		if f then
 			table.insert(ignore, f)
@@ -165,6 +165,10 @@ function Movement.endFlight()
 end
 
 --- Drops whatever is holding the character up (on death or a style change).
+function Movement.isFlying(): boolean
+	return flight ~= nil
+end
+
 function Movement.reset()
 	Movement.releaseSwing()
 	Movement.endFlight()

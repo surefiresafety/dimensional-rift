@@ -42,10 +42,11 @@ rojo serve             # then, in Studio: Plugins > Rojo > Connect
 | `src/shared/Data/*.luau` | `ReplicatedStorage.Shared.Data` | **Generated** by `npm run export:roblox`. Every technique, character, enemy, boss and world. Do not edit these by hand. |
 | `src/shared/Rules.luau` | `ReplicatedStorage.Shared.Rules` | The combat maths: the nature wheel, damage, armour, crits, cost, cooldowns, status effects, waves. No Roblox APIs, so it runs under Lune. |
 | `src/shared/Config.luau` | | Roblox-only tuning. Holds `STUDS_PER_UNIT = 2.4`, the conversion from web-build units to studs. |
-| `src/shared/Remotes.luau` | | The six RemoteEvents and what each carries. |
+| `src/shared/Progression.luau` | | What a player keeps: levels, Rift Shards, the roster, loadouts, the daily streak, quests, best waves. No Roblox APIs, so it runs under Lune. |
+| `src/shared/Remotes.luau` | | The eight RemoteEvents, the one RemoteFunction (`Ask`), and what each carries. |
 | `src/shared/Signature.luau` | | The E key for the characters whose signature is a technique. |
-| `src/server/` | `ServerScriptService.Server` | `Combat` (state, hitting enemies and players), `Abilities` (one handler per technique type), `Projectiles` (swept hits), `Enemies` (spawning and AI), `Waves`, `World` (lighting and a placeholder arena), `Looks` (bodies and hair). |
-| `src/client/` | `StarterPlayerScripts.Client` | `Hud`, `Select` (character select with universe filters and search), `Fx` (draws what the server reports), `Input`, `Movement` (web-swing and flight). |
+| `src/server/` | `ServerScriptService.Server` | `Combat` (state, hitting enemies and players), `Abilities` (one handler per technique type, the basic attack, output charge), `Symbiote` (suit, hunger, bond, detaching), `Projectiles` (swept hits), `Enemies` (spawning and AI), `Waves` (and the world rotation), `World` (lighting and a placeholder arena), `Looks` (bodies and hair), `ProfileStore` and `Profiles` (saving), `Progress` (rewards, quests, unlocks, boards, badges). |
+| `src/client/` | `StarterPlayerScripts.Client` | `Hud`, `Select` (character select with universe filters, search, locks and unlocking), `Hub` (the J menu), `Loadout` (L), `Profile` (the client's copy of its progress), `Fx` (draws what the server reports), `Input`, `TouchPad` (phones), `Movement` (web-swing and flight). |
 | `tests/` | | Lune tests: `lune run tests/run` (or `npm run test:roblox`). |
 
 ## How it fits together
@@ -69,31 +70,85 @@ rojo serve             # then, in Studio: Plugins > Rojo > Connect
 | | |
 | --- | --- |
 | Characters | All 46, with their five techniques, pools, passives' numbers, energy and ultimates |
-| Technique types | 16 of 21, which covers 274 of the 282 techniques: projectile, melee, dash, beam, trap, pull, yank, teleport, buff, heal, shield, evade, freeze, clones, domain, toggle |
+| Technique types | All 21, so all 282 techniques can be cast: projectile, melee, dash, beam, trap, pull, yank, teleport, buff, heal, shield, evade, freeze, clones, domain, toggle, self (decoy), rewind (Reverse Time), switch (weapon and suit sets), possess (Body Swap), devour (Feed) |
+| Basic attack | Left click (or the Hit button, or R2). The style's own m1 and reach, Yuji's Black Flash chance, or the drawn weapon's m1, knockback, armour piercing and soul cut |
+| Weapon and suit sets | Toji, Maki, Iron Man and Top Hat switch with the technique in their slot, Yuji with R. The drawn one changes the basic attack and scales every technique marked `weaponScaled` (damage, cost, cooldown, reach, knockback, barrier breaking, the chain's pull, the soul cut) |
+| Output charge | Hold B: a tap is Minimum Output, 5 s Medium, 10 s Maximum, which also blasts everything within 14 units. The next technique spends it |
+| The symbiote | Suit health and its regeneration, hunger (it gets hungrier, says so, and hits harder the hungrier it is), Feed, the takeover when hunger hits zero (it transforms and feeds itself until it is over 55), the bond (fire and sound strip it, starving strips it, time alone restores it), coming off at zero bond, F to put it back on within a minute, Ironthread if you do not |
 | Ultimates | All technique ultimates, plus the Venom / Anti-Venom / Sukuna transforms and Mahoraga |
 | Combat rules | Nature wheel, armour, defence-down, buffs, lifesteal (including Berserker Rage's), crits and their ramp, knockback, enrage, burn/poison/bleed, root/paralyse/webbed/stun, shields with reflect and heal, Infinity, evasion |
 | Enemies | All 118, including the 46 character bosses and 32 alphas, with melee, ranged bursts and arcs, summons and enrage |
 | Worlds | All 9 worlds' waves, boss ladders and filler, their lighting and fog, and a placeholder skyline |
-| Screens | HUD (health, energy, ability rail with cooldowns, wave, log, banner) and Select Character |
-| Controls | 1–5, G, E / right mouse (signature), M. ContextActionService also adds touch buttons for phones. |
+| Screens | HUD (health, energy, a status line for the drawn weapon, stored charge, suit, hunger and bond, ability rail with cooldowns, wave, log, banner) and Select Character |
+| Controls | Left click (basic attack), 1–5, G, E (signature), Q (dodge), B (hold to charge), R (Yuji's weapons), F (put the symbiote back on), J (menu), L (loadout), M (characters). Gamepad: R2 hit, L2 signature, Y ultimate, X dodge, B charge. Phones get a touch pad with cooldowns. |
+
+## Story mode: The Hundred Seams
+
+Nuime, the Stitched One, opened the rift to sew every world into one body he can
+wear forever. Each world's boss ladder guards one of his stitches; beating it pulls
+the stitch loose. Break all nine and the tenth world opens: **the Seam**, where
+Nuime and Patchwork have stitched themselves into **Hyakunui, the Hundred-Seam**.
+
+| | |
+| --- | --- |
+| Telling it | A card when each world opens (its chapter and what is happening), lines between waves and when its last boss falls, as subtitles. All the text is in `src/shared/Story.luau`. |
+| The Seam | Its own arena (floating pieces of the other worlds, crimson threads across the sky), and every enemy in it is stitched: an elite. Opens once Thunderspire is cleared. Data in `src/shared/Finale.luau`. |
+| Hyakunui | Three phases (`src/server/FinaleFight.luau`): seam cuts telegraphed under every player; at two thirds it tears out the Tempest Fox and the Unbidden, which adapts to any nature that hits it three times; at a third it grasps for bodies, which lets Akuro out of the Vessel, starves a symbiote, or takes a quarter of anyone else's health. |
+| The ending | The rift closes: an ending card with an epilogue for the universe of the character who closed it, 1,000 shards and a badge (`rift_closed`) the first time. |
+| After it | Loose Threads: once everyone on a server has closed the rift, every world is harder (tougher enemies, more elites) and pays half as much again. |
+| Coming back | A fresh server starts at the first player's furthest open world, not at the beginning. |
+
+## The fight
+
+| | |
+| --- | --- |
+| Enemies notice you | Every wave arrives spread over the arena in small packs, out of sight. An enemy wanders near where it arrived until a player comes within `Config.ENEMY_NOTICE` (18 units, about 43 studs; 26 for bosses), it is hit, or a packmate nearby spots someone. A "!" pops over it. Past `ENEMY_LEASH` (60 units) it gives up. All in `Rules.aiStep`, tested branch by branch. |
+| Every attack is announced | A pulsing ring under the enemy before it lands: red a swing (0.7 s, bosses 0.9 s), yellow a shot, orange a charge. A stun cancels it, and a swing is followed by a recovery to punish. |
+| Dodge | Q (X on a gamepad, DODGE on phones): a quick dash, untouchable for 0.4 s, 1.1 s cooldown. Slip a blow in its first 0.3 s for a perfect dodge (+60 Spirit Energy, and a daily quest). An attack winding up off screen shows an arrow at the edge of the screen. |
+| Elites | From wave 3 some enemies are Frenzied, Armored, Giant, Vampiric or Volatile (explodes when it dies), outlined in colour: double experience and guaranteed shards. |
+| Drops | Health, Spirit Energy and Rift Shard orbs that drift to you. |
+| Combos | Hits within 3 s chain, ranked D to SSS on the HUD, and pay out experience and shards when they end. |
+| Radar | Enemies within 70 units: yellow unaware, red hunting, bosses bigger. A boss hunting you gets a health bar across the top. |
+| Worlds | Ten arenas laid out in `src/shared/Layouts/` (one file per theme, from the approved design in `docs/design/worlds.md`) and built by `Arenas.luau`: The Crossroads, The Hidden Campus, The Ribbed Vault, The Walled Compound, The Sealed Block, Dunewatch, Quarry Hollow, Mistreach, Thunderspire and the Seam. Each has an upper route of decks, bridges and stairs, cover, anchors to swing from, a hero landmark, enemy spawn pads, weather and the rift portal. `lune run tests/world <theme>` checks one layout against the design's rules (pads, walkways, access, the swing fan, sightlines, budgets). Enemies path up stairs and ladders (`Nav.luau`) and throw rocks at players they cannot reach. |
+| Feel | Enemies animate (Roblox's default R15 set), topple and fade when they die; sounds for hits, casts, warnings and level-ups (`Config.SOUNDS`); camera shake; a down screen; a countdown between waves; a report when a world is cleared. Music per world in `Config.MUSIC` (empty until you paste ids). |
+
+## Keeping players coming back
+
+Everything below is saved per player in a DataStore (`RiftProfiles_v1`) and checked
+by the server; clients only ever ask.
+
+| | |
+| --- | --- |
+| Saving | Loaded on join, saved every 90 s, on leaving and on shutdown. A session lock stops two servers writing the same player: a second server waits up to a minute for the first to let go and never forces a live lock (a player still held is asked to rejoin), takes over a lock untouched for five minutes (its server is gone), and a server that lost the lock can never overwrite newer progress. Saves for one player never overlap, and nothing is written after the save on leaving. Failed reads and writes are retried. In Studio without API access it falls back to memory and says so; a live server never does. |
+| Levels and Rift Shards | Experience and shards from every kill (more for alphas, story bosses and character bosses), every wave cleared and every world cleared (much more the first time). Each level pays shards. |
+| The roster | Six starters from all three universes (Threadrunner, Ren Tsumuji, Kurobane, Haru Takane, Kage Inukai, Hammer Maiden). Everyone else joins when you beat their boss in the rift, or for 350 Rift Shards (900 for the ten premium characters). Locked cards say how to win them. "Continue as …" puts you straight back in as your last character. |
+| Absorbed techniques and loadouts | Techniques absorbed from enemies are kept, and the loadout screen (L) puts any of them in any character's five slots. Saved per character. |
+| Daily reward | A seven-day calendar that grows every day in a row (day 7 is the big one) and starts again after a missed day. The menu opens on it when one is waiting. |
+| Daily quests | Three a day, the same for a player on every server that day, from eight kinds (defeat enemies, alphas and bosses, clear waves, use techniques, land Black Flashes, deal damage, basic attacks, charged techniques). One swap a day for 25 shards. A red dot on MENU when something can be claimed. |
+| Worlds | Clearing a world's last wave (its boss ladder) moves everyone through the rift to the next world and opens it for travel from the menu's Worlds tab. Best wave per world is kept. |
+| Upgrades | Five permanent upgrades bought with shards, for every character: Vitality, Power, Spirit, Swiftness, Fortune, each level dearer than the last. |
+| First run | Six tips that move on as the new player does each thing, then never again. |
+| Global boards | Best wave and total experience, top ten, in the menu (OrderedDataStores). |
+| Badges | Seven: first visit, first character boss, first world cleared, levels 10 and 25, a seven-day streak, fifteen characters. Create them on the Creator Dashboard and paste the ids into `Config.BADGES`; an id of 0 is skipped. |
+| Friends | +10% experience for each friend on the same server, up to three. |
+| Stats | Kills, bosses, waves, worlds, techniques, crits, damage, best combo, time played, per-world bests, in the menu. |
+| Player list and names | `leaderstats` shows Level and Best Wave; the name over each player's head shows their level. |
 
 ## What is not ported yet
 
 Rough priority order:
 
-1. **Five technique types.** 7 equipped techniques use them and say "not in the Roblox
-   build yet" when cast. `switch` (Toji, Maki, Iron Man and Top Hat's weapon and suit
-   sets, with `Data/Arsenals`), `rewind` (Sasuke's Reverse Time), `possess` (Kenjaku),
-   `devour` (Venom's Feed) and `self` (a decoy).
-2. **The symbiote systems:** suit health, hunger, bond, the takeover at under 100 HP,
-   detaching, the lines of text, auto-tendrils (R), Doc Ock's arms.
-3. **Output charge (B)** and the Shadow Clone army. Ability handlers already take the
-   multiplier (`B`); nothing sets it yet.
-4. **The real arenas.** `World` builds a ring of blocks. Build each world in Studio as
-   a Model named after its map id (`times_square`, `jujutsu_high`, …) under
-   `ServerStorage.Maps`, and it replaces the placeholder automatically.
-5. **Gates between worlds (Q), the world map (N) and the loadout screen (Tab).**
-   Absorbed techniques are recorded (`learned`) but cannot be slotted yet.
+1. **The symbiote's voice** goes to the combat log rather than a speech bubble.
+2. **The Shadow Clone army.** Multi Shadow Clone makes its usual three to five
+   helpers; the charged 1,000 / 5,000 / 10,000 army needs a cheaper kind of minion
+   than a humanoid first.
+3. **A body for the decoy and for Body Swap.** Shadow Clone's decoy works (it takes
+   the next hit) but has no second body on screen, and a worn enemy keeps its own
+   look.
+4. **Hand-built arenas.** `Arenas` builds each world from parts and terrain. A Model
+   named after a map id (`times_square`, `jujutsu_high`, …) under
+   `ServerStorage.Maps` replaces the built one automatically.
+5. **Music.** `Config.MUSIC` is empty: paste Creator Store sound ids per world.
 6. **Looks.** Bodies are R15 in each character's colours with a hair shape made from
    parts. For real hair and clothes, put catalog asset ids in `Looks.ACCESSORIES`. The
    select screen shows colour strips rather than spinning 3D previews (`ViewportFrame`
@@ -106,7 +161,8 @@ Rough priority order:
    craft's behaviour (tracking, warning, beam, lift, abduction) is not ported yet.
 9. **Multiplayer modes.** Co-op works by default: everyone on a server shares the
    waves. Versus does not exist yet.
-10. **Saving** (DataStoreService): unlocked techniques and progress.
+10. **The Visitors' craft** walks like a person.
+12. **Monetisation.** No game passes or developer products. Shards are earned only.
 
 ## Keeping the two builds in step
 
@@ -133,9 +189,13 @@ npm run test:roblox     # the Luau rules and data checks
   ```
 
   `globalTypes.d.luau` comes from the luau-lsp repository (`scripts/`).
-- 22 Lune tests pass. They check the ported rules against the web build's own formulas
-  (damage over time matches to the point over several seconds at 60 fps), and check
-  that every exported reference resolves.
+- 73 Lune tests pass. They check the ported rules against the web build's own formulas
+  (damage over time matches to the point over several seconds at 60 fps), check
+  that every exported reference resolves, check the progression rules (levels,
+  rewards, the streak across a missed day, quests, loadouts, unlocks), and run the
+  save system against a fake DataStore (a live lock waited on and never forced, a
+  dead one taken, a last save landing while the next server waits, a server that
+  lost its lock refused, a store that keeps failing, an old save repaired).
 - The repo's node suite, including the export freshness test.
 
 **Not checked:** anything that needs the Roblox engine to be running: physics, the
