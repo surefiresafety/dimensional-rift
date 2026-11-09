@@ -31,6 +31,7 @@ local WORLDS = {
 	{ "naruto", RulesData.WORLD_LABEL.naruto },
 	{ "jjk", RulesData.WORLD_LABEL.jjk },
 	{ "marvel", RulesData.WORLD_LABEL.marvel },
+	{ "dojo", RulesData.WORLD_LABEL.dojo },
 	{ "other", RulesData.WORLD_LABEL.other },
 }
 

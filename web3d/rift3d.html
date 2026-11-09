@@ -761,6 +761,7 @@
         <button class="tab" data-world="naruto" aria-selected="false">Shinobi Lands</button>
         <button class="tab" data-world="jjk" aria-selected="false">Sorcerer's Academy</button>
         <button class="tab" data-world="marvel" aria-selected="false">Skyline City</button>
+        <button class="tab" data-world="dojo" aria-selected="false">Lantern Monastery</button>
         <button class="tab" data-world="other" aria-selected="false">Elsewhere</button>
         <input id="ms-search" type="search" placeholder="Search a name or a technique" autocomplete="off" />
         <span id="ms-count"></span>
@@ -964,6 +965,55 @@ const SKILLS = {
   ledger_pages:    { name: 'Torn Pages', origin: 'Ledger', nature: 'cursed', cost: 16, cd: 8, type: 'trap', range: 8, radius: 6, power: 60, color: 0xf2f2f2, onHit: { bleed: 3 }, desc: 'A storm of paper edges. Everything inside is cut and bleeds.' },
   ledger_alibi:    { name: 'Perfect Alibi', origin: 'Ledger', nature: 'cursed', cost: 14, cd: 18, type: 'evade', duration: 4, desc: 'For four seconds you were never there: every attack misses.' },
   ledger_world:    { name: 'The Final Page', origin: 'Ledger', nature: 'cursed', cost: 0, cd: 0, type: 'ledger', all: true, range: 45, delay: 4, power: 420, color: 0x16121c, desc: 'Every enemy within 45m goes in the book at once.' },
+  // The Lantern Monastery
+  gale_strike:     { name: 'Gust Palm', origin: 'Rikka', nature: 'wind', cost: 8, cd: 2, type: 'melee', range: 3.2, power: 58, knock: 10, color: 9429961, desc: 'A close wind strike.' },
+  gale_throw:      { name: 'Kite Shuriken', origin: 'Rikka', nature: 'wind', cost: 7, cd: 1.4, type: 'projectile', speed: 42, radius: 0.55, power: 48, color: 9429961, desc: 'Thrown fast and straight.' },
+  gale_dash:       { name: 'Cyclone Step', origin: 'Rikka', nature: 'wind', cost: 12, cd: 5, type: 'dash', range: 11, power: 70, color: 9429961, desc: 'Through everything in the line.' },
+  gale_ring:       { name: 'Dust Devil', origin: 'Rikka', nature: 'wind', cost: 16, cd: 8, type: 'trap', range: 7, radius: 6, power: 60, color: 9429961, desc: 'A ring of wind that catches everything inside.' },
+  gale_guard:      { name: 'Tailwind', origin: 'Rikka', nature: 'wind', cost: 18, cd: 20, type: 'buff', duration: 12, dmgMul: 1.25, speedMul: 1.5, color: 9429961, desc: 'A burst of speed and strength.' },
+  gale_ult:        { name: 'Hundred-Mile Gale', origin: 'Rikka', nature: 'wind', cost: 0, cd: 0, type: 'beam', range: 45, radius: 4, power: 200, color: 9429961, desc: 'Everything the clan taught, in one line.' },
+  storm_strike:    { name: 'Static Jab', origin: 'Hayato', nature: 'lightning', cost: 8, cd: 2, type: 'melee', range: 3.2, power: 58, knock: 10, onHit: { paralyze: 1.2 }, color: 16767050, desc: 'A close lightning strike.' },
+  storm_throw:     { name: 'Thunder Kunai', origin: 'Hayato', nature: 'lightning', cost: 7, cd: 1.4, type: 'projectile', speed: 42, radius: 0.55, power: 48, onHit: { paralyze: 1.2 }, color: 16767050, desc: 'Thrown fast and straight.' },
+  storm_dash:      { name: 'Arc Leap', origin: 'Hayato', nature: 'lightning', cost: 12, cd: 5, type: 'dash', range: 11, power: 70, onHit: { paralyze: 1.2 }, color: 16767050, desc: 'Through everything in the line.' },
+  storm_ring:      { name: 'Storm Cage', origin: 'Hayato', nature: 'lightning', cost: 16, cd: 8, type: 'trap', range: 7, radius: 6, power: 60, onHit: { paralyze: 1.2 }, color: 16767050, desc: 'A ring of lightning that catches everything inside.' },
+  storm_guard:     { name: 'Ground Wire', origin: 'Hayato', nature: 'lightning', cost: 18, cd: 20, type: 'shield', charges: 3, duration: 12, reflect: 40, color: 16767050, desc: 'Stops the next few hits.' },
+  storm_ult:       { name: 'Sky Hammer', origin: 'Hayato', nature: 'lightning', cost: 0, cd: 0, type: 'beam', range: 45, radius: 4, power: 200, onHit: { paralyze: 1.2 }, color: 16767050, desc: 'Everything the clan taught, in one line.' },
+  tide_strike:     { name: 'Undertow Strike', origin: 'Mirei', nature: 'water', cost: 8, cd: 2, type: 'melee', range: 3.2, power: 58, knock: 10, onHit: { root: 1 }, color: 4180160, desc: 'A close water strike.' },
+  tide_throw:      { name: 'Tide Kunai', origin: 'Mirei', nature: 'water', cost: 7, cd: 1.4, type: 'projectile', speed: 42, radius: 0.55, power: 48, onHit: { root: 1 }, color: 4180160, desc: 'Thrown fast and straight.' },
+  tide_dash:       { name: 'Wave Rush', origin: 'Mirei', nature: 'water', cost: 12, cd: 5, type: 'dash', range: 11, power: 70, onHit: { root: 1 }, color: 4180160, desc: 'Through everything in the line.' },
+  tide_ring:       { name: 'Whirlpool', origin: 'Mirei', nature: 'water', cost: 16, cd: 8, type: 'trap', range: 7, radius: 6, power: 60, onHit: { root: 1 }, color: 4180160, desc: 'A ring of water that catches everything inside.' },
+  tide_guard:      { name: 'Mist Veil', origin: 'Mirei', nature: 'water', cost: 18, cd: 20, type: 'evade', duration: 3, color: 4180160, desc: 'For a moment, nothing can touch you.' },
+  tide_ult:        { name: 'Tsunami Wall', origin: 'Mirei', nature: 'water', cost: 0, cd: 0, type: 'beam', range: 45, radius: 4, power: 200, onHit: { root: 1 }, color: 4180160, desc: 'Everything the clan taught, in one line.' },
+  stone_strike:    { name: 'Boulder Fist', origin: 'Daigo', nature: 'earth', cost: 8, cd: 2, type: 'melee', range: 3.2, power: 58, knock: 10, color: 13213800, desc: 'A close earth strike.' },
+  stone_throw:     { name: 'Stone Shard', origin: 'Daigo', nature: 'earth', cost: 7, cd: 1.4, type: 'projectile', speed: 42, radius: 0.55, power: 48, color: 13213800, desc: 'Thrown fast and straight.' },
+  stone_dash:      { name: 'Landslide Charge', origin: 'Daigo', nature: 'earth', cost: 12, cd: 5, type: 'dash', range: 11, power: 70, color: 13213800, desc: 'Through everything in the line.' },
+  stone_ring:      { name: 'Quake Ring', origin: 'Daigo', nature: 'earth', cost: 16, cd: 8, type: 'trap', range: 7, radius: 6, power: 60, color: 13213800, desc: 'A ring of earth that catches everything inside.' },
+  stone_guard:     { name: 'Granite Skin', origin: 'Daigo', nature: 'earth', cost: 18, cd: 20, type: 'shield', charges: 5, duration: 14, color: 13213800, desc: 'Stops the next few hits.' },
+  stone_ult:       { name: 'Mountain Fall', origin: 'Daigo', nature: 'earth', cost: 0, cd: 0, type: 'beam', range: 45, radius: 4, power: 200, color: 13213800, desc: 'Everything the clan taught, in one line.' },
+  cinder_strike:   { name: 'Ember Kick', origin: 'Tsubaki', nature: 'fire', cost: 8, cd: 2, type: 'melee', range: 3.2, power: 58, knock: 10, onHit: { burn: 4 }, color: 16742954, desc: 'A close fire strike.' },
+  cinder_throw:    { name: 'Firefly Kunai', origin: 'Tsubaki', nature: 'fire', cost: 7, cd: 1.4, type: 'projectile', speed: 42, radius: 0.55, power: 48, onHit: { burn: 4 }, color: 16742954, desc: 'Thrown fast and straight.' },
+  cinder_dash:     { name: 'Flare Dash', origin: 'Tsubaki', nature: 'fire', cost: 12, cd: 5, type: 'dash', range: 11, power: 70, onHit: { burn: 4 }, color: 16742954, desc: 'Through everything in the line.' },
+  cinder_ring:     { name: 'Ash Ring', origin: 'Tsubaki', nature: 'fire', cost: 16, cd: 8, type: 'trap', range: 7, radius: 6, power: 60, onHit: { burn: 4 }, color: 16742954, desc: 'A ring of fire that catches everything inside.' },
+  cinder_guard:    { name: 'Kindling', origin: 'Tsubaki', nature: 'fire', cost: 18, cd: 20, type: 'buff', duration: 12, dmgMul: 1.6, speedMul: 1.1, color: 16742954, desc: 'A burst of speed and strength.' },
+  cinder_ult:      { name: 'Phoenix Arc', origin: 'Tsubaki', nature: 'fire', cost: 0, cd: 0, type: 'beam', range: 45, radius: 4, power: 200, onHit: { burn: 4 }, color: 16742954, desc: 'Everything the clan taught, in one line.' },
+  frost_strike:    { name: 'Frost Palm', origin: 'Yukio', nature: 'water', cost: 8, cd: 2, type: 'melee', range: 3.2, power: 58, knock: 10, onHit: { root: 1.5 }, color: 12576511, desc: 'A close water strike.' },
+  frost_throw:     { name: 'Icicle Volley', origin: 'Yukio', nature: 'water', cost: 7, cd: 1.4, type: 'projectile', speed: 42, radius: 0.55, power: 48, onHit: { root: 1.5 }, color: 12576511, desc: 'Thrown fast and straight.' },
+  frost_dash:      { name: 'Glacier Glide', origin: 'Yukio', nature: 'water', cost: 12, cd: 5, type: 'dash', range: 11, power: 70, onHit: { root: 1.5 }, color: 12576511, desc: 'Through everything in the line.' },
+  frost_ring:      { name: 'Frozen Ground', origin: 'Yukio', nature: 'water', cost: 16, cd: 8, type: 'trap', range: 7, radius: 6, power: 60, onHit: { root: 1.5 }, color: 12576511, desc: 'A ring of water that catches everything inside.' },
+  frost_guard:     { name: 'Ice Mirror', origin: 'Yukio', nature: 'water', cost: 18, cd: 20, type: 'shield', charges: 3, duration: 12, reflect: 60, color: 12576511, desc: 'Stops the next few hits.' },
+  frost_ult:       { name: 'Blizzard Lance', origin: 'Yukio', nature: 'water', cost: 0, cd: 0, type: 'beam', range: 45, radius: 4, power: 200, onHit: { root: 1.5 }, color: 12576511, desc: 'Everything the clan taught, in one line.' },
+  dusk_strike:     { name: 'Shadow Cut', origin: 'Kagero', nature: 'cursed', cost: 8, cd: 2, type: 'melee', range: 3.2, power: 58, knock: 10, onHit: { bleed: 3 }, color: 10185983, desc: 'A close cursed strike.' },
+  dusk_throw:      { name: 'Night Needle', origin: 'Kagero', nature: 'cursed', cost: 7, cd: 1.4, type: 'projectile', speed: 42, radius: 0.55, power: 48, onHit: { bleed: 3 }, color: 10185983, desc: 'Thrown fast and straight.' },
+  dusk_dash:       { name: 'Shadow Step', origin: 'Kagero', nature: 'cursed', cost: 12, cd: 5, type: 'dash', range: 11, power: 70, onHit: { bleed: 3 }, color: 10185983, desc: 'Through everything in the line.' },
+  dusk_ring:       { name: 'Umbral Snare', origin: 'Kagero', nature: 'cursed', cost: 16, cd: 8, type: 'trap', range: 7, radius: 6, power: 60, onHit: { bleed: 3 }, color: 10185983, desc: 'A ring of cursed that catches everything inside.' },
+  dusk_guard:      { name: 'Fade', origin: 'Kagero', nature: 'cursed', cost: 18, cd: 20, type: 'evade', duration: 4, color: 10185983, desc: 'For a moment, nothing can touch you.' },
+  dusk_ult:        { name: 'Eclipse', origin: 'Kagero', nature: 'cursed', cost: 0, cd: 0, type: 'beam', range: 45, radius: 4, power: 200, onHit: { bleed: 3 }, color: 10185983, desc: 'Everything the clan taught, in one line.' },
+  dawn_strike:     { name: 'Sunrise Palm', origin: 'Akari', nature: 'physical', cost: 8, cd: 2, type: 'melee', range: 3.2, power: 58, knock: 10, color: 16773296, desc: 'A close physical strike.' },
+  dawn_throw:      { name: 'Glint Star', origin: 'Akari', nature: 'physical', cost: 7, cd: 1.4, type: 'projectile', speed: 42, radius: 0.55, power: 48, color: 16773296, desc: 'Thrown fast and straight.' },
+  dawn_dash:       { name: 'Beam Step', origin: 'Akari', nature: 'physical', cost: 12, cd: 5, type: 'dash', range: 11, power: 70, color: 16773296, desc: 'Through everything in the line.' },
+  dawn_ring:       { name: 'Halo Ring', origin: 'Akari', nature: 'physical', cost: 16, cd: 8, type: 'trap', range: 7, radius: 6, power: 60, color: 16773296, desc: 'A ring of physical that catches everything inside.' },
+  dawn_guard:      { name: 'Lantern Heart', origin: 'Akari', nature: 'physical', cost: 18, cd: 20, type: 'heal', percent: 0.35, color: 16773296, desc: 'Light that closes wounds.' },
+  dawn_ult:        { name: 'Daybreak', origin: 'Akari', nature: 'physical', cost: 0, cd: 0, type: 'beam', range: 45, radius: 4, power: 200, color: 16773296, desc: 'Everything the clan taught, in one line.' },
   time_freeze:     { name: 'Time Freeze', origin: 'Kurobane', nature: 'cursed', cost: 16, cd: 14, type: 'freeze', duration: 3.5, desc: 'Time stops for everything except you.' },
   frozen_world:    { name: 'Frozen World', origin: 'Kurobane', nature: 'cursed', cost: 26, cd: 22, type: 'freeze', duration: 5, hold: 3, power: 30, desc: 'Freezes every enemy on the map, and they stay locked in place when time resumes.' },
   reverse_time:    { name: 'Reverse Time', origin: 'Kurobane', nature: 'cursed', cost: 20, cd: 25, type: 'rewind', seconds: 6, desc: 'Rewind yourself six seconds. Your health, energy and position all come back.' },
@@ -1506,6 +1556,39 @@ const STYLES = {
     passives: ['Every claw attack ignores armour and leaves a bleed that scales with the target.', 'Berserker Rage takes back a third of everything it deals.'],
     pool: ['claw_slash', 'berserker_spin', 'lunge', 'healing_factor_w', 'adamantium_guard'], slots: ['claw_slash', 'berserker_spin', 'lunge', 'healing_factor_w', 'adamantium_guard'],
     ultimate: { skill: 'berserker_rage', name: 'Berserker Rage', cost: 36, cd: 32, duration: 22 } },
+  // --- The Lantern Monastery: eight elemental ninja, one of each ---
+  gale_ninja: { name: 'Rikka: Ninja of the Gale', blurb: 'A kite-maker from the hill villages who reads the wind like a map. She fights from the rooftops.',
+    passives: ['One of the eight of the Lantern Monastery; every technique carries wind.'],
+    pool: ['gale_strike', 'gale_throw', 'gale_dash', 'gale_ring', 'gale_guard'], slots: ['gale_strike', 'gale_throw', 'gale_dash', 'gale_ring', 'gale_guard'],
+    ultimate: { skill: 'gale_ult', name: 'Hundred-Mile Gale', cost: 45, cd: 32, duration: 1 } },
+  storm_ninja: { name: 'Hayato: Ninja of the Thunderhead', blurb: 'The monastery bell-ringer. He counts the seconds between flash and thunder and is never wrong.',
+    passives: ['One of the eight of the Lantern Monastery; every technique carries lightning.'],
+    pool: ['storm_strike', 'storm_throw', 'storm_dash', 'storm_ring', 'storm_guard'], slots: ['storm_strike', 'storm_throw', 'storm_dash', 'storm_ring', 'storm_guard'],
+    ultimate: { skill: 'storm_ult', name: 'Sky Hammer', cost: 45, cd: 32, duration: 1 } },
+  tide_ninja: { name: 'Mirei: Ninja of the Riptide', blurb: 'A cartographer of underground rivers. Patient, precise, and impossible to outlast.',
+    passives: ['One of the eight of the Lantern Monastery; every technique carries water.'],
+    pool: ['tide_strike', 'tide_throw', 'tide_dash', 'tide_ring', 'tide_guard'], slots: ['tide_strike', 'tide_throw', 'tide_dash', 'tide_ring', 'tide_guard'],
+    ultimate: { skill: 'tide_ult', name: 'Tsunami Wall', cost: 45, cd: 32, duration: 1 } },
+  stone_ninja: { name: 'Daigo: Ninja of the Bedrock', blurb: 'A stonemason who carves the lanterns that light the monastery. Slow to start, impossible to stop.',
+    passives: ['One of the eight of the Lantern Monastery; every technique carries earth.'],
+    pool: ['stone_strike', 'stone_throw', 'stone_dash', 'stone_ring', 'stone_guard'], slots: ['stone_strike', 'stone_throw', 'stone_dash', 'stone_ring', 'stone_guard'],
+    ultimate: { skill: 'stone_ult', name: 'Mountain Fall', cost: 45, cd: 32, duration: 1 } },
+  cinder_ninja: { name: 'Tsubaki: Ninja of the Cinder', blurb: 'The monastery cook. She keeps the hearth lit all night and fights the way she cooks: high heat, no waste.',
+    passives: ['One of the eight of the Lantern Monastery; every technique carries fire.'],
+    pool: ['cinder_strike', 'cinder_throw', 'cinder_dash', 'cinder_ring', 'cinder_guard'], slots: ['cinder_strike', 'cinder_throw', 'cinder_dash', 'cinder_ring', 'cinder_guard'],
+    ultimate: { skill: 'cinder_ult', name: 'Phoenix Arc', cost: 45, cd: 32, duration: 1 } },
+  frost_ninja: { name: 'Yukio: Ninja of the Hoarfrost', blurb: 'An old storyteller who learned his art late. He leaves frost on every word and every step.',
+    passives: ['One of the eight of the Lantern Monastery; every technique carries water.'],
+    pool: ['frost_strike', 'frost_throw', 'frost_dash', 'frost_ring', 'frost_guard'], slots: ['frost_strike', 'frost_throw', 'frost_dash', 'frost_ring', 'frost_guard'],
+    ultimate: { skill: 'frost_ult', name: 'Blizzard Lance', cost: 45, cd: 32, duration: 1 } },
+  dusk_ninja: { name: 'Kagero: Ninja of the Dusk', blurb: 'The night watchman. He knows every shadow on the mountain by name, and they owe him favours.',
+    passives: ['One of the eight of the Lantern Monastery; every technique carries cursed.'],
+    pool: ['dusk_strike', 'dusk_throw', 'dusk_dash', 'dusk_ring', 'dusk_guard'], slots: ['dusk_strike', 'dusk_throw', 'dusk_dash', 'dusk_ring', 'dusk_guard'],
+    ultimate: { skill: 'dusk_ult', name: 'Eclipse', cost: 45, cd: 32, duration: 1 } },
+  dawn_ninja: { name: 'Akari: Ninja of the Dawn', blurb: 'The lamplighter. She walks the paths at dusk lighting the lanterns, and the dark keeps its distance.',
+    passives: ['One of the eight of the Lantern Monastery; every technique carries physical.'],
+    pool: ['dawn_strike', 'dawn_throw', 'dawn_dash', 'dawn_ring', 'dawn_guard'], slots: ['dawn_strike', 'dawn_throw', 'dawn_dash', 'dawn_ring', 'dawn_guard'],
+    ultimate: { skill: 'dawn_ult', name: 'Daybreak', cost: 45, cd: 32, duration: 1 } },
 };
 // Curses are graded the way the sorcerers grade them, and the grade is what the
 // numbers below are built from: a Grade 4 is fodder, a Special Grade is a boss
@@ -2970,6 +3053,14 @@ const CHARACTERS = {
 
   // --- The second wave of the roster ---
   // Itachi: Akatsuki black with a red collar, Sharingan burning on both sides.
+  gale_ninja:{ sig: 9429961, skin: 15913652, hair: 2760474, hairStyle: 'ponytail', top: 6262634, bottom: 3029552, hood: 6262634, maskLower: 3029552, sash: 15261896, belt: 15261896, eye: 3824186 },
+  storm_ninja:{ sig: 16767050, skin: 15780000, hair: 1710618, hairStyle: 'spiky', top: 3092280, bottom: 2039590, hood: 3092280, maskLower: 14200880, sash: 14200880, belt: 14200880, eye: 14200880 },
+  tide_ninja:{ sig: 4180160, skin: 15253658, hair: 1056810, hairStyle: 'bun', top: 2062968, bottom: 1063482, hood: 2062968, maskLower: 16747114, sash: 16747114, belt: 16747114, eye: 2062968 },
+  stone_ninja:{ sig: 13213800, skin: 13146218, hair: 2759184, hairStyle: 'crop', top: 8018482, bottom: 3811866, hood: 8018482, maskLower: 3811866, sash: 14207136, belt: 3811866, eye: 5913114, height: 1.08 },
+  cinder_ninja:{ sig: 16742954, skin: 15911590, hair: 3803658, hairStyle: 'swept', top: 3814454, bottom: 1972764, hood: 3814454, maskLower: 16742954, sash: 16742954, belt: 16765066, eye: 16742954 },
+  frost_ninja:{ sig: 12576511, skin: 16047307, hair: 15265524, hairStyle: 'short', top: 10136251, bottom: 5925498, hood: 10136251, maskLower: 14676223, sash: 5933744, belt: 5933744, eye: 8046847 },
+  dusk_ninja:{ sig: 10185983, skin: 14467240, hair: 657936, hairStyle: 'long', top: 2759226, bottom: 1182234, hood: 2759226, maskLower: 1182234, sash: 10185983, belt: 10185983, eye: 10185983, hairLen: 1.0 },
+  dawn_ninja:{ sig: 16773296, skin: 15978414, hair: 14196800, hairStyle: 'spiky', top: 16052452, bottom: 12098138, hood: 16052452, maskLower: 14200896, sash: 14200896, belt: 12098138, eye: 14196800 },
   ledger:    { sig: 0xd8182c, skin: 0xf0dccb, hair: 0xe6e6ee, hairStyle: 'swept', top: 0x2e2e3a, bottom: 0x15151d, sleeves: 0x2e2e3a, eye: 0x9b6cff, collar: 0xd8182c, cape: 0x15151d, brow: 0xcfcfd8, browAngle: .12 },
   itachi:    { sig: 0xb03a3a, skin: 0xf0d8c0, hair: 0x14141c, hairStyle: 'long', top: 0x15151d, bottom: 0x15151d, sleeves: 0x15151d, eye: 0xd8232f, sharingan: true, collar: 0xb03a3a, cape: 0x15151d, headband: 0x3a4250, brow: 0x14141c, browAngle: .18, hairLen: 1.2 },
   // Guy: the green jumpsuit, orange at the belt, bowl cut, flak vest.
@@ -8324,7 +8415,8 @@ const hex = (c) => '#' + c.toString(16).padStart(6, '0');
 // Which universe each fighter walked in from. The select screen filters on it,
 // so it is a table rather than something guessed from a skill's origin string.
 const WORLD_OF = {
-  ledger: 'other', naruto: 'naruto', sasuke: 'naruto', kakashi: 'naruto', itachi: 'naruto', might_guy: 'naruto', pain: 'naruto',
+  ledger: 'other', gale_ninja: 'dojo', storm_ninja: 'dojo', tide_ninja: 'dojo', stone_ninja: 'dojo', cinder_ninja: 'dojo', frost_ninja: 'dojo', dusk_ninja: 'dojo', dawn_ninja: 'dojo',
+  naruto: 'naruto', sasuke: 'naruto', kakashi: 'naruto', itachi: 'naruto', might_guy: 'naruto', pain: 'naruto',
   gojo: 'jjk', sukuna: 'jjk', yuji: 'jjk', megumi: 'jjk', toji: 'jjk', kashimo: 'jjk', geto: 'jjk',
   kenjaku: 'jjk', choso: 'jjk', mahito: 'jjk', jogo: 'jjk', hanami: 'jjk', dagon: 'jjk', nanami: 'jjk',
   nobara: 'jjk', toge: 'jjk', maki: 'jjk', naoya: 'jjk', yuta: 'jjk', ishigori: 'jjk', uro: 'jjk',
@@ -8334,7 +8426,7 @@ const WORLD_OF = {
   jean: 'marvel', strange: 'marvel', goblin: 'marvel', wolverine: 'marvel',
   eleven: 'other', tophat: 'other',
 };
-const WORLD_LABEL = { naruto: 'Shinobi Lands', jjk: "Sorcerer's Academy", marvel: 'Skyline City', other: 'Elsewhere' };
+const WORLD_LABEL = { naruto: 'Shinobi Lands', jjk: "Sorcerer's Academy", marvel: 'Skyline City', dojo: 'Lantern Monastery', other: 'Elsewhere' };
 const worldOf = (id) => WORLD_OF[id] ?? 'other';
 
 function moveSetCard(id, st) {

@@ -43,11 +43,11 @@ end
 print("Data")
 
 H.test("the whole roster came across", function()
-	H.eq(count(Styles), 46, "characters")
-	H.eq(count(Skills), 288, "techniques")
-	H.eq(count(Enemies), 118, "enemies")
+	H.eq(count(Styles), 54, "characters")
+	H.eq(count(Skills), 336, "techniques")
+	H.eq(count(Enemies), 126, "enemies")
 	H.eq(count(Maps), 9, "worlds")
-	H.eq(#RulesData.BOSS_IDS, 46, "a boss for every character")
+	H.eq(#RulesData.BOSS_IDS, 54, "a boss for every character")
 end)
 
 H.test("every technique a character carries exists", function()
