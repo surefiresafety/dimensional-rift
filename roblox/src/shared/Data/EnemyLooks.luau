@@ -875,6 +875,8 @@ return {
 		browAngle = 0.34,
 	},
 	boss_gale_ninja = {
+		shoulders = 0x3e5e46,
+		vest = 0x8fb89a,
 		sig = 0x8fe3c9,
 		skin = 0xf2d2b4,
 		hair = 0x2a1f1a,
@@ -888,6 +890,8 @@ return {
 		eye = 0x3a5a3a,
 	},
 	boss_storm_ninja = {
+		shoulders = 0x1a1a20,
+		vest = 0xd8b030,
 		sig = 0xffd84a,
 		skin = 0xf0c8a0,
 		hair = 0x1a1a1a,
@@ -901,6 +905,8 @@ return {
 		eye = 0xd8b030,
 	},
 	boss_tide_ninja = {
+		shoulders = 0x124a48,
+		vest = 0xff8a6a,
 		sig = 0x3fc8c0,
 		skin = 0xe8c09a,
 		hair = 0x10202a,
@@ -914,6 +920,8 @@ return {
 		eye = 0x1f7a78,
 	},
 	boss_stone_ninja = {
+		shoulders = 0x4a361e,
+		vest = 0xb08a50,
 		sig = 0xc9a068,
 		skin = 0xc8986a,
 		hair = 0x2a1a10,
@@ -928,6 +936,8 @@ return {
 		height = 1.08,
 	},
 	boss_cinder_ninja = {
+		shoulders = 0x241e20,
+		vest = 0xff7a2a,
 		sig = 0xff7a2a,
 		skin = 0xf2caa6,
 		hair = 0x3a0a0a,
@@ -941,6 +951,8 @@ return {
 		eye = 0xff7a2a,
 	},
 	boss_frost_ninja = {
+		shoulders = 0x6a7a8c,
+		vest = 0xdff0ff,
 		sig = 0xbfe6ff,
 		skin = 0xf4dccb,
 		hair = 0xe8eef4,
@@ -954,6 +966,8 @@ return {
 		eye = 0x7ac8ff,
 	},
 	boss_dusk_ninja = {
+		shoulders = 0x160c22,
+		vest = 0x9b6cff,
 		sig = 0x9b6cff,
 		skin = 0xdcc0a8,
 		hair = 0x0a0a10,
@@ -968,6 +982,8 @@ return {
 		hairLen = 1,
 	},
 	boss_dawn_ninja = {
+		shoulders = 0xb89a5a,
+		vest = 0xfff0b0,
 		sig = 0xfff0b0,
 		skin = 0xf3cfae,
 		hair = 0xd8a040,
