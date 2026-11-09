@@ -803,7 +803,7 @@ return {
 	gale_ninja = {
 		name = "Rikka: Ninja of the Gale",
 		blurb = "A kite-maker from the hill villages who reads the wind like a map. She fights from the rooftops.",
-		passives = { "Hold E: Lantern Whirl, a tornado that lifts you (Space climbs, no ceiling). Hold B: Lantern Spin on the ground. Hold L: Lantern Burst, rings going off as it spins. T: Eightfold Tempest. You can run while any of them spin. O: mask off and on.", "One of the eight of the Lantern Monastery; every technique carries wind." },
+		passives = { "Hold E: Lantern Whirl, a tornado that lifts you (Space climbs, no ceiling). Hold B: Lantern Spin on the ground. Hold L: Lantern Burst, rings going off as it spins. T: Eightfold Tempest. You can run while any of them spin. O: mask off and on. P: draw the sword on your back. H: your elemental weapon. J: element fists. Whichever you hold is your left-click attack; press the same key again to go back to bare fists.", "One of the eight of the Lantern Monastery; every technique carries wind." },
 		pool = { "gale_strike", "gale_throw", "gale_dash", "gale_ring", "gale_guard" },
 		slots = { "gale_strike", "gale_throw", "gale_dash", "gale_ring", "gale_guard" },
 		ultimate = {
@@ -817,7 +817,7 @@ return {
 	storm_ninja = {
 		name = "Hayato: Ninja of the Thunderhead",
 		blurb = "The monastery bell-ringer. He counts the seconds between flash and thunder and is never wrong.",
-		passives = { "Hold E: Lantern Whirl, a tornado that lifts you (Space climbs, no ceiling). Hold B: Lantern Spin on the ground. Hold L: Lantern Burst, rings going off as it spins. T: Eightfold Tempest. You can run while any of them spin. O: mask off and on.", "One of the eight of the Lantern Monastery; every technique carries lightning." },
+		passives = { "Hold E: Lantern Whirl, a tornado that lifts you (Space climbs, no ceiling). Hold B: Lantern Spin on the ground. Hold L: Lantern Burst, rings going off as it spins. T: Eightfold Tempest. You can run while any of them spin. O: mask off and on. P: draw the sword on your back. H: your elemental weapon. J: element fists. Whichever you hold is your left-click attack; press the same key again to go back to bare fists.", "One of the eight of the Lantern Monastery; every technique carries lightning." },
 		pool = { "storm_strike", "storm_throw", "storm_dash", "storm_ring", "storm_guard" },
 		slots = { "storm_strike", "storm_throw", "storm_dash", "storm_ring", "storm_guard" },
 		ultimate = {
@@ -831,7 +831,7 @@ return {
 	tide_ninja = {
 		name = "Mirei: Ninja of the Riptide",
 		blurb = "A cartographer of underground rivers. Patient, precise, and impossible to outlast.",
-		passives = { "Hold E: Lantern Whirl, a tornado that lifts you (Space climbs, no ceiling). Hold B: Lantern Spin on the ground. Hold L: Lantern Burst, rings going off as it spins. T: Eightfold Tempest. You can run while any of them spin. O: mask off and on.", "One of the eight of the Lantern Monastery; every technique carries water." },
+		passives = { "Hold E: Lantern Whirl, a tornado that lifts you (Space climbs, no ceiling). Hold B: Lantern Spin on the ground. Hold L: Lantern Burst, rings going off as it spins. T: Eightfold Tempest. You can run while any of them spin. O: mask off and on. P: draw the sword on your back. H: your elemental weapon. J: element fists. Whichever you hold is your left-click attack; press the same key again to go back to bare fists.", "One of the eight of the Lantern Monastery; every technique carries water." },
 		pool = { "tide_strike", "tide_throw", "tide_dash", "tide_ring", "tide_guard" },
 		slots = { "tide_strike", "tide_throw", "tide_dash", "tide_ring", "tide_guard" },
 		ultimate = {
@@ -845,7 +845,7 @@ return {
 	stone_ninja = {
 		name = "Daigo: Ninja of the Bedrock",
 		blurb = "A stonemason who carves the lanterns that light the monastery. Slow to start, impossible to stop.",
-		passives = { "Hold E: Lantern Whirl, a tornado that lifts you (Space climbs, no ceiling). Hold B: Lantern Spin on the ground. Hold L: Lantern Burst, rings going off as it spins. T: Eightfold Tempest. You can run while any of them spin. O: mask off and on.", "One of the eight of the Lantern Monastery; every technique carries earth." },
+		passives = { "Hold E: Lantern Whirl, a tornado that lifts you (Space climbs, no ceiling). Hold B: Lantern Spin on the ground. Hold L: Lantern Burst, rings going off as it spins. T: Eightfold Tempest. You can run while any of them spin. O: mask off and on. P: draw the sword on your back. H: your elemental weapon. J: element fists. Whichever you hold is your left-click attack; press the same key again to go back to bare fists.", "One of the eight of the Lantern Monastery; every technique carries earth." },
 		pool = { "stone_strike", "stone_throw", "stone_dash", "stone_ring", "stone_guard" },
 		slots = { "stone_strike", "stone_throw", "stone_dash", "stone_ring", "stone_guard" },
 		ultimate = {
@@ -859,7 +859,7 @@ return {
 	cinder_ninja = {
 		name = "Tsubaki: Ninja of the Cinder",
 		blurb = "The monastery cook. She keeps the hearth lit all night and fights the way she cooks: high heat, no waste.",
-		passives = { "Hold E: Lantern Whirl, a tornado that lifts you (Space climbs, no ceiling). Hold B: Lantern Spin on the ground. Hold L: Lantern Burst, rings going off as it spins. T: Eightfold Tempest. You can run while any of them spin. O: mask off and on.", "One of the eight of the Lantern Monastery; every technique carries fire." },
+		passives = { "Hold E: Lantern Whirl, a tornado that lifts you (Space climbs, no ceiling). Hold B: Lantern Spin on the ground. Hold L: Lantern Burst, rings going off as it spins. T: Eightfold Tempest. You can run while any of them spin. O: mask off and on. P: draw the sword on your back. H: your elemental weapon. J: element fists. Whichever you hold is your left-click attack; press the same key again to go back to bare fists.", "One of the eight of the Lantern Monastery; every technique carries fire." },
 		pool = { "cinder_strike", "cinder_throw", "cinder_dash", "cinder_ring", "cinder_guard" },
 		slots = { "cinder_strike", "cinder_throw", "cinder_dash", "cinder_ring", "cinder_guard" },
 		ultimate = {
@@ -873,7 +873,7 @@ return {
 	frost_ninja = {
 		name = "Yukio: Ninja of the Hoarfrost",
 		blurb = "An old storyteller who learned his art late. He leaves frost on every word and every step.",
-		passives = { "Hold E: Lantern Whirl, a tornado that lifts you (Space climbs, no ceiling). Hold B: Lantern Spin on the ground. Hold L: Lantern Burst, rings going off as it spins. T: Eightfold Tempest. You can run while any of them spin. O: mask off and on.", "One of the eight of the Lantern Monastery; every technique carries water." },
+		passives = { "Hold E: Lantern Whirl, a tornado that lifts you (Space climbs, no ceiling). Hold B: Lantern Spin on the ground. Hold L: Lantern Burst, rings going off as it spins. T: Eightfold Tempest. You can run while any of them spin. O: mask off and on. P: draw the sword on your back. H: your elemental weapon. J: element fists. Whichever you hold is your left-click attack; press the same key again to go back to bare fists.", "One of the eight of the Lantern Monastery; every technique carries water." },
 		pool = { "frost_strike", "frost_throw", "frost_dash", "frost_ring", "frost_guard" },
 		slots = { "frost_strike", "frost_throw", "frost_dash", "frost_ring", "frost_guard" },
 		ultimate = {
@@ -887,7 +887,7 @@ return {
 	dusk_ninja = {
 		name = "Kagero: Ninja of the Dusk",
 		blurb = "The night watchman. He knows every shadow on the mountain by name, and they owe him favours.",
-		passives = { "Hold E: Lantern Whirl, a tornado that lifts you (Space climbs, no ceiling). Hold B: Lantern Spin on the ground. Hold L: Lantern Burst, rings going off as it spins. T: Eightfold Tempest. You can run while any of them spin. O: mask off and on.", "One of the eight of the Lantern Monastery; every technique carries cursed." },
+		passives = { "Hold E: Lantern Whirl, a tornado that lifts you (Space climbs, no ceiling). Hold B: Lantern Spin on the ground. Hold L: Lantern Burst, rings going off as it spins. T: Eightfold Tempest. You can run while any of them spin. O: mask off and on. P: draw the sword on your back. H: your elemental weapon. J: element fists. Whichever you hold is your left-click attack; press the same key again to go back to bare fists.", "One of the eight of the Lantern Monastery; every technique carries cursed." },
 		pool = { "dusk_strike", "dusk_throw", "dusk_dash", "dusk_ring", "dusk_guard" },
 		slots = { "dusk_strike", "dusk_throw", "dusk_dash", "dusk_ring", "dusk_guard" },
 		ultimate = {
@@ -901,7 +901,7 @@ return {
 	dawn_ninja = {
 		name = "Akari: Ninja of the Dawn",
 		blurb = "The lamplighter. She walks the paths at dusk lighting the lanterns, and the dark keeps its distance.",
-		passives = { "Hold E: Lantern Whirl, a tornado that lifts you (Space climbs, no ceiling). Hold B: Lantern Spin on the ground. Hold L: Lantern Burst, rings going off as it spins. T: Eightfold Tempest. You can run while any of them spin. O: mask off and on.", "One of the eight of the Lantern Monastery; every technique carries physical." },
+		passives = { "Hold E: Lantern Whirl, a tornado that lifts you (Space climbs, no ceiling). Hold B: Lantern Spin on the ground. Hold L: Lantern Burst, rings going off as it spins. T: Eightfold Tempest. You can run while any of them spin. O: mask off and on. P: draw the sword on your back. H: your elemental weapon. J: element fists. Whichever you hold is your left-click attack; press the same key again to go back to bare fists.", "One of the eight of the Lantern Monastery; every technique carries physical." },
 		pool = { "dawn_strike", "dawn_throw", "dawn_dash", "dawn_ring", "dawn_guard", "dawn_ult" },
 		slots = { "dawn_strike", "dawn_throw", "dawn_dash", "dawn_ring", "dawn_guard" },
 		ultimate = {

@@ -875,6 +875,7 @@ return {
 		browAngle = 0.34,
 	},
 	boss_gale_ninja = {
+		sword = true,
 		shoulders = 0x3e5e46,
 		vest = 0x8fb89a,
 		sig = 0x8fe3c9,
@@ -890,6 +891,7 @@ return {
 		eye = 0x3a5a3a,
 	},
 	boss_storm_ninja = {
+		sword = true,
 		shoulders = 0x1a1a20,
 		vest = 0xd8b030,
 		sig = 0xffd84a,
@@ -905,6 +907,7 @@ return {
 		eye = 0xd8b030,
 	},
 	boss_tide_ninja = {
+		sword = true,
 		shoulders = 0x124a48,
 		vest = 0xff8a6a,
 		sig = 0x3fc8c0,
@@ -920,6 +923,7 @@ return {
 		eye = 0x1f7a78,
 	},
 	boss_stone_ninja = {
+		sword = true,
 		shoulders = 0x4a361e,
 		vest = 0xb08a50,
 		sig = 0xc9a068,
@@ -936,6 +940,7 @@ return {
 		height = 1.08,
 	},
 	boss_cinder_ninja = {
+		sword = true,
 		shoulders = 0x241e20,
 		vest = 0xff7a2a,
 		sig = 0xff7a2a,
@@ -951,6 +956,7 @@ return {
 		eye = 0xff7a2a,
 	},
 	boss_frost_ninja = {
+		sword = true,
 		shoulders = 0x6a7a8c,
 		vest = 0xdff0ff,
 		sig = 0xbfe6ff,
@@ -966,6 +972,7 @@ return {
 		eye = 0x7ac8ff,
 	},
 	boss_dusk_ninja = {
+		sword = true,
 		shoulders = 0x160c22,
 		vest = 0x9b6cff,
 		sig = 0x9b6cff,
@@ -982,6 +989,7 @@ return {
 		hairLen = 1,
 	},
 	boss_dawn_ninja = {
+		sword = true,
 		shoulders = 0xb89a5a,
 		vest = 0xfff0b0,
 		sig = 0xfff0b0,
