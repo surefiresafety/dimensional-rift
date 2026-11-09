@@ -76,6 +76,8 @@ source += `\n({ ${[...TABLES, 'BOSS_IDS', 'ALPHA_IDS'].join(', ')} });`;
 
 class Vector3 { constructor(x = 0, y = 0, z = 0) { Object.assign(this, { x, y, z }); } }
 const data = vm.runInNewContext(source, { THREE: { Vector3 } }, { filename: 'rift3d-data.js' });
+// Admin-only characters stay in the browser build; the Roblox game has no admin yet.
+for (const [id, st] of Object.entries(data.STYLES)) if (st.adminOnly) delete data.STYLES[id];
 
 // ---- Writing Luau ------------------------------------------------------------
 const COLOR_KEY = /(color|col|sig|skin|hair|top|bottom|sleeves|eye|brow|belt|buckle|sash|cape|collar|hood|uniform|cuff|tie|necktie|vest|headband|sandals|shoulders|mask|masklower|tendrils|claws|tentacles|streaks|spider|metalarm|floor|edge|sky|suncolor|fogcolor|hemisky|hemiground|lens|goggles|specs|tiespots|blindfold)$/i;

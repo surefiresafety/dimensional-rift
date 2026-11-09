@@ -126,6 +126,7 @@ return {
 		pain = "fly",
 	},
 	WORLD_OF = {
+		ledger = "other",
 		naruto = "naruto",
 		sasuke = "naruto",
 		kakashi = "naruto",

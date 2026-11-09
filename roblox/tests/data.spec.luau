@@ -44,7 +44,7 @@ print("Data")
 
 H.test("the whole roster came across", function()
 	H.eq(count(Styles), 46, "characters")
-	H.eq(count(Skills), 282, "techniques")
+	H.eq(count(Skills), 288, "techniques")
 	H.eq(count(Enemies), 118, "enemies")
 	H.eq(count(Maps), 9, "worlds")
 	H.eq(#RulesData.BOSS_IDS, 46, "a boss for every character")
